@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>نظام OMA - إدارة الحصص</title>
 <style>
-body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
+body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;visibility:hidden;}
 header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
 .card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
@@ -85,104 +85,123 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// 🔹 إعداد Firebase
 const firebaseConfig = {
-  apiKey: "API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+  authDomain: "oma2-d36fa.firebaseapp.com",
+  projectId: "oma2-d36fa",
+  storageBucket: "oma2-d36fa.appspot.com",
+  messagingSenderId: "774171603105",
+  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// التحقق من تسجيل الدخول
-onAuthStateChanged(auth, user=>{
-  if(!user){ window.location.href="login.html"; }
-  else{ document.body.style.visibility="visible"; loadSubjectsTeachersGroups(); loadClasses(); }
-});
-
 // عناصر النموذج
-const classForm=document.getElementById("classForm");
-const subjectSelect=document.getElementById("subjectSelect");
-const teacherSelect=document.getElementById("teacherSelect");
-const groupSelect=document.getElementById("groupSelect");
-const classesTableBody=document.querySelector("#classesTable tbody");
+const classForm = document.getElementById("classForm");
+const subjectSelect = document.getElementById("subjectSelect");
+const teacherSelect = document.getElementById("teacherSelect");
+const groupSelect = document.getElementById("groupSelect");
+const classesTableBody = document.querySelector("#classesTable tbody");
 
-const filterSubject=document.getElementById("filterSubject");
-const filterTeacher=document.getElementById("filterTeacher");
-const filterGroup=document.getElementById("filterGroup");
-const filterBtn=document.getElementById("filterBtn");
+const filterSubject = document.getElementById("filterSubject");
+const filterTeacher = document.getElementById("filterTeacher");
+const filterGroup = document.getElementById("filterGroup");
+const filterBtn = document.getElementById("filterBtn");
 
 let subjectsList=[], teachersList=[], groupsList=[], classesData=[];
 
-// تحميل المواد والأساتذة والكروبات
+// 🔑 التحقق من تسجيل الدخول
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  try {
+    // عرض الصفحة بعد التأكد من تسجيل الدخول
+    document.body.style.visibility = "visible";
+
+    // تحميل البيانات
+    await loadSubjectsTeachersGroups();
+    await loadClasses();
+  } catch (err) {
+    console.error("خطأ أثناء تحميل البيانات:", err);
+    alert("حدث خطأ أثناء تحميل الصفحة، حاول إعادة تحميل الصفحة.");
+  }
+});
+
+// تحميل المواد، الأساتذة، الكروبات
 async function loadSubjectsTeachersGroups(){
-  subjectsList=[]; teachersList=[]; groupsList=[];
-  
-  const studentsSnap=await getDocs(collection(db,"students"));
-  const subjectsSet=new Set();
-  const groupsSet=new Set();
+  subjectsList = [];
+  teachersList = [];
+  groupsList = [];
+
+  const studentsSnap = await getDocs(collection(db, "students"));
+  const subjectsSet = new Set();
+  const groupsSet = new Set();
   studentsSnap.forEach(s=>{
-    s.data().subjects.forEach(sub=>subjectsSet.add(sub.name));
+    s.data().subjects?.forEach(sub=>subjectsSet.add(sub.name));
     if(s.data().group) groupsSet.add(s.data().group);
   });
-  subjectsList=[...subjectsSet]; groupsList=[...groupsSet];
-  
-  const teachersSnap=await getDocs(collection(db,"teachers"));
+  subjectsList = [...subjectsSet];
+  groupsList = [...groupsSet];
+
+  const teachersSnap = await getDocs(collection(db, "teachers"));
   teachersSnap.forEach(t=>{teachersList.push({id:t.id,...t.data()});});
-  
+
   // تعبئة القوائم
-  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
-  filterSubject.innerHTML="<option value=''>الكل</option>";
+  subjectSelect.innerHTML = "<option value=''>اختر المادة</option>";
+  filterSubject.innerHTML = "<option value=''>الكل</option>";
   subjectsList.forEach(sub=>{
-    subjectSelect.innerHTML+=`<option value="${sub}">${sub}</option>`;
-    filterSubject.innerHTML+=`<option value="${sub}">${sub}</option>`;
+    subjectSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+    filterSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
   });
-  
-  teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>";
-  filterTeacher.innerHTML="<option value=''>الكل</option>";
+
+  teacherSelect.innerHTML = "<option value=''>اختر الأستاذ</option>";
+  filterTeacher.innerHTML = "<option value=''>الكل</option>";
   teachersList.forEach(t=>{
-    teacherSelect.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
-    filterTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
+    teacherSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+    filterTeacher.innerHTML += `<option value="${t.id}">${t.name}</option>`;
   });
-  
-  groupSelect.innerHTML="<option value=''>اختر الكروب</option>";
-  filterGroup.innerHTML="<option value=''>الكل</option>";
+
+  groupSelect.innerHTML = "<option value=''>اختر الكروب</option>";
+  filterGroup.innerHTML = "<option value=''>الكل</option>";
   groupsList.forEach(g=>{
-    groupSelect.innerHTML+=`<option value="${g}">${g}</option>`;
-    filterGroup.innerHTML+=`<option value="${g}">${g}</option>`;
+    groupSelect.innerHTML += `<option value="${g}">${g}</option>`;
+    filterGroup.innerHTML += `<option value="${g}">${g}</option>`;
   });
 }
 
 // حفظ الحصة
-classForm.addEventListener("submit",async e=>{
+classForm.addEventListener("submit", async e=>{
   e.preventDefault();
-  const subject=subjectSelect.value;
-  const teacherId=teacherSelect.value;
-  const group=groupSelect.value;
-  const day=document.getElementById("daySelect").value;
-  const time=document.getElementById("timeInput").value;
-  
+  const subject = subjectSelect.value;
+  const teacherId = teacherSelect.value;
+  const group = groupSelect.value;
+  const day = document.getElementById("daySelect").value;
+  const time = document.getElementById("timeInput").value;
+
   // الطلاب المرتبطين بالكروب
-  const studentsSnap=await getDocs(collection(db,"students"));
-  const groupStudents=[];
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const groupStudents = [];
   studentsSnap.forEach(s=>{
-    const st=s.data();
-    if(st.group===group) groupStudents.push({id:s.id,name:st.name});
+    const st = s.data();
+    if(st.group === group) groupStudents.push({id: s.id, name: st.name});
   });
-  
+
   await addDoc(collection(db,"classes"),{
     subject,
     teacherId,
     group,
     day,
     time,
-    students:groupStudents,
-    attendance:[]
+    students: groupStudents,
+    attendance: []
   });
-  
+
   alert("تم حفظ الحصة بنجاح");
   classForm.reset();
   loadClasses();
@@ -190,19 +209,18 @@ classForm.addEventListener("submit",async e=>{
 
 // تحميل الحصص
 async function loadClasses(filter={}){
-  const snapshot=await getDocs(collection(db,"classes"));
-  classesTableBody.innerHTML="";
-  classesData=[];
+  const snapshot = await getDocs(collection(db,"classes"));
+  classesTableBody.innerHTML = "";
+  classesData = [];
   snapshot.forEach(docSnap=>{
-    const cls={id:docSnap.id,...docSnap.data()};
-    // فلترة
+    const cls = {id: docSnap.id, ...docSnap.data()};
     if((!filter.subject || cls.subject===filter.subject) &&
        (!filter.teacher || cls.teacherId===filter.teacher) &&
        (!filter.group || cls.group===filter.group)){
       classesData.push(cls);
-      const teacherName=(teachersList.find(t=>t.id===cls.teacherId)||{}).name||"غير معروف";
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
+      const teacherName = (teachersList.find(t=>t.id===cls.teacherId)||{}).name || "غير معروف";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
         <td>${cls.subject}</td>
         <td>${teacherName}</td>
         <td>${cls.group}</td>
@@ -216,7 +234,7 @@ async function loadClasses(filter={}){
 }
 
 // حذف الحصة
-window.deleteClass=async id=>{
+window.deleteClass = async id=>{
   if(confirm("هل تريد حذف الحصة؟")){
     await deleteDoc(doc(db,"classes",id));
     loadClasses();
@@ -224,11 +242,11 @@ window.deleteClass=async id=>{
 }
 
 // تطبيق الفلتر
-filterBtn.addEventListener("click",()=>{
+filterBtn.addEventListener("click", ()=>{
   loadClasses({
-    subject:filterSubject.value,
-    teacher:filterTeacher.value,
-    group:filterGroup.value
+    subject: filterSubject.value,
+    teacher: filterTeacher.value,
+    group: filterGroup.value
   });
 });
 </script>
