@@ -81,65 +81,76 @@ footer {
   <footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
 
   <script type="module">
-    // ✅ تهيئة Firebase مباشرة داخل الصفحة
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  // ✅ تهيئة Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged, 
+    signOut 
+  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-      authDomain: "oma2-d36fa.firebaseapp.com",
-      projectId: "oma2-d36fa",
-      storageBucket: "oma2-d36fa.firebasestorage.app",
-      messagingSenderId: "774171603105",
-      appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
-      measurementId: "G-QHPZG4JLB8"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+    authDomain: "oma2-d36fa.firebaseapp.com",
+    projectId: "oma2-d36fa",
+    storageBucket: "oma2-d36fa.firebasestorage.app",
+    messagingSenderId: "774171603105",
+    appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
+    measurementId: "G-QHPZG4JLB8"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    const loginBtn = document.getElementById("loginBtn");
-    const errorMsg = document.getElementById("errorMsg");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const loginBtn = document.getElementById("loginBtn");
+  const errorMsg = document.getElementById("errorMsg");
 
-    // ✅ التحقق من حالة المستخدم
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
+  // 🧹 مسح أي جلسة تسجيل دخول قديمة عند فتح صفحة تسجيل الدخول
+  signOut(auth).then(() => {
+    console.log("✅ تم تسجيل الخروج التلقائي عند فتح صفحة تسجيل الدخول");
+  }).catch((err) => {
+    console.warn("⚠️ خطأ أثناء تسجيل الخروج:", err);
+  });
+
+  // 🎯 عند الضغط على زر الدخول
+  loginBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
+      return;
+    }
+
+    errorMsg.textContent = "";
+    loginBtn.disabled = true;
+    loginBtn.textContent = "جاري التحقق...";
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("✅ تسجيل دخول:", userCredential.user.email);
+      errorMsg.style.color = "green";
+      errorMsg.textContent = "تم تسجيل الدخول بنجاح...";
+      setTimeout(() => {
         window.location.href = "dashboard.html";
+      }, 1200);
+    } catch (error) {
+      console.error(error);
+      loginBtn.disabled = false;
+      loginBtn.textContent = "دخول";
+      errorMsg.style.color = "red";
+      if (error.code === "auth/user-not-found") {
+        errorMsg.textContent = "المستخدم غير موجود.";
+      } else if (error.code === "auth/wrong-password") {
+        errorMsg.textContent = "كلمة المرور غير صحيحة.";
+      } else {
+        errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
       }
-    });
-
-    // ✅ عند الضغط على زر الدخول
-    loginBtn.addEventListener("click", async () => {
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!email || !password) {
-        errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
-        return;
-      }
-
-      errorMsg.textContent = "";
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("✅ تسجيل دخول:", userCredential.user.email);
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        console.error(error);
-        if (error.code === "auth/user-not-found") {
-          errorMsg.textContent = "المستخدم غير موجود.";
-        } else if (error.code === "auth/wrong-password") {
-          errorMsg.textContent = "كلمة المرور غير صحيحة.";
-        } else {
-          errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
-        }
-      }
-    });
-  </script>
+    }
+  });
+</script>
 </body>
 </html>
