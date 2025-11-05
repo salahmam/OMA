@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>نظام OMA - الإعدادات المركزية</title>
 <style>
-body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
+body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;visibility:hidden;}
 header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
 .card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
@@ -16,12 +16,12 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
 table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:#004aad;color:#fff;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.filters select{flex:1;}
 @media print{
   body{background:white;}
   header,.btn,.modal{display:none !important;}
 }
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-.filters select{flex:1;}
 </style>
 </head>
 <body>
@@ -40,7 +40,7 @@ th{background:#004aad;color:#fff;}
   </form>
 </div>
 
-<!-- إدارة الحسابات -->
+<!-- إدارة المستخدمين -->
 <div class="card">
   <strong>إدارة دخول المستخدمين</strong>
   <form id="userForm">
@@ -60,7 +60,7 @@ th{background:#004aad;color:#fff;}
   </form>
 </div>
 
-<!-- فلاتر وعرض الطلاب -->
+<!-- عرض الطلاب -->
 <div class="card">
   <strong>قائمة الطلاب</strong>
   <div class="filters">
@@ -82,7 +82,7 @@ th{background:#004aad;color:#fff;}
   </table>
 </div>
 
-<!-- فلاتر وعرض الأساتذة -->
+<!-- عرض الأساتذة -->
 <div class="card">
   <strong>قائمة الأساتذة</strong>
   <div class="filters">
@@ -103,7 +103,7 @@ th{background:#004aad;color:#fff;}
   </table>
 </div>
 
-<!-- فلاتر وعرض الحصص -->
+<!-- عرض الحصص -->
 <div class="card">
   <strong>قائمة الحصص</strong>
   <div class="filters">
@@ -125,10 +125,12 @@ th{background:#004aad;color:#fff;}
   </table>
 </div>
 
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, deleteDoc, doc, addDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -143,35 +145,35 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// تأمين الصفحة
-auth.onAuthStateChanged(user=>{
+// حماية الصفحة وعرضها بعد التحقق
+onAuthStateChanged(auth,user=>{
   if(!user) window.location.href="login.html";
+  else document.body.style.visibility="visible";
 });
 
 // عناصر الطلاب
-const studentsTableBody = document.querySelector("#studentsTable tbody");
-const studentFilterGroup = document.getElementById("studentFilterGroup");
-const studentFilterStage = document.getElementById("studentFilterStage");
+const studentsTableBody=document.querySelector("#studentsTable tbody");
+const studentFilterGroup=document.getElementById("studentFilterGroup");
+const studentFilterStage=document.getElementById("studentFilterStage");
 
 // عناصر الأساتذة
-const teachersTableBody = document.querySelector("#teachersTable tbody");
-const teacherFilter = document.getElementById("teacherFilter");
+const teachersTableBody=document.querySelector("#teachersTable tbody");
+const teacherFilter=document.getElementById("teacherFilter");
 
 // عناصر الحصص
-const classesTableBody = document.querySelector("#classesTable tbody");
-const classFilterTeacher = document.getElementById("classFilterTeacher");
-const classFilterGroup = document.getElementById("classFilterGroup");
+const classesTableBody=document.querySelector("#classesTable tbody");
+const classFilterTeacher=document.getElementById("classFilterTeacher");
+const classFilterGroup=document.getElementById("classFilterGroup");
 
 // تحميل الطلاب
 async function loadStudents(){
-  const snapshot = await getDocs(collection(db,"students"));
+  const snapshot=await getDocs(collection(db,"students"));
   studentsTableBody.innerHTML="";
-  let groupsSet = new Set(), stagesSet = new Set();
+  let groupsSet=new Set(), stagesSet=new Set();
   snapshot.forEach(docSnap=>{
-    const s = {...docSnap.data(),id:docSnap.id};
-    // حفظ الفلاتر
+    const s={id:docSnap.id,...docSnap.data()};
     groupsSet.add(s.group); stagesSet.add(s.stage);
-    const tr = document.createElement("tr");
+    const tr=document.createElement("tr");
     tr.innerHTML=`
       <td>${s.name}</td>
       <td>${s.phone}</td>
@@ -182,14 +184,13 @@ async function loadStudents(){
     `;
     studentsTableBody.appendChild(tr);
   });
-  // إعداد خيارات الفلاتر
   studentFilterGroup.innerHTML="<option value=''>فلترة حسب الكروب</option>"; groupsSet.forEach(g=>{studentFilterGroup.innerHTML+=`<option value='${g}'>${g}</option>`});
   studentFilterStage.innerHTML="<option value=''>فلترة حسب المرحلة</option>"; stagesSet.forEach(st=>{studentFilterStage.innerHTML+=`<option value='${st}'>${st}</option>`});
 }
 loadStudents();
 
 // حذف طالب
-window.deleteStudent = async(id)=>{
+window.deleteStudent=async(id)=>{
   if(confirm("هل تريد حذف الطالب؟")){
     await deleteDoc(doc(db,"students",id));
     loadStudents();
@@ -198,11 +199,11 @@ window.deleteStudent = async(id)=>{
 
 // تحميل الأساتذة
 async function loadTeachers(){
-  const snapshot = await getDocs(collection(db,"teachers"));
+  const snapshot=await getDocs(collection(db,"teachers"));
   teachersTableBody.innerHTML=""; teacherFilter.innerHTML="<option value=''>فلترة حسب الأستاذ</option>";
   snapshot.forEach(docSnap=>{
-    const t = {...docSnap.data(),id:docSnap.id};
-    const tr = document.createElement("tr");
+    const t={id:docSnap.id,...docSnap.data()};
+    const tr=document.createElement("tr");
     tr.innerHTML=`
       <td>${t.name}</td>
       <td>${t.phone}</td>
@@ -218,7 +219,7 @@ async function loadTeachers(){
 loadTeachers();
 
 // حذف أستاذ
-window.deleteTeacher = async(id)=>{
+window.deleteTeacher=async(id)=>{
   if(confirm("هل تريد حذف الأستاذ؟")){
     await deleteDoc(doc(db,"teachers",id));
     loadTeachers();
@@ -227,30 +228,31 @@ window.deleteTeacher = async(id)=>{
 
 // تحميل الحصص
 async function loadClasses(){
-  const snapshot = await getDocs(collection(db,"classes"));
+  const snapshot=await getDocs(collection(db,"classes"));
   classesTableBody.innerHTML="";
   classFilterTeacher.innerHTML="<option value=''>فلترة حسب الأستاذ</option>";
   classFilterGroup.innerHTML="<option value=''>فلترة حسب الكروب</option>";
   snapshot.forEach(docSnap=>{
-    const c = {...docSnap.data(),id:docSnap.id};
-    const tr = document.createElement("tr");
+    const c={id:docSnap.id,...docSnap.data()};
+    const tr=document.createElement("tr");
+    const teacherName=c.teacherId || "غير معروف";
     tr.innerHTML=`
       <td>${c.subject}</td>
-      <td>${c.teacherName}</td>
+      <td>${teacherName}</td>
       <td>${c.group}</td>
       <td>${c.day}</td>
       <td>${c.time}</td>
       <td><button class="btn warn" onclick="deleteClass('${c.id}')">🗑️ حذف</button></td>
     `;
     classesTableBody.appendChild(tr);
-    classFilterTeacher.innerHTML+=`<option value='${c.teacherName}'>${c.teacherName}</option>`;
+    classFilterTeacher.innerHTML+=`<option value='${teacherName}'>${teacherName}</option>`;
     classFilterGroup.innerHTML+=`<option value='${c.group}'>${c.group}</option>`;
   });
 }
 loadClasses();
 
 // حذف حصة
-window.deleteClass = async(id)=>{
+window.deleteClass=async(id)=>{
   if(confirm("هل تريد حذف الحصة؟")){
     await deleteDoc(doc(db,"classes",id));
     loadClasses();
