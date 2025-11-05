@@ -14,148 +14,229 @@
 *{box-sizing:border-box}
 body{
   font-family: 'Cairo',sans-serif;
-  margin:0;
-  background:linear-gradient(180deg,var(--bg),#fff);
-  color:#102027;
-  direction:rtl;
-  visibility:hidden; /* محتوى الصفحة مخفي مؤقتًا */
+  margin:0;background:linear-gradient(180deg,var(--bg),#fff);
+  color:#102027;direction:rtl;visibility:hidden;
 }
-/* ... باقي CSS كما في الكود الأصلي ... */
+header{
+  background:linear-gradient(90deg,var(--primary),#007bff);
+  color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
+  box-shadow:0 3px 12px rgba(2,20,40,0.08);
+}
+.wrap{max-width:1200px;margin:22px auto;padding:12px;}
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1}
+.form-grid{display:flex;flex-wrap:wrap;gap:10px}
+input[type="text"], input[type="tel"], input[type="number"], select, textarea, .subject-field {
+  padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
+}
+.two{width:calc(50% - 6px)}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
+.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.btn.warn{background:#ff7043}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
+.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
+.add-subj{display:inline-block;margin-top:6px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+th{background:var(--primary);color:#fff}
+.actions button{margin:0 6px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
+.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
+.modal.open{display:flex}
+.modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
 </style>
 </head>
 <body>
 <header>نظام OMA - إدارة الطلاب (متطور)</header>
 <div class="wrap">
-<!-- جميع عناصر الصفحة كما هي بدون تعديل -->
+
+<div class="controls">
+  <div style="flex:1" class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <strong>أضف طالب جديد</strong>
+        <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
+      </div>
+    </div>
+
+    <form id="studentForm" style="margin-top:12px">
+      <div class="form-grid">
+        <div class="two">
+          <label>الاسم الكامل</label>
+          <input id="name" type="text" required />
+        </div>
+        <div class="two">
+          <label>رقم الموبايل</label>
+          <input id="phone" type="tel" required />
+        </div>
+        <div class="two">
+          <label>العنوان</label>
+          <input id="address" type="text" />
+        </div>
+        <div class="two">
+          <label>اسم المدرسة</label>
+          <input id="school" type="text" />
+        </div>
+        <div class="two">
+          <label>المرحلة الدراسية</label>
+          <input id="stage" type="text" />
+        </div>
+        <div class="two">
+          <label>المجموعة / الكروب</label>
+          <input id="group" type="text" placeholder="مثال: A أو 101" />
+        </div>
+
+        <div style="width:100%">
+          <label>المواد (أضف أكثر من مادة)</label>
+          <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          <div style="margin-top:8px">
+            <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
+          </div>
+        </div>
+
+        <div class="two">
+          <label>إجمالي الأقساط (اختياري)</label>
+          <input id="totalFees" type="number" min="0" />
+        </div>
+        <div class="two">
+          <label>ملاحظة / وصف الطالب</label>
+          <input id="note" type="text" />
+        </div>
+
+        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+          <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
+          <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
+  </div>
+  <table id="studentsTable">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>الهاتف</th>
+        <th>المرحلة</th>
+        <th>المجموعة</th>
+        <th>الأقساط</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong id="modalTitle">تفاصيل الطالب</strong>
+      <button id="closeModal" class="btn ghost">إغلاق</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script type="module">
-import { initializeApp } from "./firebase-config.js"; // ملفك
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 تهيئة Firebase
-const app = initializeApp;
+// 🔹 إعداد Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+  authDomain: "oma2-d36fa.firebaseapp.com",
+  projectId: "oma2-d36fa",
+  storageBucket: "oma2-d36fa.appspot.com",
+  messagingSenderId: "774171603105",
+  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
+};
+
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 🔒 التحقق من تسجيل الدخول قبل عرض الصفحة
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = "login.html"; // إعادة توجيه المستخدم إذا لم يسجل الدخول
+    window.location.href = "login.html"; // إعادة توجيه غير مسجل
   } else {
-    document.body.style.visibility = "visible"; // إظهار الصفحة فقط للمستخدم المسجل
-    initPage(); // تهيئة الصفحة (الوظائف الحالية)
+    document.body.style.visibility = "visible"; // إظهار الصفحة بعد التحقق
+    loadStudents();
   }
 });
 
-function initPage() {
-  // ⚡ هنا ضع كل الكود الخاص بالطلاب من إضافة، حفظ، عرض، حذف، طباعة ...
-  const studentForm = document.getElementById("studentForm");
-  const studentsTableBody = document.querySelector("#studentsTable tbody");
-  const subjectsContainer = document.getElementById("subjectsContainer");
-  const addSubjectBtn = document.getElementById("addSubjectBtn");
+// إضافة طالب
+const studentForm = document.getElementById("studentForm");
+const subjectsContainer = document.getElementById("subjectsContainer");
+const addSubjectBtn = document.getElementById("addSubjectBtn");
+const studentsTableBody = document.querySelector("#studentsTable tbody");
+let studentsData = [];
 
-  let studentsData = [];
+addSubjectBtn.addEventListener("click",()=>{
+  const div = document.createElement("div");
+  div.classList.add("subject-field");
+  div.style.display="flex"; div.style.gap="6px"; div.style.alignItems="center";
+  div.innerHTML = `
+    <input type="text" placeholder="اسم المادة" class="subjName" required />
+    <input type="number" placeholder="إجمالي القسط" class="subjFee" min="0" />
+    <button type="button" class="btn warn small removeSubjBtn">❌</button>
+  `;
+  subjectsContainer.appendChild(div);
 
-  // إضافة مادة جديدة
-  addSubjectBtn.addEventListener("click",()=>{
-    const div = document.createElement("div");
-    div.classList.add("subject-field");
-    div.style.display="flex"; div.style.gap="6px"; div.style.alignItems="center";
-    div.innerHTML = `
-      <input type="text" placeholder="اسم المادة" class="subjName" required />
-      <input type="text" placeholder="الأستاذ" class="subjTeacher" required />
-      <input type="number" placeholder="إجمالي القسط" class="subjFee" min="0" />
-      <input type="number" placeholder="المتبقي" class="subjRemaining" min="0" />
-      <button type="button" class="btn small addPaymentBtn">💰 دفع</button>
-      <button type="button" class="btn warn small removeSubjBtn">❌</button>
+  div.querySelector(".removeSubjBtn").addEventListener("click",()=>{subjectsContainer.removeChild(div);});
+});
+
+studentForm.addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const school = document.getElementById("school").value.trim();
+  const stage = document.getElementById("stage").value.trim();
+  const group = document.getElementById("group").value.trim();
+  const totalFees = parseFloat(document.getElementById("totalFees").value)||0;
+  const note = document.getElementById("note").value.trim();
+
+  const subjects = [];
+  document.querySelectorAll(".subject-field").forEach(sub=>{
+    const subjName = sub.querySelector(".subjName").value.trim();
+    const subjFee = parseFloat(sub.querySelector(".subjFee").value)||0;
+    if(subjName) subjects.push({name:subjName,fee:subjFee});
+  });
+
+  if(subjects.length===0){ alert("أضف مادة واحدة على الأقل"); return;}
+
+  try{
+    await addDoc(collection(db,"students"),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
+    alert("تم حفظ الطالب بنجاح");
+    studentForm.reset();
+    subjectsContainer.innerHTML="";
+    loadStudents();
+  }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
+});
+
+// تحميل الطلاب
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,"students"));
+  studentsTableBody.innerHTML="";
+  studentsData = [];
+  snapshot.forEach(docSnap=>{
+    const student = {...docSnap.data(),id:docSnap.id};
+    studentsData.push(student);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${student.name}</td>
+      <td>${student.phone}</td>
+      <td>${student.stage}</td>
+      <td>${student.group}</td>
+      <td>${student.subjects.map(s=>"المادة:"+s.name+" / القسط:"+s.fee).join("<br>")}</td>
     `;
-    subjectsContainer.appendChild(div);
-
-    div.querySelector(".removeSubjBtn").addEventListener("click",()=>{subjectsContainer.removeChild(div);});
-
-    div.querySelector(".addPaymentBtn").addEventListener("click",()=>{
-      const payment = prompt("أدخل المبلغ المدفوع:");
-      if(payment && !isNaN(payment)){
-        const date = new Date().toLocaleDateString();
-        const remainingInput = div.querySelector(".subjRemaining");
-        const currentRemaining = parseFloat(remainingInput.value)||0;
-        const newRemaining = currentRemaining - parseFloat(payment);
-        remainingInput.value = newRemaining>=0?newRemaining:0;
-
-        if(!div.payments) div.payments=[];
-        div.payments.push({amount:parseFloat(payment),date});
-        alert("تم تسجيل الدفعة: "+payment+" بتاريخ "+date);
-      }
-    });
+    studentsTableBody.appendChild(tr);
   });
-
-  // حفظ الطالب
-  studentForm.addEventListener("submit", async(e)=>{
-    e.preventDefault();
-    const name = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const address = document.getElementById("address").value.trim();
-    const school = document.getElementById("school").value.trim();
-    const stage = document.getElementById("stage").value.trim();
-    const group = document.getElementById("group").value.trim();
-    const totalFees = parseFloat(document.getElementById("totalFees").value)||0;
-    const note = document.getElementById("note").value.trim();
-
-    const subjects = [];
-    document.querySelectorAll(".subject-field").forEach(sub=>{
-      const subjName = sub.querySelector(".subjName").value.trim();
-      const subjTeacher = sub.querySelector(".subjTeacher").value.trim();
-      const subjFee = parseFloat(sub.querySelector(".subjFee").value)||0;
-      const subjRemaining = parseFloat(sub.querySelector(".subjRemaining").value)||0;
-      const payments = sub.payments || [];
-      if(subjName && subjTeacher){
-        subjects.push({name:subjName,teacher:subjTeacher,fee:subjFee,remaining:subjRemaining,payments});
-      }
-    });
-
-    if(subjects.length===0){ alert("أضف مادة واحدة على الأقل"); return;}
-
-    try{
-      await addDoc(collection(db,"students"),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
-      alert("تم حفظ الطالب بنجاح");
-      studentForm.reset();
-      subjectsContainer.innerHTML="";
-      loadStudents();
-    }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
-  });
-
-  // تحميل الطلاب
-  async function loadStudents(){
-    const snapshot = await getDocs(collection(db,"students"));
-    studentsTableBody.innerHTML="";
-    studentsData = [];
-    snapshot.forEach(docSnap=>{
-      const student = {...docSnap.data(),id:docSnap.id};
-      studentsData.push(student);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input type="checkbox" class="checkbox selectStudent" data-id="${student.id}"/></td>
-        <td>${student.name}</td>
-        <td>${student.phone}</td>
-        <td>${student.stage}</td>
-        <td>${student.group}</td>
-        <td>${student.subjects.map(s=>s.name).join(", ")}</td>
-        <td>${student.subjects.map(s=>"إجمالي:"+s.fee+" / المتبقي:"+s.remaining).join("<br>")}</td>
-        <td>${student.subjects.map(s=>"المعلم: "+s.teacher+"<br>"+s.payments.map(p=>p.amount+" بتاريخ "+p.date).join("<br>")).join("<hr>")}</td>
-        <td class="actions">
-          <button class="btn small" onclick="showStudent('${student.id}')">🔍 التفاصيل</button>
-          <button class="btn warn small" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
-        </td>
-      `;
-      studentsTableBody.appendChild(tr);
-    });
-    document.getElementById("totalCount").innerText=studentsData.length;
-  }
-  loadStudents();
-
-  // باقي الوظائف مثل deleteStudent، showStudent، الطباعة كما هي...
+  document.getElementById("totalCount").innerText=studentsData.length;
 }
 </script>
 </body>
