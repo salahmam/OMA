@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>💰 المالية والمصاريف - نظام OMA</title>
+<style>
+body {font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
+header {background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
+.wrap {max-width:1200px;margin:22px auto;padding:12px;}
+.card {background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+input, select {padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
+label {display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn {background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:8px;}
+.btn.warn {background:#ff7043;}
+table {width:100%;border-collapse:collapse;margin-top:12px;}
+th,td {padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th {background:#004aad;color:#fff;}
+@media print{
+  body{background:white;}
+  header,.filters,.actions,.modal,.btn{display:none !important;}
+  table{page-break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+<header>💰 المالية والمصاريف - نظام OMA</header>
+<div class="wrap">
+
+<!-- نموذج إضافة مصروف / مستحق -->
+<div class="card">
+  <strong>أضف مصروف أو مستحق</strong>
+  <form id="financeForm">
+    <label>نوع العملية</label>
+    <select id="financeType" required>
+      <option value="expense">مصروف</option>
+      <option value="due">مستحق</option>
+      <option value="payment">دفعة مستلمة</option>
+    </select>
+
+    <label>المبلغ</label>
+    <input type="number" id="amountInput" required />
+
+    <label>المستلم / المستفيد</label>
+    <input type="text" id="recipientInput" placeholder="اسم الشخص أو الجهة" />
+
+    <label>المادة (اختياري)</label>
+    <select id="subjectSelect">
+      <option value="">-- اختر المادة --</option>
+    </select>
+
+    <label>الأستاذ (اختياري)</label>
+    <select id="teacherSelect">
+      <option value="">-- اختر الأستاذ --</option>
+    </select>
+
+    <label>الكروب / القاعة (اختياري)</label>
+    <input type="text" id="groupInput" placeholder="مثال: A أو 101" />
+
+    <p>نسبة المعهد: <span id="instituteShare">0</span>% | نسبة الأستاذ: <span id="teacherShare">0</span>%</p>
+    <p>المبلغ بعد النسبة: <span id="netAmount">0</span></p>
+
+    <button type="submit" class="btn">✅ حفظ</button>
+  </form>
+</div>
+
+<!-- جدول العمليات -->
+<div class="card">
+  <strong>سجل العمليات المالية</strong>
+  <table id="financeTable">
+    <thead>
+      <tr>
+        <th>النوع</th>
+        <th>المبلغ</th>
+        <th>المستلم / المستفيد</th>
+        <th>المادة</th>
+        <th>الأستاذ</th>
+        <th>الكروب</th>
+        <th>المبلغ بعد النسب</th>
+        <th>تاريخ</th>
+        <th>خيارات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<button onclick="window.print()" class="btn">🖨️ طباعة</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+// إعداد Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+  authDomain: "oma2-d36fa.firebaseapp.com",
+  projectId: "oma2-d36fa",
+  storageBucket: "oma2-d36fa.appspot.com",
+  messagingSenderId: "774171603105",
+  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// تأكيد تسجيل الدخول
+onAuthStateChanged(auth, (user) => { if(!user){ window.location.href="login.html"; } });
+
+// عناصر النموذج والجدول
+const financeForm = document.getElementById("financeForm");
+const amountInput = document.getElementById("amountInput");
+const recipientInput = document.getElementById("recipientInput");
+const subjectSelect = document.getElementById("subjectSelect");
+const teacherSelect = document.getElementById("teacherSelect");
+const groupInput = document.getElementById("groupInput");
+const netAmountSpan = document.getElementById("netAmount");
+const instituteShareSpan = document.getElementById("instituteShare");
+const teacherShareSpan = document.getElementById("teacherShare");
+const financeTableBody = document.querySelector("#financeTable tbody");
+
+let settings = {instituteShare:0, teacherShare:0};
+
+// تحميل النسب من settings
+async function loadSettings(){
+  const snap = await getDocs(collection(db,"settings"));
+  if(!snap.empty){
+    const data = snap.docs[snap.docs.length-1].data();
+    settings = data;
+    instituteShareSpan.innerText = settings.instituteShare || 0;
+    teacherShareSpan.innerText = settings.teacherShare || 0;
+  }
+}
+loadSettings();
+
+// حساب المبلغ بعد النسب
+amountInput.addEventListener("input",()=>{calculateNetAmount();});
+function calculateNetAmount(){
+  const amount = parseFloat(amountInput.value) || 0;
+  const net = amount*(settings.instituteShare+settings.teacherShare>0? (settings.instituteShare+settings.teacherShare)/100 : 0);
+  netAmountSpan.innerText = net.toFixed(2);
+}
+
+// تحميل المواد والأساتذة
+async function loadSubjectsAndTeachers(){
+  // المواد من الطلاب
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const subjectsSet = new Set();
+  studentsSnap.forEach(snap=>{
+    snap.data().subjects.forEach(sub=>{ subjectsSet.add(sub.name); });
+  });
+  subjectSelect.innerHTML="<option value=''>-- اختر المادة --</option>";
+  subjectsSet.forEach(sub=>{subjectSelect.innerHTML+=`<option value="${sub}">${sub}</option>`;});
+
+  // الأساتذة
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  teacherSelect.innerHTML="<option value=''>-- اختر الأستاذ --</option>";
+  teachersSnap.forEach(snap=>{
+    const t = snap.data();
+    teacherSelect.innerHTML+=`<option value="${snap.id}">${t.name}</option>`;
+  });
+}
+loadSubjectsAndTeachers();
+
+// حفظ العملية المالية
+financeForm.addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const type = document.getElementById("financeType").value;
+  const amount = parseFloat(amountInput.value)||0;
+  const recipient = recipientInput.value.trim();
+  const subject = subjectSelect.value;
+  const teacher = teacherSelect.value;
+  const group = groupInput.value.trim();
+  const netAmount = parseFloat(netAmountSpan.innerText)||0;
+
+  await addDoc(collection(db,"finance"),{
+    type, amount, recipient, subject, teacher, group, netAmount, createdAt:new Date()
+  });
+  alert("تم حفظ العملية بنجاح");
+  financeForm.reset();
+  netAmountSpan.innerText = "0";
+  loadFinance();
+});
+
+// تحميل العمليات المالية
+async function loadFinance(){
+  const snap = await getDocs(collection(db,"finance"));
+  financeTableBody.innerHTML="";
+  snap.forEach(docSnap=>{
+    const f = {...docSnap.data(),id:docSnap.id};
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${f.type}</td>
+      <td>${f.amount}</td>
+      <td>${f.recipient}</td>
+      <td>${f.subject||'-'}</td>
+      <td>${f.teacher||'-'}</td>
+      <td>${f.group||'-'}</td>
+      <td>${f.netAmount}</td>
+      <td>${f.createdAt.toDate ? f.createdAt.toDate().toLocaleString() : new Date(f.createdAt).toLocaleString()}</td>
+      <td>
+        <button class="btn warn" onclick="deleteFinance('${f.id}')">❌ حذف</button>
+      </td>
+    `;
+    financeTableBody.appendChild(tr);
+  });
+}
+loadFinance();
+
+// حذف العملية
+window.deleteFinance = async(id)=>{
+  if(confirm("هل تريد حذف العملية؟")){
+    await deleteDoc(doc(db,"finance",id));
+    loadFinance();
+  }
+}
+</script>
+</body>
+</html>
