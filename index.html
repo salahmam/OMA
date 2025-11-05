@@ -268,7 +268,6 @@ studentForm.addEventListener("submit", async(e)=>{
     loadStudents();
   }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
 });
-<!-- أضف هذا القسم داخل <script type="module"> أسفل loadStudents() مباشرة -->
 
 // دالة إنشاء محتوى الاستمارة للطباعة
 function generatePrintForm(student){
@@ -329,7 +328,7 @@ function printStudentForm(studentId){
   printWindow.print();
 }
 
-// إضافة زر الطباعة لكل طالب في الجدول (تحت عمود "الخيارات")
+// إضافة زر الطباعة لكل طالب في الجدول
 function addPrintButton(tr, student){
   const btn = document.createElement("button");
   btn.classList.add("btn","small");
@@ -338,34 +337,6 @@ function addPrintButton(tr, student){
   tr.querySelector(".actions").appendChild(btn);
 }
 
-// تعديل loadStudents() لإضافة زر الطباعة لكل صف
-async function loadStudents(){
-  const snapshot = await getDocs(collection(db,"students"));
-  studentsTableBody.innerHTML="";
-  studentsData = [];
-  snapshot.forEach(docSnap=>{
-    const student = {...docSnap.data(),id:docSnap.id};
-    studentsData.push(student);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input type="checkbox" class="checkbox selectStudent" data-id="${student.id}"/></td>
-      <td>${student.name}</td>
-      <td>${student.phone}</td>
-      <td>${student.stage}</td>
-      <td>${student.group}</td>
-      <td>${student.subjects.map(s=>s.name).join(", ")}</td>
-      <td>${student.subjects.map(s=>"إجمالي:"+s.fee+" / المتبقي:"+s.remaining).join("<br>")}</td>
-      <td>${student.subjects.map(s=>"المعلم: "+s.teacher).join("<br>")}</td>
-      <td class="actions">
-        <button class="btn small" onclick="showStudent('${student.id}')">🔍 التفاصيل</button>
-        <button class="btn warn small" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
-      </td>
-    `;
-    studentsTableBody.appendChild(tr);
-    addPrintButton(tr, student);
-  });
-  document.getElementById("totalCount").innerText=studentsData.length;
-}
 // تحميل الطلاب
 async function loadStudents(){
   const snapshot = await getDocs(collection(db,"students"));
@@ -390,6 +361,7 @@ async function loadStudents(){
       </td>
     `;
     studentsTableBody.appendChild(tr);
+    addPrintButton(tr, student);
   });
   document.getElementById("totalCount").innerText=studentsData.length;
 }
