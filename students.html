@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>نظام OMA - إدارة الطلاب</title>
+<title>نظام OMA المتطور - إدارة الطلاب</title>
 <style>
 :root {
   --primary:#004aad;
@@ -11,115 +11,143 @@
   --bg:#f5f9ff;
   --card:#fff;
 }
-*{box-sizing:border-box;}
-body{
-  font-family:'Cairo',sans-serif;
-  margin:0;background:linear-gradient(180deg,var(--bg),#fff);
-  color:#102027;direction:rtl;
+* { box-sizing: border-box; }
+body {
+  font-family: 'Cairo', sans-serif;
+  margin: 0;
+  background: linear-gradient(180deg,var(--bg),#fff);
+  color: #102027;
+  direction: rtl;
 }
-header{
-  background:linear-gradient(90deg,var(--primary),#007bff);
-  color:#fff;padding:16px;text-align:center;font-size:20px;font-weight:700;
-  display:flex;justify-content:space-between;align-items:center;
+header {
+  background: linear-gradient(90deg,var(--primary),#007bff);
+  color: #fff;
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  position: relative;
+  box-shadow: 0 3px 12px rgba(2,20,40,0.08);
 }
-header button {
-  background:#ff5555;
-  border:none;
-  color:white;
-  padding:8px 14px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:bold;
-  transition:0.3s;
+.logout-btn {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  background: #ff5252;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
 }
-header button:hover { background:#d63030; }
-
-.wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1;}
-input, select, textarea {
-  padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
+.wrap { max-width: 1200px; margin: 22px auto; padding: 12px; }
+.controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(6,20,30,0.06);
+  flex: 1;
 }
-label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
-.btn.warn{background:#ff7043;}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12);}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:6px;}
-table{width:100%;border-collapse:collapse;margin-top:12px;}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-th{background:var(--primary);color:#fff;}
-.modal {
-  position:fixed;left:0;top:0;right:0;bottom:0;
-  background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;
+input[type="text"], input[type="tel"], input[type="number"], select, textarea {
+  padding: 10px; border: 1px solid #d6dde9; border-radius: 8px; font-size: 15px; width: 100%;
 }
-.modal.open{display:flex;}
-.modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto;}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700;}
+.two { width: calc(50% - 6px); }
+label { display: block; margin-bottom: 6px; font-size: 13px; color: #37474f; }
+.btn {
+  background: var(--primary); color: #fff; padding: 10px 14px; border: none;
+  border-radius: 8px; cursor: pointer; font-weight: 700;
+}
+.btn.warn { background: #ff7043; }
+.btn.ghost { background: transparent; color: var(--primary); border: 1px solid rgba(0,74,173,0.12); }
+.btn.small { padding: 6px 8px; font-size: 13px; border-radius: 6px; }
+.add-subj { display: inline-block; margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+th, td {
+  padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px;
+}
+th { background: var(--primary); color: #fff; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef6ff; color: var(--primary); font-weight: 700; }
 @media (max-width:900px){
-  .controls{flex-direction:column;align-items:stretch;}
+  .two { width: 100%; }
+  .controls { flex-direction: column; align-items: stretch; }
 }
+.modal { position: fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999; }
+.modal.open { display: flex; }
+.modal .box { background: white; padding: 18px; border-radius: 10px; max-width: 720px; width: 94%; max-height: 90vh; overflow: auto; }
 </style>
 </head>
 <body>
-
 <header>
-  <div>📚 نظام OMA - إدارة الطلاب</div>
-  <button id="logoutBtn">تسجيل الخروج</button>
+  نظام OMA - إدارة الطلاب
+  <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
 </header>
 
 <div class="wrap">
-
-  <!-- 🔹 قسم إضافة طالب -->
   <div class="controls">
     <div style="flex:1" class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap">
         <div>
           <strong>أضف طالب جديد</strong>
           <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
         </div>
-        <div class="right">
+        <div style="display:flex;gap:8px;align-items:center">
           <input id="searchInput" placeholder="بحث بالاسم أو الهاتف..." style="padding:8px;border-radius:8px;border:1px solid #e0e6ef" />
           <button id="refreshBtn" class="btn">تحديث</button>
         </div>
       </div>
 
       <form id="studentForm" style="margin-top:12px">
-        <div class="form-grid">
-          <label>الاسم الكامل</label>
-          <input id="name" type="text" required />
+        <div class="form-grid" style="display:flex;flex-wrap:wrap;gap:10px;">
+          <div class="two">
+            <label>الاسم الكامل</label>
+            <input id="name" type="text" required />
+          </div>
+          <div class="two">
+            <label>رقم الموبايل</label>
+            <input id="phone" type="tel" required />
+          </div>
+          <div class="two">
+            <label>العنوان</label>
+            <input id="address" type="text" />
+          </div>
+          <div class="two">
+            <label>اسم المدرسة</label>
+            <input id="school" type="text" />
+          </div>
+          <div class="two">
+            <label>المرحلة الدراسية</label>
+            <input id="stage" type="text" />
+          </div>
+          <div class="two">
+            <label>المجموعة / الكروب</label>
+            <input id="group" type="text" placeholder="مثال: A أو 101" />
+          </div>
 
-          <label>رقم الموبايل</label>
-          <input id="phone" type="tel" required />
+          <div style="width:100%">
+            <label>المواد (أضف أكثر من مادة)</label>
+            <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
+          </div>
 
-          <label>العنوان</label>
-          <input id="address" type="text" />
-
-          <label>اسم المدرسة</label>
-          <input id="school" type="text" />
-
-          <label>المرحلة الدراسية</label>
-          <input id="stage" type="text" />
-
-          <label>المجموعة</label>
-          <input id="group" type="text" />
-
-          <label>المواد (أضف أكثر من مادة)</label>
-          <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-          <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
-
-          <label>إجمالي الأقساط</label>
-          <input id="totalFees" type="number" min="0" />
-
-          <label>ملاحظات</label>
-          <input id="note" type="text" />
-
-          <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
+          <div class="two">
+            <label>إجمالي الأقساط</label>
+            <input id="totalFees" type="number" min="0" />
+          </div>
+          <div class="two">
+            <label>ملاحظات</label>
+            <input id="note" type="text" />
+          </div>
+          <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+            <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
+            <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
+          </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- 🔹 قسم القائمة -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
@@ -128,12 +156,7 @@ th{background:var(--primary);color:#fff;}
     <table id="studentsTable">
       <thead>
         <tr>
-          <th>الاسم</th>
-          <th>الهاتف</th>
-          <th>المرحلة</th>
-          <th>المجموعة</th>
-          <th>المواد</th>
-          <th>الخيارات</th>
+          <th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>المجموعة</th><th>المواد</th><th>الخيارات</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -141,8 +164,7 @@ th{background:var(--primary);color:#fff;}
   </div>
 </div>
 
-<!-- 🔹 نافذة التفاصيل -->
-<div id="modal" class="modal" aria-hidden="true">
+<div id="modal" class="modal">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <strong id="modalTitle">تفاصيل الطالب</strong>
@@ -153,11 +175,12 @@ th{background:var(--primary);color:#fff;}
 </div>
 
 <script type="module">
-// ✅ Firebase & Auth
+// Firebase setup
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
+// Config
 const firebaseConfig = {
   apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
   authDomain: "oma2-d36fa.firebaseapp.com",
@@ -169,67 +192,83 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// 🔒 حماية الصفحة - منع الدخول المباشر
+// تحقق من تسجيل الدخول
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "login.html";
   }
 });
 
-// 🔐 زر تسجيل الخروج
+// تسجيل الخروج
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   await signOut(auth);
   window.location.href = "login.html";
 });
 
-// 🔹 تحميل الطلاب من Firestore
+// CRUD للطلاب
+const studentForm = document.getElementById("studentForm");
 const studentsTableBody = document.querySelector("#studentsTable tbody");
-async function loadStudents(){
-  const snapshot = await getDocs(collection(db,"students"));
-  studentsTableBody.innerHTML="";
-  snapshot.forEach(docSnap=>{
-    const student = docSnap.data();
+const subjectsContainer = document.getElementById("subjectsContainer");
+const addSubjectBtn = document.getElementById("addSubjectBtn");
+
+let studentsData = [];
+
+addSubjectBtn.addEventListener("click", () => {
+  const div = document.createElement("div");
+  div.innerHTML = `
+    <input type="text" placeholder="اسم المادة" class="subjName" required />
+    <input type="text" placeholder="الأستاذ" class="subjTeacher" required />
+    <button type="button" class="btn warn small removeSubjBtn">❌</button>
+  `;
+  subjectsContainer.appendChild(div);
+  div.querySelector(".removeSubjBtn").addEventListener("click", () => div.remove());
+});
+
+studentForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = name.value.trim();
+  const phone = phone.value.trim();
+  const stage = stage.value.trim();
+  const group = group.value.trim();
+  const subjects = [];
+  subjectsContainer.querySelectorAll("div").forEach((s) => {
+    const subjName = s.querySelector(".subjName").value.trim();
+    const subjTeacher = s.querySelector(".subjTeacher").value.trim();
+    if (subjName) subjects.push({ subjName, subjTeacher });
+  });
+  await addDoc(collection(db, "students"), { name, phone, stage, group, subjects });
+  loadStudents();
+});
+
+async function loadStudents() {
+  const snapshot = await getDocs(collection(db, "students"));
+  studentsTableBody.innerHTML = "";
+  snapshot.forEach((d) => {
+    const s = d.data();
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${student.name}</td>
-      <td>${student.phone}</td>
-      <td>${student.stage}</td>
-      <td>${student.group}</td>
-      <td>${student.subjects ? student.subjects.map(s=>s.name).join(", ") : ""}</td>
-      <td>
-        <button class="btn small warn" onclick="deleteStudent('${docSnap.id}')">🗑️ حذف</button>
-      </td>
+      <td>${s.name}</td>
+      <td>${s.phone}</td>
+      <td>${s.stage}</td>
+      <td>${s.group}</td>
+      <td>${(s.subjects||[]).map(x=>x.subjName).join(", ")}</td>
+      <td><button class="btn small warn" onclick="deleteStudent('${d.id}')">🗑️ حذف</button></td>
     `;
     studentsTableBody.appendChild(tr);
   });
 }
-loadStudents();
 
-// 🔹 حفظ طالب جديد
-const studentForm = document.getElementById("studentForm");
-studentForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const stage = document.getElementById("stage").value;
-  const group = document.getElementById("group").value;
-
-  await addDoc(collection(db, "students"), { name, phone, stage, group, createdAt:new Date() });
-  alert("✅ تم حفظ الطالب بنجاح");
-  studentForm.reset();
-  loadStudents();
-});
-
-// 🔹 حذف طالب
 window.deleteStudent = async (id) => {
-  if (confirm("هل تريد حذف الطالب؟")) {
+  if (confirm("هل تريد حذف هذا الطالب؟")) {
     await deleteDoc(doc(db, "students", id));
     loadStudents();
   }
 };
+
+loadStudents();
 </script>
 </body>
 </html>
