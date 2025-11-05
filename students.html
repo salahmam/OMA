@@ -51,16 +51,12 @@ th{background:var(--primary);color:#fff}
 <header>نظام OMA - إدارة الطلاب (متطور)</header>
 <div class="wrap">
 
-<!-- إضافة طالب -->
 <div class="controls">
   <div style="flex:1" class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <strong>أضف طالب جديد</strong>
-        <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
-      </div>
+    <div>
+      <strong>أضف طالب جديد</strong>
+      <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
     </div>
-
     <form id="studentForm" style="margin-top:12px">
       <div class="form-grid">
         <div class="two">
@@ -87,7 +83,6 @@ th{background:var(--primary);color:#fff}
           <label>المجموعة / الكروب</label>
           <input id="group" type="text" placeholder="مثال: A أو 101" />
         </div>
-
         <div style="width:100%">
           <label>المواد (أضف أكثر من مادة)</label>
           <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
@@ -95,7 +90,6 @@ th{background:var(--primary);color:#fff}
             <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
           </div>
         </div>
-
         <div class="two">
           <label>إجمالي الأقساط (اختياري)</label>
           <input id="totalFees" type="number" min="0" />
@@ -104,7 +98,6 @@ th{background:var(--primary);color:#fff}
           <label>ملاحظة / وصف الطالب</label>
           <input id="note" type="text" />
         </div>
-
         <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
           <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
           <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
@@ -114,7 +107,6 @@ th{background:var(--primary);color:#fff}
   </div>
 </div>
 
-<!-- قائمة الطلاب -->
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
     <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
@@ -134,7 +126,6 @@ th{background:var(--primary);color:#fff}
   </table>
 </div>
 
-<!-- مودال التفاصيل -->
 <div id="modal" class="modal" aria-hidden="true">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -150,15 +141,15 @@ th{background:var(--primary);color:#fff}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-  authDomain: "oma2-d36fa.firebaseapp.com",
-  projectId: "oma2-d36fa",
-  storageBucket: "oma2-d36fa.appspot.com",
-  messagingSenderId: "774171603105",
-  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
+  apiKey: "API_KEY_HERE",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -170,7 +161,6 @@ const subjectsContainer = document.getElementById("subjectsContainer");
 const addSubjectBtn = document.getElementById("addSubjectBtn");
 let studentsData = [];
 
-// إضافة مادة
 addSubjectBtn.addEventListener("click",()=>{
   const div = document.createElement("div");
   div.classList.add("subject-field");
@@ -183,9 +173,7 @@ addSubjectBtn.addEventListener("click",()=>{
     <button type="button" class="btn warn small removeSubjBtn">❌</button>
   `;
   subjectsContainer.appendChild(div);
-
-  div.querySelector(".removeSubjBtn").addEventListener("click",()=>{subjectsContainer.removeChild(div);});
-
+  div.querySelector(".removeSubjBtn").addEventListener("click",()=>subjectsContainer.removeChild(div));
   div.querySelector(".addPaymentBtn").addEventListener("click",()=>{
     const payment = prompt("أدخل المبلغ المدفوع:");
     if(payment && !isNaN(payment)){
@@ -201,7 +189,6 @@ addSubjectBtn.addEventListener("click",()=>{
   });
 });
 
-// حفظ طالب
 studentForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
   const name = document.getElementById("name").value.trim();
@@ -233,7 +220,6 @@ studentForm.addEventListener("submit", async(e)=>{
   }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
 });
 
-// تحميل الطلاب
 async function loadStudents(){
   const snapshot = await getDocs(collection(db,"students"));
   studentsTableBody.innerHTML="";
@@ -259,7 +245,6 @@ async function loadStudents(){
   document.body.style.visibility="visible";
 }
 
-// حذف طالب
 window.deleteStudent = async function(id){
   if(confirm("هل تريد حذف الطالب؟")){
     await deleteDoc(doc(db,"students",id));
@@ -267,7 +252,6 @@ window.deleteStudent = async function(id){
   }
 }
 
-// عرض التفاصيل في مودال
 window.showStudent = function(id){
   const student = studentsData.find(s=>s.id===id);
   if(!student) return;
@@ -287,7 +271,6 @@ window.showStudent = function(id){
   modal.classList.add("open");
 }
 
-// إغلاق المودال
 document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
 
 </script>
