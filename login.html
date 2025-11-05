@@ -3,20 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول - نظام OMA</title>
+<title>تسجيل الدخول - OMA آمن</title>
 <style>
-  body {
-    font-family: 'Cairo', sans-serif;
-    display:flex; justify-content:center; align-items:center;
-    height:100vh; margin:0; background:#f5f9ff;
-  }
-  .login-box {
-    background:#fff; padding:30px; border-radius:12px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.1); width:320px;
-  }
-  input { width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ccc; }
-  button { width:100%; padding:10px; background:#004aad; color:white; border:none; border-radius:8px; cursor:pointer; }
-  p#error { color:red; font-size:13px; text-align:center; }
+  body {font-family:'Cairo',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f9ff;margin:0;}
+  .login-box {background:#fff;padding:30px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.1);width:320px;}
+  input {width:100%;padding:10px;margin:10px 0;border-radius:8px;border:1px solid #ccc;}
+  button {width:100%;padding:10px;background:#004aad;color:white;border:none;border-radius:8px;cursor:pointer;}
+  p#error {color:red;font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
@@ -29,12 +22,10 @@
   <p id="error"></p>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-  // إعداد Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
     authDomain: "oma2-d36fa.firebaseapp.com",
@@ -54,14 +45,24 @@
   loginBtn.addEventListener('click', async () => {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
-    
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // تحويل إلى لوحة الإدارة بعد تسجيل الدخول
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (!userCredential.user.emailVerified) {
+        errorMsg.innerText = "يجب تأكيد البريد الإلكتروني أولاً.";
+        return;
+      }
       window.location.href = 'index.html';
     } catch (err) {
-      errorMsg.innerText = 'خطأ في البريد الإلكتروني أو كلمة المرور';
+      errorMsg.innerText = "خطأ في البريد الإلكتروني أو كلمة المرور";
       console.error(err);
+    }
+  });
+
+  // منع الوصول غير المصرح به
+  onAuthStateChanged(auth, user => {
+    if (user && window.location.pathname.endsWith("login.html")) {
+      window.location.href = 'index.html';
     }
   });
 </script>
