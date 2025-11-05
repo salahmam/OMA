@@ -2,141 +2,183 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>حضور وغياب الأساتذة - OMA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام OMA - تقرير الحضور</title>
 <style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
-}
-body{
-  font-family:'Cairo',sans-serif;
-  margin:0;background:linear-gradient(180deg,var(--bg),#fff);color:#102027;direction:rtl;
-}
-header{background:linear-gradient(90deg,var(--primary),#007bff);color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
+body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
+header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
-th{background:var(--primary);color:#fff}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.warn{background:#ff7043}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
-.checkbox{width:18px;height:18px}
+.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+select,input{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn{background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
+.btn.warn{background:#ff7043;}
+table{width:100%;border-collapse:collapse;margin-top:12px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th{background:#004aad;color:#fff;}
 @media print{
-  body{background:white;padding:0}
-  header, .controls, .actions { display:none !important; }
-  .print-page{box-shadow:none;margin:0;padding:0}
+  body{background:white;}
+  header,.filters,.btn,.modal{display:none !important;}
+  table{page-break-inside:avoid;}
 }
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.filters select{width:auto;}
 </style>
 </head>
 <body>
-<header>نظام OMA - حضور وغياب الأستاذ</header>
+<header>نظام OMA - تقرير الحضور</header>
 <div class="wrap">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <strong>طلابك حسب المادة والكروب</strong>
-      <button id="printAttendance" class="btn">🖨️ طباعة الحضور</button>
-    </div>
-    <table id="attendanceTable">
-      <thead>
-        <tr>
-          <th>الاسم</th>
-          <th>المجموعة</th>
-          <th>المادة</th>
-          <th>الحضور</th>
-          <th>الغياب</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+<div class="card filters">
+  <div style="flex:1">
+    <label>فلتر حسب الطالب</label>
+    <select id="filterStudent"><option value="">اختر الطالب</option></select>
+  </div>
+  <div style="flex:1">
+    <label>فلتر حسب الأستاذ</label>
+    <select id="filterTeacher"><option value="">اختر الأستاذ</option></select>
+  </div>
+  <div style="flex:1">
+    <label>فلتر حسب المادة</label>
+    <select id="filterSubject"><option value="">اختر المادة</option></select>
+  </div>
+  <div style="flex:1">
+    <label>فلتر حسب الكروب</label>
+    <input id="filterGroup" placeholder="أدخل الكروب">
   </div>
 </div>
 
+<div class="card">
+  <strong>تقرير الحضور</strong>
+  <table id="attendanceReport">
+    <thead>
+      <tr>
+        <th>الطالب</th>
+        <th>المادة</th>
+        <th>الأستاذ</th>
+        <th>الكروب</th>
+        <th>عدد الحصص</th>
+        <th>الحضور</th>
+        <th>الغياب</th>
+        <th>النسبة %</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "API_KEY_HERE",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+  authDomain: "oma2-d36fa.firebaseapp.com",
+  projectId: "oma2-d36fa",
+  storageBucket: "oma2-d36fa.appspot.com",
+  messagingSenderId: "774171603105",
+  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-// استدعاء بيانات المستخدم
-const userType = localStorage.getItem("userType");
-const userName = localStorage.getItem("userName");
+// عناصر الصفحة
+const filterStudent = document.getElementById("filterStudent");
+const filterTeacher = document.getElementById("filterTeacher");
+const filterSubject = document.getElementById("filterSubject");
+const filterGroup = document.getElementById("filterGroup");
+const attendanceReport = document.querySelector("#attendanceReport tbody");
 
-if(userType !== "teacher"){ alert("ليس لديك صلاحية الوصول لهذه الصفحة"); window.location.href = "index.html"; }
+// التحقق من تسجيل الدخول
+onAuthStateChanged(auth,user=>{
+  if(!user){ window.location.href="login.html"; }
+  else{ document.body.style.visibility="visible"; loadFilters(); loadReport(); }
+});
 
-const attendanceTableBody = document.querySelector("#attendanceTable tbody");
+// تحميل الفلاتر
+async function loadFilters(){
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  const classesSnap = await getDocs(collection(db,"classes"));
 
-// تحميل الطلاب الذين يدرسهم الأستاذ
-async function loadTeacherStudents() {
-  const snapshot = await getDocs(collection(db,"students"));
-  attendanceTableBody.innerHTML = "";
-  snapshot.forEach(docSnap => {
-    const student = {...docSnap.data(), id: docSnap.id};
-    student.subjects.forEach(sub => {
-      if(sub.teacher === userName){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${student.name}</td>
-          <td>${student.group}</td>
-          <td>${sub.name}</td>
-          <td><input type="checkbox" class="present" data-student="${student.id}" data-subject="${sub.name}"></td>
-          <td><input type="checkbox" class="absent" data-student="${student.id}" data-subject="${sub.name}"></td>
-        `;
-        attendanceTableBody.appendChild(tr);
+  filterStudent.innerHTML="<option value=''>اختر الطالب</option>";
+  studentsSnap.forEach(s=>filterStudent.innerHTML+=`<option value="${s.id}">${s.data().name}</option>`);
 
-        // التأكد من أنه لا يمكن اختيار حضور وغياب في نفس الوقت
-        const presentChk = tr.querySelector(".present");
-        const absentChk = tr.querySelector(".absent");
-        presentChk.addEventListener("change",()=>{if(presentChk.checked) absentChk.checked=false;});
-        absentChk.addEventListener("change",()=>{if(absentChk.checked) presentChk.checked=false;});
-      }
+  filterTeacher.innerHTML="<option value=''>اختر الأستاذ</option>";
+  teachersSnap.forEach(t=>filterTeacher.innerHTML+=`<option value="${t.id}">${t.data().name}</option>`);
+
+  const subjectsSet = new Set();
+  classesSnap.forEach(c=>c.data().students.forEach(s=>c.data().subject && subjectsSet.add(c.data().subject)));
+  filterSubject.innerHTML="<option value=''>اختر المادة</option>";
+  subjectsSet.forEach(s=>filterSubject.innerHTML+=`<option value="${s}">${s}</option>`);
+}
+
+// تحميل التقرير
+async function loadReport(){
+  const classesSnap = await getDocs(collection(db,"classes"));
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const studentsMap = {};
+  studentsSnap.forEach(s=>studentsMap[s.id]=s.data().name);
+
+  attendanceReport.innerHTML="";
+  const reportData = {};
+
+  classesSnap.forEach(cSnap=>{
+    const cls = cSnap.data();
+    const clsId = cSnap.id;
+    const clsTeacher = cls.teacher;
+    const clsSubject = cls.subject;
+    const clsGroup = cls.group;
+
+    cls.students.forEach(st=>{
+      const studentId = st.id;
+      if(filterStudent.value && filterStudent.value!==studentId) return;
+      if(filterTeacher.value && filterTeacher.value!==clsTeacher) return;
+      if(filterSubject.value && filterSubject.value!==clsSubject) return;
+      if(filterGroup.value && !clsGroup.includes(filterGroup.value)) return;
+
+      if(!reportData[studentId]) reportData[studentId]={};
+      const key = clsSubject+"_"+clsTeacher+"_"+clsGroup;
+      if(!reportData[studentId][key]) reportData[studentId][key]={total:0,present:0};
+      reportData[studentId][key].total++;
+      const attendanceRecord = cls.attendance?.find(a=>a.studentId===studentId);
+      if(attendanceRecord?.present) reportData[studentId][key].present++;
+    });
+  });
+
+  Object.keys(reportData).forEach(studentId=>{
+    const studentName = studentsMap[studentId] || "غير معروف";
+    Object.keys(reportData[studentId]).forEach(key=>{
+      const [subject,teacher,group] = key.split("_");
+      const data = reportData[studentId][key];
+      const absent = data.total - data.present;
+      const percent = Math.round((data.present/data.total)*100);
+      const tr = document.createElement("tr");
+      tr.innerHTML=`
+        <td>${studentName}</td>
+        <td>${subject}</td>
+        <td>${teacher}</td>
+        <td>${group}</td>
+        <td>${data.total}</td>
+        <td>${data.present}</td>
+        <td>${absent}</td>
+        <td>${percent}%</td>
+      `;
+      attendanceReport.appendChild(tr);
     });
   });
 }
 
-loadTeacherStudents();
+// تطبيق الفلاتر
+filterStudent.addEventListener("change", loadReport);
+filterTeacher.addEventListener("change", loadReport);
+filterSubject.addEventListener("change", loadReport);
+filterGroup.addEventListener("input", loadReport);
 
-// حفظ الحضور والغياب مباشرة إلى الطالب
-async function saveAttendance() {
-  const rows = attendanceTableBody.querySelectorAll("tr");
-  for(const row of rows){
-    const studentId = row.querySelector(".present").dataset.student;
-    const subjectName = row.querySelector(".present").dataset.subject;
-    const present = row.querySelector(".present").checked;
-    const absent = row.querySelector(".absent").checked;
-
-    const studentRef = doc(db,"students",studentId);
-    const studentSnap = await getDocs(collection(db,"students"));
-    const studentDoc = await getDocs(doc(db,"students",studentId));
-    
-    // تحديث الدفع في نفس الطالب (إضافة الحضور)
-    await updateDoc(studentRef, {
-      subjects: firebase.firestore.FieldValue.arrayUnion({
-        name: subjectName,
-        attendance: present ? "حاضر" : absent ? "غائب" : "غير محدد"
-      })
-    });
-  }
-  alert("تم حفظ الحضور والغياب بنجاح");
-}
-
-// زر الطباعة
-document.getElementById("printAttendance").addEventListener("click",()=>{
-  window.print();
-});
 </script>
+</div>
 </body>
 </html>
