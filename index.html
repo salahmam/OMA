@@ -3,34 +3,41 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>إدارة الطلاب - OMA</title>
+<title>استمارة الطالب - OMA</title>
 <style>
-  body { font-family: 'Cairo', sans-serif; background:#f5f9ff; margin:0; color:#102027; }
-  header { background:#004aad; color:white; text-align:center; padding:18px; font-size:20px; font-weight:bold; }
-  .wrap { max-width:1200px; margin:20px auto; padding:12px; }
-  .card { background:white; padding:16px; border-radius:10px; box-shadow:0 6px 18px rgba(6,20,30,0.06); margin-bottom:20px; }
-  input, select { padding:8px; border-radius:6px; border:1px solid #d6dde9; width:100%; font-size:14px; }
-  button { padding:10px 14px; border:none; border-radius:6px; cursor:pointer; background:#004aad; color:white; font-weight:700; }
-  table { width:100%; border-collapse: collapse; margin-top:12px; }
-  th, td { padding:8px; border:1px solid #ddd; text-align:center; font-size:14px; }
-  th { background:#004aad; color:white; }
-  .actions button { margin:0 4px; font-size:12px; }
-  @media print {
-    body{background:white;}
-    header, .controls, .actions, .btn, .card input, .card select{display:none !important;}
-    .print-page { display:block; width:100%; margin:0; padding:0; box-shadow:none; }
-  }
-  .modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:9999; }
-  .modal.open{display:flex;}
-  .modal .box{background:white; padding:16px; border-radius:10px; max-width:800px; width:95%; max-height:90vh; overflow:auto;}
-  .subject-table th, .subject-table td{border:1px solid #ccc; padding:6px; font-size:13px;}
-  .signature {margin-top:30px; display:flex; justify-content:space-between; }
-  .signature div { text-align:center; width:40%; }
+body { font-family: 'Cairo', sans-serif; background:#f5f9ff; margin:0; color:#102027; }
+header { background:#004aad; color:white; text-align:center; padding:18px; font-size:20px; font-weight:bold; }
+.wrap { max-width:1200px; margin:20px auto; padding:12px; }
+input, select { padding:8px; border-radius:6px; border:1px solid #d6dde9; width:100%; font-size:14px; margin-bottom:10px;}
+button { padding:10px 14px; border:none; border-radius:6px; cursor:pointer; background:#004aad; color:white; font-weight:700; margin-top:6px;}
+table { width:100%; border-collapse: collapse; margin-top:12px; }
+th, td { padding:8px; border:1px solid #ddd; text-align:center; font-size:14px; }
+th { background:#004aad; color:white; }
+.actions button { margin:0 4px; font-size:12px; }
+.modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:9999; }
+.modal.open{display:flex;}
+.modal .box{background:white; padding:16px; border-radius:10px; max-width:900px; width:95%; max-height:90vh; overflow:auto;}
+.subject-table th, .subject-table td{border:1px solid #ccc; padding:6px; font-size:13px;}
+.signature {margin-top:30px; display:flex; justify-content:space-between; }
+.signature div { text-align:center; width:40%; }
+.add-payment { margin:10px 0; }
+
+/* طباعة احترافية على A4 */
+@media print {
+  body{background:white; color:black;}
+  header, .wrap > :not(.print-page){display:none;}
+  .print-page { width:210mm; min-height:297mm; margin:0 auto; padding:20mm; box-sizing:border-box; display:block; }
+  table, th, td { border:1px solid black; }
+  th, td { padding:8px; font-size:12pt; }
+  h2,h3 { margin:4px 0; }
+}
 </style>
 </head>
 <body>
 <header>نظام OMA - إدارة الطلاب</header>
 <div class="wrap">
+
+  <!-- قائمة الطلاب -->
   <div class="card">
     <h3>قائمة الطلاب</h3>
     <table id="studentsTable">
@@ -56,100 +63,121 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
-    authDomain: "oma-system-30813.firebaseapp.com",
-    projectId: "oma-system-30813"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
+  authDomain: "oma-system-30813.firebaseapp.com",
+  projectId: "oma-system-30813"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const tableBody = document.querySelector('#studentsTable tbody');
-  const modal = document.getElementById('modal');
-  const modalBody = document.getElementById('modalBody');
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  async function loadStudents() {
-    tableBody.innerHTML='';
-    const snapshot = await getDocs(collection(db,'students'));
-    snapshot.forEach(docSnap=>{
-      const st = docSnap.data();
-      const tr = document.createElement('tr');
-      tr.innerHTML=`
-        <td>${st.name}</td>
-        <td>${st.phone}</td>
-        <td>${st.stage}</td>
-        <td>${st.group}</td>
-        <td>
-          <button onclick="showStudent('${docSnap.id}')" style="padding:6px 10px;">تفاصيل / طباعة</button>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    });
-  }
+const tableBody = document.querySelector('#studentsTable tbody');
+const modal = document.getElementById('modal');
+const modalBody = document.getElementById('modalBody');
 
-  async function showStudent(id){
-    const docSnap = await getDoc(doc(db,'students',id));
+async function loadStudents() {
+  tableBody.innerHTML='';
+  const snapshot = await getDocs(collection(db,'students'));
+  snapshot.forEach(docSnap=>{
     const st = docSnap.data();
-    modalBody.innerHTML=`
-      <div class="print-page">
-        <h2 style="text-align:center;">استمارة الطالب</h2>
-        <table style="width:100%; margin-top:10px;">
-          <tr><td>الاسم:</td><td>${st.name}</td></tr>
-          <tr><td>الهاتف:</td><td>${st.phone}</td></tr>
-          <tr><td>العنوان:</td><td>${st.address||'-'}</td></tr>
-          <tr><td>المدرسة:</td><td>${st.school||'-'}</td></tr>
-          <tr><td>المرحلة:</td><td>${st.stage||'-'}</td></tr>
-          <tr><td>المجموعة:</td><td>${st.group||'-'}</td></tr>
-          <tr><td>ملاحظة:</td><td>${st.note||'-'}</td></tr>
-        </table>
+    const tr = document.createElement('tr');
+    tr.innerHTML=`
+      <td>${st.name}</td>
+      <td>${st.phone}</td>
+      <td>${st.stage}</td>
+      <td>${st.group}</td>
+      <td>
+        <button onclick="showStudent('${docSnap.id}')" style="padding:6px 10px;">استمارة / طباعة</button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
 
-        <h3 style="margin-top:20px;">تفاصيل المواد والدفعات</h3>
-        <table class="subject-table" style="width:100%; border-collapse: collapse;">
-          <thead>
-            <tr>
-              <th>المادة</th>
-              <th>إجمالي القسط</th>
-              <th>الدفعات</th>
-              <th>المتبقي</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${st.subjects.map(sub=>{
-              const paid = sub.payments ? sub.payments.reduce((a,p)=>a+p.amount,0) : 0;
-              const remaining = sub.total - paid;
-              const paymentsText = sub.payments ? sub.payments.map((p,i)=>`${i+1}. ${p.amount} ريال (${p.date})`).join('<br>') : '-';
-              return `<tr>
-                <td>${sub.name}</td>
-                <td>${sub.total}</td>
-                <td>${paymentsText}</td>
-                <td>${remaining}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+async function showStudent(id){
+  const docRef = doc(db,'students',id);
+  const docSnap = await getDoc(docRef);
+  const st = docSnap.data();
 
-        <div class="signature">
-          <div>
-            <hr>
-            توقيع الطالب
-          </div>
-          <div>
-            <hr>
-            ختم المعهد
-          </div>
+  modalBody.innerHTML=`
+    <div class="print-page">
+      <h2 style="text-align:center;">استمارة الطالب</h2>
+      <table style="width:100%; margin-top:10px;">
+        <tr><td>الاسم:</td><td>${st.name}</td></tr>
+        <tr><td>الهاتف:</td><td>${st.phone}</td></tr>
+        <tr><td>العنوان:</td><td>${st.address||'-'}</td></tr>
+        <tr><td>المدرسة:</td><td>${st.school||'-'}</td></tr>
+        <tr><td>المرحلة:</td><td>${st.stage||'-'}</td></tr>
+        <tr><td>المجموعة:</td><td>${st.group||'-'}</td></tr>
+        <tr><td>ملاحظة:</td><td>${st.note||'-'}</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px;">تفاصيل المواد والدفعات</h3>
+      <table class="subject-table" style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>المادة</th>
+            <th>إجمالي القسط</th>
+            <th>الدفعات</th>
+            <th>المتبقي</th>
+            <th>إضافة دفعة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${st.subjects.map((sub,index)=>{
+            const paid = sub.payments ? sub.payments.reduce((a,p)=>a+p.amount,0) : 0;
+            const remaining = sub.total - paid;
+            const paymentsText = sub.payments ? sub.payments.map((p,i)=>`${i+1}. ${p.amount} ريال (${p.date})`).join('<br>') : '-';
+            return `<tr>
+              <td>${sub.name}</td>
+              <td>${sub.total}</td>
+              <td id="payments-${index}">${paymentsText}</td>
+              <td id="remaining-${index}">${remaining}</td>
+              <td>
+                <input type="number" id="pay-input-${index}" placeholder="المبلغ">
+                <button class="add-payment" onclick="addPayment('${id}',${index})">💰 إضافة</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <div class="signature">
+        <div>
+          <hr>
+          توقيع الطالب
+        </div>
+        <div>
+          <hr>
+          ختم المعهد
         </div>
       </div>
-      <button onclick="window.print()" style="margin-top:15px;">🖨️ طباعة الاستمارة</button>
-    `;
-    modal.classList.add('open');
-  }
+    </div>
+    <button onclick="window.print()" style="margin-top:15px;">🖨️ طباعة الاستمارة</button>
+  `;
+  modal.classList.add('open');
+}
 
-  function closeModal(){ modal.classList.remove('open'); }
+async function addPayment(studentId, subIndex){
+  const amountInput = document.getElementById(`pay-input-${subIndex}`);
+  const amount = parseFloat(amountInput.value);
+  if(!amount || amount<=0){ alert('ادخل مبلغ صحيح'); return; }
+  const date = new Date().toLocaleDateString('ar-EG');
+  const studentRef = doc(db,'students',studentId);
+  await updateDoc(studentRef,{
+    [`subjects.${subIndex}.payments`]: arrayUnion({amount, date})
+  });
+  amountInput.value='';
+  await showStudent(studentId);
+}
 
-  loadStudents();
+function closeModal(){ modal.classList.remove('open'); }
+
+loadStudents();
 </script>
 </body>
 </html>
