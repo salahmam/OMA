@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نظام OMA - إدارة الدروس والحصص</title>
+<style>
+:root{
+  --primary:#004aad;
+  --accent:#ffcc33;
+  --bg:#f5f9ff;
+  --card:#fff;
+}
+*{box-sizing:border-box}
+body{
+  font-family: 'Cairo',sans-serif;
+  margin:0;
+  background:linear-gradient(180deg,var(--bg),#fff);
+  color:#102027;
+}
+header{
+  background:linear-gradient(90deg,var(--primary),#007bff);
+  color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
+  box-shadow:0 3px 12px rgba(2,20,40,0.08);
+}
+.wrap{max-width:1200px;margin:22px auto;padding:12px;}
+.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+.form-grid{display:flex;flex-wrap:wrap;gap:10px}
+input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;}
+.two{width:calc(50% - 6px)}
+.three{width:calc(33.333% - 8px)}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
+.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.btn.warn{background:#ff7043}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
+.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+th{background:var(--primary);color:#fff}
+.actions button{margin:0 6px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
+@media (max-width:900px){.two,.three{width:100%}}
+@media print{
+  body{background:white;padding:0}
+  header, .card form, .actions, .filters, .modal { display:none !important; }
+  .print-page{box-shadow:none;margin:0;padding:0}
+}
+.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
+.modal.open{display:flex}
+.modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
+.flex{display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+<header>نظام OMA - إدارة الدروس والحصص</header>
+<div class="wrap">
+
+<div class="card">
+  <strong>إضافة درس جديد</strong>
+  <form id="lessonForm" style="margin-top:12px">
+    <div class="form-grid">
+      <div class="two">
+        <label>اسم الدرس</label>
+        <input id="lessonName" type="text" required />
+      </div>
+      <div class="two">
+        <label>المعلم</label>
+        <select id="lessonTeacher" required></select>
+      </div>
+      <div class="two">
+        <label>المرحلة الدراسية</label>
+        <select id="lessonStage" required></select>
+      </div>
+      <div class="two">
+        <label>المجموعة / الكروب</label>
+        <select id="lessonGroup" required></select>
+      </div>
+      <div class="two">
+        <label>اليوم</label>
+        <select id="lessonDay" required>
+          <option>السبت</option>
+          <option>الأحد</option>
+          <option>الإثنين</option>
+          <option>الثلاثاء</option>
+          <option>الأربعاء</option>
+          <option>الخميس</option>
+        </select>
+      </div>
+      <div class="two">
+        <label>الوقت</label>
+        <input type="time" id="lessonTime" required />
+      </div>
+      <div style="width:100%;display:flex;justify-content:flex-end">
+        <button class="btn" type="submit">✅ حفظ الدرس</button>
+        <button type="button" class="btn ghost" id="clearLessonForm">مسح الحقول</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div><strong>قائمة الدروس</strong> <span id="lessonCount" class="badge">0</span></div>
+  </div>
+  <table id="lessonsTable">
+    <thead>
+      <tr>
+        <th>الدرس</th>
+        <th>المعلم</th>
+        <th>المرحلة</th>
+        <th>المجموعة</th>
+        <th>اليوم</th>
+        <th>الوقت</th>
+        <th>الحضور</th>
+        <th>الخيارات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong id="modalTitle">تفاصيل الدرس</strong>
+      <button id="closeModal" class="btn ghost">إغلاق</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "API_KEY_HERE",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const lessonForm = document.getElementById("lessonForm");
+const lessonsTableBody = document.querySelector("#lessonsTable tbody");
+const lessonTeacher = document.getElementById("lessonTeacher");
+const lessonStage = document.getElementById("lessonStage");
+const lessonGroup = document.getElementById("lessonGroup");
+
+// تحميل الأساتذة والطلاب للربط
+let teachersData = [];
+let studentsData = [];
+
+async function loadTeachers(){
+  const snapshot = await getDocs(collection(db,"teachers"));
+  lessonTeacher.innerHTML='<option value="">اختر المعلم</option>';
+  teachersData=[];
+  snapshot.forEach(docSnap=>{
+    const t = {...docSnap.data(),id:docSnap.id};
+    teachersData.push(t);
+    lessonTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
+  });
+}
+
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,"students"));
+  studentsData=[];
+  let stagesSet = new Set();
+  let groupsSet = new Set();
+  snapshot.forEach(docSnap=>{
+    const s = {...docSnap.data(),id:docSnap.id};
+    studentsData.push(s);
+    if(s.stage) stagesSet.add(s.stage);
+    if(s.group) groupsSet.add(s.group);
+  });
+  lessonStage.innerHTML='<option value="">المرحلة</option>'+[...stagesSet].map(s=>`<option value="${s}">${s}</option>`).join("");
+  lessonGroup.innerHTML='<option value="">المجموعة</option>'+[...groupsSet].map(g=>`<option value="${g}">${g}</option>`).join("");
+}
+
+// حفظ درس جديد
+lessonForm.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const name=document.getElementById("lessonName").value.trim();
+  const teacherId=lessonTeacher.value;
+  const stage=lessonStage.value;
+  const group=lessonGroup.value;
+  const day=document.getElementById("lessonDay").value;
+  const time=document.getElementById("lessonTime").value;
+
+  if(!name || !teacherId || !stage || !group || !day || !time){alert("املأ جميع الحقول");return;}
+
+  try{
+    await addDoc(collection(db,"lessons"),{name,teacherId,stage,group,day,time,attendance:[],createdAt:new Date()});
+    alert("تم حفظ الدرس بنجاح");
+    lessonForm.reset();
+    loadLessons();
+  }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
+});
+
+// تحميل الدروس
+async function loadLessons(){
+  const snapshot = await getDocs(collection(db,"lessons"));
+  lessonsTableBody.innerHTML="";
+  let count=0;
+  snapshot.forEach(docSnap=>{
+    const l = {...docSnap.data(),id:docSnap.id};
+    count++;
+    const teacher = teachersData.find(t=>t.id===l.teacherId)?.name || "غير محدد";
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${l.name}</td>
+      <td>${teacher}</td>
+      <td>${l.stage}</td>
+      <td>${l.group}</td>
+      <td>${l.day}</td>
+      <td>${l.time}</td>
+      <td><button class="btn small" onclick="manageAttendance('${l.id}')">📝 حضور/غياب</button></td>
+      <td class="actions">
+        <button class="btn small" onclick="showLesson('${l.id}')">🔍 التفاصيل</button>
+      </td>
+    `;
+    lessonsTableBody.appendChild(tr);
+  });
+  document.getElementById("lessonCount").innerText=count;
+}
+
+// إدارة الحضور والغياب
+window.manageAttendance = async function(lessonId){
+  const lessonSnap = await getDocs(collection(db,"lessons"));
+  const lessonDoc = lessonSnap.docs.find(d=>d.id===lessonId);
+  const lessonData = {...lessonDoc.data(),id:lessonDoc.id};
+
+  const studentsInGroup = studentsData.filter(s=>s.stage===lessonData.stage && s.group===lessonData.group);
+
+  const attendance = lessonData.attendance || [];
+  const result = studentsInGroup.map(s=>{
+    const present = attendance.includes(s.id)? "حاضر" : "غائب";
+    return `${s.name} - ${present} - (انقر لتبديل)`; 
+  }).join("\n");
+  alert(result); // لاحقًا يمكن عمل واجهة أكثر تفاعلية
+}
+
+// عرض تفاصيل الدرس
+window.showLesson = function(id){
+  const modal = document.getElementById("modal");
+  const body = document.getElementById("modalBody");
+  const lesson = lessonsTableBody.querySelector(`tr button[onclick="showLesson('${id}')"]`).closest("tr");
+  body.innerHTML=`<pre>${lesson.innerText}</pre>`;
+  modal.classList.add("open");
+}
+
+document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
+
+// المسح
+document.getElementById("clearLessonForm").addEventListener("click",()=>lessonForm.reset());
+
+await loadTeachers();
+await loadStudents();
+await loadLessons();
+</script>
+</body>
+</html>
