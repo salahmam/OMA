@@ -64,6 +64,11 @@
     #logoutBtn:hover {
       background-color: #b71c1c;
     }
+
+    @media (max-width:600px){
+      .container { padding: 20px; }
+      .card { padding: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -75,24 +80,21 @@
     <div class="card" id="classesCard"><h3>🏫 إدارة الحصص</h3></div>
     <div class="card" id="attendanceCard"><h3>🕓 الحضور والغياب</h3></div>
     <div class="card" id="settingsCard"><h3>⚙️ الإعدادات</h3></div>
+    <div class="card" id="financeCard"><h3>💰 المالية والمصاريف</h3></div>
   </div>
 
   <button id="logoutBtn">🔓 تسجيل الخروج</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { 
-      getAuth, 
-      onAuthStateChanged, 
-      signOut 
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
     // 🔹 إعداد Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
       authDomain: "oma2-d36fa.firebaseapp.com",
       projectId: "oma2-d36fa",
-      storageBucket: "oma2-d36fa.firebasestorage.app",
+      storageBucket: "oma2-d36fa.appspot.com",
       messagingSenderId: "774171603105",
       appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
       measurementId: "G-QHPZG4JLB8"
@@ -127,6 +129,10 @@
 
     document.getElementById("settingsCard").addEventListener("click", () => {
       window.location.href = "settings.html";
+    });
+
+    document.getElementById("financeCard").addEventListener("click", () => {
+      window.location.href = "finance.html";
     });
 
     // 🔒 زر تسجيل الخروج
