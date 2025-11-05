@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نظام OMA - إدارة الحصص</title>
+<title>نظام OMA - إدارة الحصص والحضور</title>
 <style>
 body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
 header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
@@ -13,14 +13,16 @@ input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:
 label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
 .btn{background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
 .btn.warn{background:#ff7043;}
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
-.filters select{width:auto;}
 table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:#004aad;color:#fff;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.filters select{width:auto;}
 .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;}
 .modal.open{display:flex;}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto;}
+.attendance-list{margin-top:10px;}
+.attendance-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;}
 @media print{
   body{background:white;}
   header,.filters,.btn,.modal{display:none !important;}
@@ -29,7 +31,7 @@ th{background:#004aad;color:#fff;}
 </style>
 </head>
 <body>
-<header>نظام OMA - إدارة الحصص</header>
+<header>نظام OMA - إدارة الحصص والحضور</header>
 <div class="wrap">
 
 <!-- نموذج إضافة/تعديل حصة -->
@@ -60,12 +62,8 @@ th{background:#004aad;color:#fff;}
 
 <!-- فلاتر الطباعة -->
 <div class="filters">
-  <select id="filterTeacher">
-    <option value="">فلتر حسب الأستاذ</option>
-  </select>
-  <select id="filterSubject">
-    <option value="">فلتر حسب المادة</option>
-  </select>
+  <select id="filterTeacher"><option value="">فلتر حسب الأستاذ</option></select>
+  <select id="filterSubject"><option value="">فلتر حسب المادة</option></select>
   <input type="text" id="filterGroup" placeholder="فلتر حسب الكروب">
 </div>
 
@@ -85,6 +83,16 @@ th{background:#004aad;color:#fff;}
     </thead>
     <tbody></tbody>
   </table>
+</div>
+
+<!-- نافذة الحضور -->
+<div id="attendanceModal" class="modal">
+  <div class="box">
+    <h3>تسجيل الحضور</h3>
+    <div id="attendanceList" class="attendance-list"></div>
+    <button id="saveAttendanceBtn" class="btn">✅ حفظ الحضور</button>
+    <button id="closeAttendanceBtn" class="btn warn">إغلاق</button>
+  </div>
 </div>
 
 <script type="module">
@@ -119,6 +127,13 @@ const filterSubject = document.getElementById("filterSubject");
 const filterGroup = document.getElementById("filterGroup");
 const editClassId = document.getElementById("editClassId");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
+
+// Modal الحضور
+const attendanceModal = document.getElementById("attendanceModal");
+const attendanceList = document.getElementById("attendanceList");
+const saveAttendanceBtn = document.getElementById("saveAttendanceBtn");
+const closeAttendanceBtn = document.getElementById("closeAttendanceBtn");
+let currentClassDocId = null;
 
 // تحميل المواد والأساتذة
 async function loadSubjectsAndTeachers(){
@@ -159,13 +174,11 @@ classForm.addEventListener("submit", async e=>{
   });
 
   if(editClassId.value){
-    // تعديل الحصة
     const docRef = doc(db,"classes",editClassId.value);
     await updateDoc(docRef,{subject,teacher,group,day,time,students:groupStudents});
     alert("تم تعديل الحصة بنجاح");
     editClassId.value="";
   } else {
-    // إضافة حصة جديدة
     await addDoc(collection(db,"classes"),{subject,teacher,group,day,time,students:groupStudents,attendance:[]});
     alert("تم حفظ الحصة بنجاح");
   }
@@ -179,7 +192,7 @@ cancelEditBtn.addEventListener("click", ()=>{
   editClassId.value="";
 });
 
-// تحميل الحصص مع الفلاتر
+// تحميل الحصص
 async function loadClasses(){
   const snapshot = await getDocs(collection(db,"classes"));
   classesTableBody.innerHTML="";
@@ -199,6 +212,7 @@ async function loadClasses(){
       <td>
         <button class="btn warn" onclick="deleteClass('${cls.id}')">🗑️ حذف</button>
         <button class="btn" onclick="editClass('${cls.id}')">✏️ تعديل</button>
+        <button class="btn" onclick="openAttendance('${cls.id}')">📝 الحضور</button>
       </td>
     `;
     classesTableBody.appendChild(tr);
@@ -216,8 +230,9 @@ window.deleteClass = async id=>{
 // تعديل حصة
 window.editClass = async id=>{
   const docSnap = await getDocs(collection(db,"classes"));
-  const cls = docSnap.docs.find(d=>d.id===id)?.data();
-  if(cls){
+  const clsDoc = docSnap.docs.find(d=>d.id===id);
+  if(clsDoc){
+    const cls = clsDoc.data();
     subjectSelect.value = cls.subject;
     teacherSelect.value = cls.teacher;
     document.getElementById("groupInput").value = cls.group;
@@ -227,11 +242,58 @@ window.editClass = async id=>{
   }
 }
 
+// فتح نافذة الحضور
+window.openAttendance = async id=>{
+  currentClassDocId = id;
+  attendanceList.innerHTML = "";
+  const docSnap = await getDocs(collection(db,"classes"));
+  const clsDoc = docSnap.docs.find(d=>d.id===id);
+  if(clsDoc){
+    const cls = clsDoc.data();
+    cls.students.forEach(s=>{
+      const presentRecord = cls.attendance.find(a=>a.studentId===s.id);
+      attendanceList.innerHTML += `
+        <div class="attendance-item">
+          <span>${s.name}</span>
+          <select data-studentid="${s.id}">
+            <option value="true" ${presentRecord?.present?"selected":""}>حاضر</option>
+            <option value="false" ${presentRecord?.present===false?"selected":""}>غائب</option>
+          </select>
+        </div>
+      `;
+    });
+  }
+  attendanceModal.classList.add("open");
+}
+
+// حفظ الحضور
+saveAttendanceBtn.addEventListener("click", async ()=>{
+  if(!currentClassDocId) return;
+  const attendanceData = [];
+  attendanceList.querySelectorAll("select").forEach(sel=>{
+    attendanceData.push({
+      studentId: sel.dataset.studentid,
+      studentName: sel.parentElement.querySelector("span").innerText,
+      present: sel.value==="true",
+      timestamp: new Date()
+    });
+  });
+  const docRef = doc(db,"classes",currentClassDocId);
+  await updateDoc(docRef,{attendance:attendanceData});
+  alert("تم حفظ الحضور");
+  attendanceModal.classList.remove("open");
+  loadClasses();
+});
+
+// إغلاق نافذة الحضور
+closeAttendanceBtn.addEventListener("click", ()=>{
+  attendanceModal.classList.remove("open");
+});
+
 // تطبيق الفلاتر
 filterTeacher.addEventListener("change", loadClasses);
 filterSubject.addEventListener("change", loadClasses);
 filterGroup.addEventListener("input", loadClasses);
-
 </script>
 </body>
 </html>
