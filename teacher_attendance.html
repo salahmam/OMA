@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نظام OMA - حضور وغياب المعلم</title>
+<style>
+:root{
+  --primary:#004aad;
+  --accent:#ffcc33;
+  --bg:#f5f9ff;
+  --card:#fff;
+}
+*{box-sizing:border-box}
+body{
+  font-family: 'Cairo',sans-serif;
+  margin:0;
+  background:linear-gradient(180deg,var(--bg),#fff);
+  color:#102027;
+}
+header{
+  background:linear-gradient(90deg,var(--primary),#007bff);
+  color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
+  box-shadow:0 3px 12px rgba(2,20,40,0.08);
+}
+.wrap{max-width:1200px;margin:22px auto;padding:12px;}
+.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+th{background:var(--primary);color:#fff}
+.btn{background:var(--primary);color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-weight:700}
+.btn.warn{background:#ff7043}
+.btn.small{padding:4px 8px;font-size:12px;border-radius:6px}
+@media print{
+  body{background:white;padding:0}
+  header, .btn, .actions, .filters { display:none !important; }
+  .print-page{box-shadow:none;margin:0;padding:0}
+}
+</style>
+</head>
+<body>
+<header>نظام OMA - حضور وغياب المعلم</header>
+<div class="wrap">
+
+<div class="card">
+  <strong>قائمة حصص المعلم</strong>
+  <table id="lessonsTable">
+    <thead>
+      <tr>
+        <th>الدرس</th>
+        <th>المرحلة</th>
+        <th>المجموعة</th>
+        <th>اليوم</th>
+        <th>الوقت</th>
+        <th>الحضور</th>
+        <th>طباعة الاستمارة</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "API_KEY_HERE",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ضع هنا معرف المعلم لتسجيل الدخول
+const currentTeacherId = "TEACHER_ID_HERE";
+
+const lessonsTableBody = document.querySelector("#lessonsTable tbody");
+let studentsData = [];
+
+// تحميل الطلاب
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,"students"));
+  studentsData = [];
+  snapshot.forEach(docSnap=>{
+    const s = {...docSnap.data(),id:docSnap.id};
+    studentsData.push(s);
+  });
+}
+
+// تحميل حصص المعلم
+async function loadLessons(){
+  const snapshot = await getDocs(collection(db,"lessons"));
+  lessonsTableBody.innerHTML="";
+  snapshot.forEach(docSnap=>{
+    const l = {...docSnap.data(),id:docSnap.id};
+    if(l.teacherId!==currentTeacherId) return; // فقط حصص المعلم الحالي
+    const studentsInGroup = studentsData.filter(s=>s.stage===l.stage && s.group===l.group);
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${l.name}</td>
+      <td>${l.stage}</td>
+      <td>${l.group}</td>
+      <td>${l.day}</td>
+      <td>${l.time}</td>
+      <td><button class="btn small" onclick="toggleAttendance('${l.id}')">📝 تسجيل الحضور</button></td>
+      <td><button class="btn small" onclick="printAttendance('${l.id}')">🖨️ طباعة الاستمارة</button></td>
+    `;
+    lessonsTableBody.appendChild(tr);
+  });
+}
+
+// تسجيل الحضور/الغياب
+window.toggleAttendance = async function(lessonId){
+  const lessonDocRef = doc(db,"lessons",lessonId);
+  const lessonSnap = await getDocs(collection(db,"lessons"));
+  const lessonDoc = lessonSnap.docs.find(d=>d.id===lessonId);
+  const lessonData = {...lessonDoc.data(),id:lessonDoc.id};
+  const studentsInGroup = studentsData.filter(s=>s.stage===lessonData.stage && s.group===lessonData.group);
+
+  // التبديل بين الحاضر/الغائب
+  const attendance = lessonData.attendance || [];
+  for(const s of studentsInGroup){
+    const index = attendance.indexOf(s.id);
+    if(index===-1){attendance.push(s.id);} // حضر
+    else{attendance.splice(index,1);} // غائب
+  }
+  await updateDoc(lessonDocRef,{attendance});
+  alert("تم تحديث الحضور والغياب");
+}
+
+// طباعة الاستمارة
+window.printAttendance = async function(lessonId){
+  const lessonSnap = await getDocs(collection(db,"lessons"));
+  const lessonDoc = lessonSnap.docs.find(d=>d.id===lessonId);
+  const lessonData = {...lessonDoc.data(),id:lessonDoc.id};
+  const studentsInGroup = studentsData.filter(s=>s.stage===lessonData.stage && s.group===lessonData.group);
+
+  const attendance = lessonData.attendance || [];
+  let html = `<div class="print-page" style="padding:20px;font-size:14px">
+    <h2>استمارة حضور وغياب</h2>
+    <p><b>المعلم:</b> المعلم الحالي</p>
+    <p><b>الدرس:</b> ${lessonData.name}</p>
+    <p><b>المرحلة:</b> ${lessonData.stage}</p>
+    <p><b>المجموعة:</b> ${lessonData.group}</p>
+    <p><b>اليوم والوقت:</b> ${lessonData.day} - ${lessonData.time}</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="width:100%;margin-top:10px">
+      <tr><th>الاسم</th><th>حضور/غياب</th></tr>
+      ${studentsInGroup.map(s=>`<tr><td>${s.name}</td><td>${attendance.includes(s.id)?'حاضر':'غائب'}</td></tr>`).join("")}
+    </table>
+    <p style="margin-top:20px">توقيع المعلم: _________</p>
+    <p>ختم المعهد: _________</p>
+  </div>`;
+  
+  const w = window.open("","_blank");
+  w.document.write(html);
+  w.print();
+}
+
+await loadStudents();
+await loadLessons();
+</script>
+</body>
+</html>
