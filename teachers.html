@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>نظام OMA المتطور - إدارة الأساتذة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نظام OMA - إدارة الأساتذة</title>
 <style>
 :root{
   --primary:#004aad;
@@ -11,147 +11,64 @@
   --bg:#f5f9ff;
   --card:#fff;
 }
-*{box-sizing:border-box}
-body{
-  font-family:'Cairo',sans-serif;
-  margin:0;
-  background:linear-gradient(180deg,var(--bg),#fff);
-  color:#102027;
-  direction:rtl;
-}
-header{
-  background:linear-gradient(90deg,var(--primary),#007bff);
-  color:#fff;
-  padding:18px 16px;
-  text-align:center;
-  font-size:20px;
-  font-weight:700;
-  box-shadow:0 3px 12px rgba(2,20,40,0.08);
-}
+body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;}
+header{background:linear-gradient(90deg,var(--primary),#007bff);color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1}
-.form-grid{display:flex;flex-wrap:wrap;gap:10px}
-input[type="text"], input[type="number"], select, .subject-field {
-  padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
-}
-.two{width:calc(50% - 6px)}
-.three{width:calc(33.333% - 8px)}
-label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.warn{background:#ff7043}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
-.add-subj{display:inline-block;margin-top:6px}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
-th{background:var(--primary);color:#fff}
-.actions button{margin:0 6px}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
-@media (max-width:900px){
-  .two,.three{width:100%}
-  .controls{flex-direction:column;align-items:stretch}
-}
+.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:16px;}
+input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
+.btn.warn{background:#ff7043;}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12);}
+table{width:100%;border-collapse:collapse;margin-top:12px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th{background:var(--primary);color:#fff;}
 @media print{
-  body{background:white;padding:0}
-  header, .controls, .card .form-grid, .actions, .modal { display:none !important; }
-  .print-page{box-shadow:none;margin:0;padding:0}
+  body{background:white;}
+  header, .card .form-grid, .actions, .filters {display:none !important;}
 }
-.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
-.modal.open{display:flex}
-.modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
 </style>
 </head>
 <body>
 <header>نظام OMA - إدارة الأساتذة</header>
 <div class="wrap">
 
-<div class="controls">
-  <div style="flex:1" class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <strong>أضف أستاذ جديد</strong>
-        <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
-      </div>
-      <div>
-        <input id="searchInput" placeholder="بحث بالاسم..." style="padding:8px;border-radius:8px;border:1px solid #e0e6ef" />
-      </div>
-    </div>
-
-    <form id="teacherForm" style="margin-top:12px">
-      <div class="form-grid">
-        <div class="two">
-          <label>الاسم الكامل</label>
-          <input id="teacherName" type="text" required />
-        </div>
-        <div class="two">
-          <label>رقم الهاتف</label>
-          <input id="teacherPhone" type="text" />
-        </div>
-        <div style="width:100%">
-          <label>المواد المكلف بها</label>
-          <div id="teacherSubjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-          <div style="margin-top:8px">
-            <button id="addTeacherSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
-          </div>
-        </div>
-
-        <div class="two">
-          <label>إجمالي المستحقات</label>
-          <input id="teacherTotal" type="number" min="0" value="0" readonly />
-        </div>
-        <div class="two">
-          <label>المبلغ المسلم</label>
-          <input id="teacherPaid" type="number" min="0" value="0" readonly />
-        </div>
-        <div class="two">
-          <label>المتبقي</label>
-          <input id="teacherRemaining" type="number" min="0" value="0" readonly />
-        </div>
-
-        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
-          <button id="saveTeacherBtn" class="btn" type="submit">✅ حفظ الأستاذ</button>
-          <button id="clearTeacherFormBtn" type="button" class="btn ghost">مسح الحقول</button>
-        </div>
-      </div>
-    </form>
-  </div>
+<!-- نموذج إضافة أستاذ -->
+<div class="card">
+  <strong>أضف أستاذ جديد</strong>
+  <form id="teacherForm">
+    <label>الاسم الكامل</label>
+    <input id="teacherName" type="text" required>
+    <label>رقم الهاتف</label>
+    <input id="teacherPhone" type="tel">
+    <label>المواد التي يدرسها (افصل بين المواد بفاصلة)</label>
+    <input id="teacherSubjects" type="text">
+    <button type="submit" class="btn">✅ حفظ الأستاذ</button>
+  </form>
 </div>
 
+<!-- جدول الأساتذة -->
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <div><strong>قائمة الأساتذة</strong> <span id="teacherCount" class="badge">0</span></div>
-  </div>
-
+  <strong>قائمة الأساتذة</strong>
   <table id="teachersTable">
     <thead>
       <tr>
         <th>الاسم</th>
         <th>الهاتف</th>
         <th>المواد</th>
-        <th>إجمالي المستحقات</th>
-        <th>المبلغ المسلم</th>
+        <th>إجمالي المدفوع</th>
         <th>المتبقي</th>
-        <th>الخيارات</th>
+        <th>خيارات</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
-</div>
-
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <strong id="modalTitle">تفاصيل الأستاذ</strong>
-      <button id="closeModal" class="btn ghost">إغلاق</button>
-    </div>
-    <div id="modalBody"></div>
-  </div>
+  <button id="printTeachersBtn" class="btn" style="margin-top:10px;">🖨️ طباعة استمارة الأستاذ</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -167,62 +84,17 @@ const db = getFirestore(app);
 
 const teacherForm = document.getElementById("teacherForm");
 const teachersTableBody = document.querySelector("#teachersTable tbody");
-const teacherSubjectsContainer = document.getElementById("teacherSubjectsContainer");
-const addTeacherSubjectBtn = document.getElementById("addTeacherSubjectBtn");
 
-let teachersData = [];
-
-// إضافة مادة للأستاذ
-addTeacherSubjectBtn.addEventListener("click",()=>{
-  const div = document.createElement("div");
-  div.classList.add("subject-field");
-  div.style.display="flex"; div.style.gap="6px"; div.style.alignItems="center";
-  div.innerHTML = `
-    <input type="text" placeholder="اسم المادة" class="teacherSubjName" required />
-    <input type="number" placeholder="المستحق من الطلاب" class="teacherSubjFee" min="0" />
-    <button type="button" class="btn warn small removeSubjBtn">❌</button>
-  `;
-  teacherSubjectsContainer.appendChild(div);
-
-  div.querySelector(".removeSubjBtn").addEventListener("click",()=>{teacherSubjectsContainer.removeChild(div); updateTotals();});
-  
-  div.querySelector(".teacherSubjFee").addEventListener("input",updateTotals);
-});
-
-// تحديث إجمالي المدفوعات والمتبقي
-function updateTotals(){
-  let total=0;
-  teacherSubjectsContainer.querySelectorAll(".subject-field").forEach(s=>{
-    total+=parseFloat(s.querySelector(".teacherSubjFee").value)||0;
-  });
-  document.getElementById("teacherTotal").value = total;
-  const paid = parseFloat(document.getElementById("teacherPaid").value)||0;
-  document.getElementById("teacherRemaining").value = total-paid;
-}
-
-// حفظ الأستاذ
+// حفظ أستاذ جديد
 teacherForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
   const name = document.getElementById("teacherName").value.trim();
   const phone = document.getElementById("teacherPhone").value.trim();
-
-  const subjects=[];
-  teacherSubjectsContainer.querySelectorAll(".subject-field").forEach(s=>{
-    const subName = s.querySelector(".teacherSubjName").value.trim();
-    const subFee = parseFloat(s.querySelector(".teacherSubjFee").value)||0;
-    if(subName) subjects.push({name:subName,fee:subFee});
-  });
-
-  const total=parseFloat(document.getElementById("teacherTotal").value)||0;
-  const paid=parseFloat(document.getElementById("teacherPaid").value)||0;
-  const remaining=parseFloat(document.getElementById("teacherRemaining").value)||0;
-
+  const subjects = document.getElementById("teacherSubjects").value.split(",").map(s=>s.trim()).filter(s=>s);
   try{
-    await addDoc(collection(db,"teachers"),{name,phone,subjects,total,paid,remaining,createdAt:new Date()});
+    await addDoc(collection(db,"teachers"),{name,phone,subjects,totalReceived:0,remaining:0});
     alert("تم حفظ الأستاذ بنجاح");
     teacherForm.reset();
-    teacherSubjectsContainer.innerHTML="";
-    updateTotals();
     loadTeachers();
   }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
 });
@@ -231,78 +103,36 @@ teacherForm.addEventListener("submit", async(e)=>{
 async function loadTeachers(){
   const snapshot = await getDocs(collection(db,"teachers"));
   teachersTableBody.innerHTML="";
-  teachersData=[];
   snapshot.forEach(docSnap=>{
     const teacher = {...docSnap.data(),id:docSnap.id};
-    teachersData.push(teacher);
-    const tr=document.createElement("tr");
+    const tr = document.createElement("tr");
     tr.innerHTML=`
       <td>${teacher.name}</td>
       <td>${teacher.phone}</td>
-      <td>${teacher.subjects.map(s=>s.name).join(", ")}</td>
-      <td>${teacher.total}</td>
-      <td>${teacher.paid}</td>
-      <td>${teacher.remaining}</td>
-      <td class="actions">
-        <button class="btn small" onclick="showTeacher('${teacher.id}')">🔍 التفاصيل</button>
-        <button class="btn warn small" onclick="deleteTeacher('${teacher.id}')">🗑️ حذف</button>
-        <button class="btn small" onclick="printTeacher('${teacher.id}')">🖨️ طباعة</button>
+      <td>${teacher.subjects.join(", ")}</td>
+      <td>${teacher.totalReceived || 0}</td>
+      <td>${teacher.remaining || 0}</td>
+      <td>
+        <button class="btn warn" onclick="deleteTeacher('${teacher.id}')">🗑️ حذف</button>
       </td>
     `;
     teachersTableBody.appendChild(tr);
   });
-  document.getElementById("teacherCount").innerText=teachersData.length;
 }
 loadTeachers();
 
-// حذف الأستاذ
-async function deleteTeacher(id){
+// حذف أستاذ
+window.deleteTeacher = async(id)=>{
   if(confirm("هل تريد حذف الأستاذ؟")){
     await deleteDoc(doc(db,"teachers",id));
     loadTeachers();
   }
 }
 
-// عرض التفاصيل في المودال
-function showTeacher(id){
-  const teacher = teachersData.find(t=>t.id===id);
-  if(!teacher) return;
-  const modal=document.getElementById("modal");
-  const body=document.getElementById("modalBody");
-  body.innerHTML=`<h3>${teacher.name}</h3>
-    <p>الهاتف: ${teacher.phone}</p>
-    <h4>المواد ومستحقات الطلاب:</h4>
-    ${teacher.subjects.map(s=>`<b>${s.name}</b> - المستحق: ${s.fee}`).join("<br>")}
-    <p>إجمالي: ${teacher.total} / المدفوع: ${teacher.paid} / المتبقي: ${teacher.remaining}</p>`;
-  modal.classList.add("open");
-}
-document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
-
-// طباعة استمارة الأستاذ
-function printTeacher(id){
-  const teacher = teachersData.find(t=>t.id===id);
-  if(!teacher) return;
-  const printWin = window.open('', '', 'width=800,height=600');
-  printWin.document.write(`<html dir="rtl"><head><title>استمارة الأستاذ</title><style>
-    body{font-family:'Cairo',sans-serif;padding:20px;}
-    h2{text-align:center;}
-    table{width:100%;border-collapse:collapse;margin-top:12px;}
-    th,td{border:1px solid #333;padding:8px;text-align:center;}
-  </style></head><body>`);
-  printWin.document.write(`<h2>استمارة الأستاذ</h2>
-    <p><b>الاسم:</b> ${teacher.name}</p>
-    <table><thead><tr><th>المادة</th><th>المستحق من الطلاب</th></tr></thead><tbody>`);
-  teacher.subjects.forEach(s=>{printWin.document.write(`<tr><td>${s.name}</td><td>${s.fee}</td></tr>`);});
-  printWin.document.write(`</tbody></table>
-    <p><b>إجمالي المستحق:</b> ${teacher.total}</p>
-    <p><b>المبلغ المسلم:</b> ${teacher.paid}</p>
-    <p><b>المتبقي:</b> ${teacher.remaining}</p>
-    <p>التوقيع: ___________</p>
-    <p>ختم المعهد: ___________</p>`);
-  printWin.document.write('</body></html>');
-  printWin.document.close();
-  printWin.print();
-}
+// طباعة استمارة الأستاذ (الإجمالي + المتبقي)
+document.getElementById("printTeachersBtn").addEventListener("click",()=>{
+  window.print();
+});
 </script>
 </body>
 </html>
