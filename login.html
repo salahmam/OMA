@@ -3,69 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تسجيل الدخول - OMA آمن</title>
+<title>تسجيل الدخول - نظام OMA</title>
 <style>
-  body {font-family:'Cairo',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f9ff;margin:0;}
-  .login-box {background:#fff;padding:30px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.1);width:320px;}
-  input {width:100%;padding:10px;margin:10px 0;border-radius:8px;border:1px solid #ccc;}
-  button {width:100%;padding:10px;background:#004aad;color:white;border:none;border-radius:8px;cursor:pointer;}
-  p#error {color:red;font-size:13px;text-align:center;}
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: #f5f9ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .login-box {
+    background: #fff;
+    padding: 24px 32px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(6,20,30,0.06);
+    width: 320px;
+  }
+  h2 { text-align:center; color:#004aad; }
+  input { width:100%; padding:10px; margin:8px 0; border-radius:8px; border:1px solid #d6dde9; }
+  button { width:100%; padding:10px; background:#004aad; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:700; }
 </style>
 </head>
 <body>
-
 <div class="login-box">
-  <h2 style="text-align:center">تسجيل الدخول</h2>
-  <input type="email" id="email" placeholder="البريد الإلكتروني" required>
-  <input type="password" id="password" placeholder="كلمة المرور" required>
-  <button id="loginBtn">تسجيل الدخول</button>
-  <p id="error"></p>
+  <h2>تسجيل الدخول</h2>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+    <input type="password" id="password" placeholder="كلمة المرور" required>
+    <button type="submit">دخول</button>
+  </form>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { app } from "./firebase-config.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-    authDomain: "oma2-d36fa.firebaseapp.com",
-    projectId: "oma2-d36fa",
-    storageBucket: "oma2-d36fa.firebasestorage.app",
-    messagingSenderId: "774171603105",
-    appId: "1:774171603105:web:b6b12f5b6fa25a134080e0",
-    measurementId: "G-X68V04QGK3"
-  };
+const auth = getAuth(app);
+const loginForm = document.getElementById("loginForm");
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  const loginBtn = document.getElementById('loginBtn');
-  const errorMsg = document.getElementById('error');
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    window.location.href = "index.html"; // تحويل بعد تسجيل الدخول
+  } catch (err) {
+    alert("خطأ في تسجيل الدخول: " + err.message);
+  }
+});
 
-  loginBtn.addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (!userCredential.user.emailVerified) {
-        errorMsg.innerText = "يجب تأكيد البريد الإلكتروني أولاً.";
-        return;
-      }
-      window.location.href = 'index.html';
-    } catch (err) {
-      errorMsg.innerText = "خطأ في البريد الإلكتروني أو كلمة المرور";
-      console.error(err);
-    }
-  });
-
-  // منع الوصول غير المصرح به
-  onAuthStateChanged(auth, user => {
-    if (user && window.location.pathname.endsWith("login.html")) {
-      window.location.href = 'index.html';
-    }
-  });
+// التأكد من تسجيل الدخول قبل السماح بالوصول للصفحة
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    window.location.href = "index.html";
+  }
+});
 </script>
-
 </body>
 </html>
