@@ -268,7 +268,104 @@ studentForm.addEventListener("submit", async(e)=>{
     loadStudents();
   }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
 });
+<!-- أضف هذا القسم داخل <script type="module"> أسفل loadStudents() مباشرة -->
 
+// دالة إنشاء محتوى الاستمارة للطباعة
+function generatePrintForm(student){
+  let subjectsHtml = student.subjects.map(s=>{
+    let paymentsHtml = (s.payments || []).map((p,i)=>`دفعة ${i+1}: ${p}`).join("<br>");
+    return `
+      <tr>
+        <td>${s.name}</td>
+        <td>${s.teacher}</td>
+        <td>${s.fee}</td>
+        <td>${s.remaining}</td>
+        <td>${paymentsHtml || "-"}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="print-page" style="padding:20px; font-family:'Cairo',sans-serif; page-break-after:always;">
+      <h2 style="text-align:center">استمارة الطالب</h2>
+      <table style="width:100%;margin-bottom:12px;">
+        <tr><td><b>الاسم:</b> ${student.name}</td><td><b>الهاتف:</b> ${student.phone}</td></tr>
+        <tr><td><b>المرحلة:</b> ${student.stage}</td><td><b>المجموعة:</b> ${student.group}</td></tr>
+        <tr><td><b>المدرسة:</b> ${student.school}</td><td><b>العنوان:</b> ${student.address}</td></tr>
+        <tr><td colspan="2"><b>ملاحظات:</b> ${student.note || "-"}</td></tr>
+      </table>
+      <h3>المواد والأقساط:</h3>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #000;">
+        <thead>
+          <tr style="background:#004aad;color:white;">
+            <th style="border:1px solid #000;padding:6px;">المادة</th>
+            <th style="border:1px solid #000;padding:6px;">المعلم</th>
+            <th style="border:1px solid #000;padding:6px;">إجمالي القسط</th>
+            <th style="border:1px solid #000;padding:6px;">المتبقي</th>
+            <th style="border:1px solid #000;padding:6px;">الدفعات</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${subjectsHtml}
+        </tbody>
+      </table>
+      <div style="margin-top:30px;display:flex;justify-content:space-between;">
+        <div><b>توقيع الطالب:</b> ...................................</div>
+        <div><b>ختم المعهد:</b> ...................................</div>
+      </div>
+    </div>
+  `;
+}
+
+// طباعة استمارة طالب محدد
+function printStudentForm(studentId){
+  const student = studentsData.find(s=>s.id===studentId);
+  if(!student) return;
+  const printWindow = window.open("","_blank");
+  printWindow.document.write('<html><head><title>استمارة الطالب</title></head><body>');
+  printWindow.document.write(generatePrintForm(student));
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
+}
+
+// إضافة زر الطباعة لكل طالب في الجدول (تحت عمود "الخيارات")
+function addPrintButton(tr, student){
+  const btn = document.createElement("button");
+  btn.classList.add("btn","small");
+  btn.innerText="🖨️ طباعة الاستمارة";
+  btn.addEventListener("click",()=>printStudentForm(student.id));
+  tr.querySelector(".actions").appendChild(btn);
+}
+
+// تعديل loadStudents() لإضافة زر الطباعة لكل صف
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,"students"));
+  studentsTableBody.innerHTML="";
+  studentsData = [];
+  snapshot.forEach(docSnap=>{
+    const student = {...docSnap.data(),id:docSnap.id};
+    studentsData.push(student);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" class="checkbox selectStudent" data-id="${student.id}"/></td>
+      <td>${student.name}</td>
+      <td>${student.phone}</td>
+      <td>${student.stage}</td>
+      <td>${student.group}</td>
+      <td>${student.subjects.map(s=>s.name).join(", ")}</td>
+      <td>${student.subjects.map(s=>"إجمالي:"+s.fee+" / المتبقي:"+s.remaining).join("<br>")}</td>
+      <td>${student.subjects.map(s=>"المعلم: "+s.teacher).join("<br>")}</td>
+      <td class="actions">
+        <button class="btn small" onclick="showStudent('${student.id}')">🔍 التفاصيل</button>
+        <button class="btn warn small" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
+      </td>
+    `;
+    studentsTableBody.appendChild(tr);
+    addPrintButton(tr, student);
+  });
+  document.getElementById("totalCount").innerText=studentsData.length;
+}
 // تحميل الطلاب
 async function loadStudents(){
   const snapshot = await getDocs(collection(db,"students"));
