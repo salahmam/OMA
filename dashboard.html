@@ -64,11 +64,6 @@
     #logoutBtn:hover {
       background-color: #b71c1c;
     }
-
-    @media (max-width:600px){
-      .container { padding: 20px; }
-      .card { padding: 20px; }
-    }
   </style>
 </head>
 <body>
@@ -96,8 +91,7 @@
       projectId: "oma2-d36fa",
       storageBucket: "oma2-d36fa.appspot.com",
       messagingSenderId: "774171603105",
-      appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
-      measurementId: "G-QHPZG4JLB8"
+      appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -111,28 +105,22 @@
     });
 
     // 🔘 التنقل بين الصفحات
-    document.getElementById("studentsCard").addEventListener("click", () => {
-      window.location.href = "students.html";
-    });
+    const pageLinks = {
+      studentsCard: "students.html",
+      teachersCard: "teachers.html",
+      classesCard: "classes.html",
+      attendanceCard: "attendance.html",
+      settingsCard: "settings.html",
+      financeCard: "finance.html" // تأكد أن هذا الملف موجود في نفس المجلد
+    };
 
-    document.getElementById("teachersCard").addEventListener("click", () => {
-      window.location.href = "teachers.html";
-    });
-
-    document.getElementById("classesCard").addEventListener("click", () => {
-      window.location.href = "classes.html";
-    });
-
-    document.getElementById("attendanceCard").addEventListener("click", () => {
-      window.location.href = "attendance.html";
-    });
-
-    document.getElementById("settingsCard").addEventListener("click", () => {
-      window.location.href = "settings.html";
-    });
-
-    document.getElementById("financeCard").addEventListener("click", () => {
-      window.location.href = "finance.html";
+    Object.keys(pageLinks).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("click", () => {
+          window.location.href = pageLinks[id];
+        });
+      }
     });
 
     // 🔒 زر تسجيل الخروج
