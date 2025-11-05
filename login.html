@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تسجيل الدخول - OMA</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - نظام OMA</title>
 <style>
-body{font-family:'Cairo',sans-serif;margin:0;background:#f5f9ff;display:flex;justify-content:center;align-items:center;height:100vh;}
-.login-card{background:#fff;padding:30px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);width:350px;}
-h2{text-align:center;color:#004aad;margin-bottom:20px;}
-input[type=email],input[type=password]{width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:8px;font-size:15px;}
-.btn{width:100%;padding:10px;background:#004aad;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:16px;cursor:pointer;margin-top:10px;}
-.alert{color:red;font-size:14px;text-align:center;margin-top:10px;}
+body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(180deg,#f5f9ff,#fff);
+    display:flex; justify-content:center; align-items:center; height:100vh; margin:0;
+}
+.card {
+    background:white; padding:24px; border-radius:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.08); width:320px;
+}
+h2 { text-align:center; color:#004aad; }
+input[type="email"], input[type="password"]{
+    width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #ccc;
+}
+.btn{
+    width:100%; padding:10px; background:#004aad; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;
+}
+.alert { color:red; font-size:13px; display:none; margin-top:8px; text-align:center; }
 </style>
 </head>
 <body>
-<div class="login-card">
-<h2>تسجيل الدخول</h2>
-<input type="email" id="email" placeholder="البريد الإلكتروني" required>
-<input type="password" id="password" placeholder="كلمة المرور" required>
-<button id="loginBtn" class="btn">دخول</button>
-<div class="alert" id="errorMsg"></div>
+<div class="card">
+    <h2>تسجيل الدخول</h2>
+    <input id="email" type="email" placeholder="البريد الإلكتروني" required />
+    <input id="password" type="password" placeholder="كلمة المرور" required />
+    <button id="loginBtn" class="btn">دخول</button>
+    <div id="alert" class="alert">بيانات غير صحيحة</div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -37,44 +47,30 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 
 const loginBtn = document.getElementById("loginBtn");
-const errorMsg = document.getElementById("errorMsg");
+const alertBox = document.getElementById("alert");
 
-loginBtn.addEventListener("click", async()=>{
+loginBtn.addEventListener("click", async () => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
-    errorMsg.textContent = "";
 
-    if(!email || !password){ errorMsg.textContent="الرجاء إدخال البريد وكلمة المرور"; return;}
+    if (!email || !password) return;
 
-    try{
-        const userCredential = await signInWithEmailAndPassword(auth,email,password);
-        const user = userCredential.user;
-        
-        // جلب بيانات المستخدم من Firestore لتحديد نوعه
-        const userDoc = await getDoc(doc(db,"users",user.uid));
-        if(!userDoc.exists()){ 
-            errorMsg.textContent="المستخدم غير موجود في النظام"; 
-            return;
-        }
-        const userData = userDoc.data();
-        // حفظ نوع المستخدم في localStorage لتوجيهه لاحقاً
-        localStorage.setItem("userType", userData.type);
-        localStorage.setItem("userName", userData.name);
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", email), where("password", "==", password));
+    const snapshot = await getDocs(q);
 
-        // توجيه حسب نوع المستخدم
-        if(userData.type==="admin"){ window.location.href="index.html"; }
-        else if(userData.type==="accountant"){ window.location.href="index.html"; } // صفحة الإدارة أو المحاسبة
-        else if(userData.type==="teacher"){ window.location.href="teachers.html"; }
-        else if(userData.type==="student"){ window.location.href="student_dashboard.html"; }
-        else{ errorMsg.textContent="نوع المستخدم غير معروف"; }
-
-    }catch(err){
-        console.error(err);
-        errorMsg.textContent="البريد أو كلمة المرور خاطئة";
+    if (!snapshot.empty) {
+        const user = snapshot.docs[0].data();
+        // الدور: admin, teacher, student
+        if(user.role === "admin") window.location.href = "index.html"; // لوحة الإدارة
+        else if(user.role === "teacher") window.location.href = "teacher_attendance.html"; // صفحة الأستاذ
+        else if(user.role === "student") window.location.href = "student_dashboard.html"; // صفحة الطالب (يمكن إنشاؤها لاحقًا)
+    } else {
+        alertBox.style.display = "block";
+        setTimeout(()=> alertBox.style.display = "none", 3000);
     }
 });
 </script>
