@@ -1,221 +1,223 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نظام OMA - إدارة المالية والمصروفات</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المالية والمصاريف - نظام OMA</title>
 <style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
+body {
+  font-family:'Cairo',sans-serif;
+  background:#f5f9ff;
+  margin:0;
+  padding:0;
+  direction:rtl;
 }
-body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
-header{background:linear-gradient(90deg,var(--primary),#007bff);color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
-.wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
-input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
-label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:8px;}
-.btn.warn{background:#ff7043;}
-table{width:100%;border-collapse:collapse;margin-top:12px;}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-th{background:var(--primary);color:#fff;}
-.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+header {
+  background:#004aad;
+  color:white;
+  text-align:center;
+  padding:15px 0;
+  font-size:20px;
+  font-weight:bold;
+}
+.wrap {
+  max-width:1200px;
+  margin:20px auto;
+  padding:12px;
+}
+.card {
+  background:white;
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:16px;
+  box-shadow:0 6px 18px rgba(6,20,30,0.06);
+}
+input, select {
+  padding:10px;
+  border:1px solid #d6dde9;
+  border-radius:8px;
+  font-size:15px;
+  width:100%;
+  margin-bottom:8px;
+}
+label {display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn {
+  background:#004aad;
+  color:white;
+  padding:10px 14px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+  margin-bottom:8px;
+}
+.btn.warn {background:#ff7043;}
+table {width:100%;border-collapse:collapse;margin-top:12px;}
+th,td {padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th {background:#004aad;color:white;}
 @media print{
   body{background:white;}
-  header,.filters,.btn{display:none !important;}
+  header,.btn,.card form{display:none !important;}
   table{page-break-inside:avoid;}
 }
 </style>
 </head>
 <body>
-<header>نظام OMA - إدارة المالية والمصروفات</header>
+<header>💰 المالية والمصاريف - نظام OMA</header>
+
 <div class="wrap">
+  <div class="card">
+    <strong>إضافة مصروف / دفعة</strong>
+    <form id="financeForm">
+      <label>المادة</label>
+      <select id="subjectSelect" required></select>
+      <label>الأستاذ</label>
+      <select id="teacherSelect" required></select>
+      <label>المجموعة / الكروب</label>
+      <input type="text" id="groupInput" placeholder="مثال: A أو 101" required>
+      <label>نوع العملية</label>
+      <select id="typeSelect" required>
+        <option value="expense">مصروف</option>
+        <option value="payment">دفعة مستلمة</option>
+      </select>
+      <label>المبلغ</label>
+      <input type="number" id="amountInput" min="0" required>
+      <label>المستلم / من دفع</label>
+      <input type="text" id="receivedBy" placeholder="اسم الشخص">
+      <button type="submit" class="btn">✅ إضافة</button>
+    </form>
+  </div>
 
-<!-- نموذج إضافة مصروف / دفعة -->
-<div class="card">
-  <strong>أضف مصروف أو دفعة</strong>
-  <form id="financeForm">
-    <label>المادة / الخدمة</label>
-    <input id="financeSubject" type="text" placeholder="مثال: حصة رياضيات" required>
-    <label>الأستاذ / المستلم</label>
-    <select id="financeTeacher" required></select>
-    <label>المبلغ الإجمالي</label>
-    <input id="totalAmount" type="number" min="0" required>
-    <label>المبلغ المستلم</label>
-    <input id="receivedAmount" type="number" min="0" required>
-    <label>المتبقي</label>
-    <input id="remainingAmount" type="number" readonly>
-    <label>التاريخ</label>
-    <input id="paymentDate" type="date" required>
-    <button type="submit" class="btn">✅ حفظ</button>
-  </form>
-</div>
-
-<!-- فلاتر -->
-<div class="filters card">
-  <label>فلترة حسب الأستاذ</label>
-  <select id="filterTeacher"><option value="">الكل</option></select>
-  <label>فلترة حسب المادة / الخدمة</label>
-  <input id="filterSubject" type="text" placeholder="أدخل اسم المادة">
-  <button id="applyFilter" class="btn">تطبيق الفلتر</button>
-  <button id="printReport" class="btn">🖨️ طباعة التقرير</button>
-</div>
-
-<!-- جدول المصروفات -->
-<div class="card">
-  <strong>سجل المصروفات والدفعات</strong>
-  <table id="financeTable">
-    <thead>
-      <tr>
-        <th>المادة / الخدمة</th>
-        <th>الأستاذ</th>
-        <th>المبلغ الإجمالي</th>
-        <th>المبلغ المستلم</th>
-        <th>نسبة المعهد</th>
-        <th>المتبقي</th>
-        <th>التاريخ</th>
-        <th>خيارات</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="card">
+    <strong>تقرير المالية</strong>
+    <table id="financeTable">
+      <thead>
+        <tr>
+          <th>المادة</th>
+          <th>الأستاذ</th>
+          <th>المجموعة</th>
+          <th>نوع العملية</th>
+          <th>المبلغ</th>
+          <th>المستلم / من دفع</th>
+          <th>الإجمالي بعد النسبة</th>
+          <th>خيارات</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+  authDomain: "oma2-d36fa.firebaseapp.com",
+  projectId: "oma2-d36fa",
+  storageBucket: "oma2-d36fa.appspot.com",
+  messagingSenderId: "774171603105",
+  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 🔹 التحقق من تسجيل الدخول
+// ✅ منع الدخول إلا بعد تسجيل الدخول
 onAuthStateChanged(auth, (user)=>{
-  if(!user){ window.location.href="login.html"; } 
-  else{ document.body.style.visibility="visible"; loadTeachers(); loadFinance(); }
+  if(!user){ window.location.href="login.html"; }
 });
 
-// عناصر النموذج
+// العناصر
+const subjectSelect = document.getElementById("subjectSelect");
+const teacherSelect = document.getElementById("teacherSelect");
 const financeForm = document.getElementById("financeForm");
-const financeTeacher = document.getElementById("financeTeacher");
-const totalAmountInput = document.getElementById("totalAmount");
-const receivedAmountInput = document.getElementById("receivedAmount");
-const remainingAmountInput = document.getElementById("remainingAmount");
-const paymentDateInput = document.getElementById("paymentDate");
 const financeTableBody = document.querySelector("#financeTable tbody");
-const filterTeacher = document.getElementById("filterTeacher");
-const filterSubject = document.getElementById("filterSubject");
 
-// تحميل الأساتذة للاختيار
-let teachersData = [];
-async function loadTeachers(){
-  const snapshot = await getDocs(collection(db,"teachers"));
-  financeTeacher.innerHTML="<option value=''>اختر الأستاذ</option>";
-  filterTeacher.innerHTML="<option value=''>الكل</option>";
-  teachersData = [];
-  snapshot.forEach(docSnap=>{
-    const t = {...docSnap.data(), id:docSnap.id};
-    teachersData.push(t);
-    financeTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
-    filterTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
+// تحميل المواد والأساتذة
+async function loadSubjectsAndTeachers(){
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>";
+  teachersSnap.forEach(snap=>{
+    const t = snap.data();
+    teacherSelect.innerHTML += `<option value="${snap.id}">${t.name}</option>`;
   });
-}
 
-// تحميل إعدادات النسب
-let instituteSharePercent = 0;
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const subjectsSet = new Set();
+  studentsSnap.forEach(snap=>{
+    snap.data().subjects.forEach(sub=>{
+      subjectsSet.add(sub.name);
+    });
+  });
+  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
+  subjectsSet.forEach(sub=>{ subjectSelect.innerHTML += `<option value="${sub}">${sub}</option>` });
+}
+loadSubjectsAndTeachers();
+
+// تحميل النسبة
+let instituteShare = 0;
+let teacherShare = 100;
 async function loadSettings(){
-  const snapshot = await getDocs(collection(db,"settings"));
-  snapshot.forEach(docSnap=>{
+  const settingsSnap = await getDocs(collection(db,"settings"));
+  settingsSnap.forEach(docSnap=>{
     const s = docSnap.data();
-    instituteSharePercent = s.instituteShare || 0;
+    instituteShare = s.instituteShare || 0;
+    teacherShare = s.teacherShare || 100;
   });
 }
 loadSettings();
 
-// حساب المتبقي تلقائياً
-function updateRemaining(){
-  const total = parseFloat(totalAmountInput.value)||0;
-  const received = parseFloat(receivedAmountInput.value)||0;
-  const instituteShare = (total * instituteSharePercent)/100;
-  remainingAmountInput.value = (total - received - instituteShare).toFixed(2);
-}
-totalAmountInput.addEventListener("input", updateRemaining);
-receivedAmountInput.addEventListener("input", updateRemaining);
-
-// حفظ المصروف / الدفعة
+// إضافة مصروف / دفعة
 financeForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
-  const subject = document.getElementById("financeSubject").value.trim();
-  const teacherId = financeTeacher.value;
-  const total = parseFloat(totalAmountInput.value)||0;
-  const received = parseFloat(receivedAmountInput.value)||0;
-  const remaining = parseFloat(remainingAmountInput.value)||0;
-  const date = paymentDateInput.value;
-  if(!subject || !teacherId || !total || !date){ alert("اكمل جميع الحقول المطلوبة"); return;}
+  const subject = subjectSelect.value;
+  const teacher = teacherSelect.value;
+  const group = document.getElementById("groupInput").value.trim();
+  const type = document.getElementById("typeSelect").value;
+  const amount = parseFloat(document.getElementById("amountInput").value) || 0;
+  const received = document.getElementById("receivedBy").value.trim();
+
   await addDoc(collection(db,"finance"),{
-    subject, teacherId, total, received, remaining, date, createdAt:new Date()
+    subject, teacher, group, type, amount, received, createdAt:new Date()
   });
-  alert("تم حفظ المصروف / الدفعة");
   financeForm.reset();
-  remainingAmountInput.value="";
   loadFinance();
 });
 
-// تحميل المصروفات
-async function loadFinance(filter={}){
-  const snapshot = await getDocs(query(collection(db,"finance"), orderBy("createdAt","desc")));
+// تحميل المالية
+async function loadFinance(){
+  const snapshot = await getDocs(collection(db,"finance"));
   financeTableBody.innerHTML="";
   snapshot.forEach(docSnap=>{
     const f = {...docSnap.data(),id:docSnap.id};
-    if(filter.teacherId && f.teacherId !== filter.teacherId) return;
-    if(filter.subject && !f.subject.includes(filter.subject)) return;
-    const teacherName = teachersData.find(t=>t.id===f.teacherId)?.name || "غير محدد";
-    financeTableBody.innerHTML += `
-      <tr>
-        <td>${f.subject}</td>
-        <td>${teacherName}</td>
-        <td>${f.total}</td>
-        <td>${f.received}</td>
-        <td>${instituteSharePercent}%</td>
-        <td>${f.remaining}</td>
-        <td>${f.date}</td>
-        <td><button class="btn warn" onclick="deleteFinance('${f.id}')">❌ حذف</button></td>
-      </tr>
+    const totalAfterShare = f.type==='payment'? (f.amount * teacherShare/100) : f.amount;
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${f.subject}</td>
+      <td>${f.teacher}</td>
+      <td>${f.group}</td>
+      <td>${f.type}</td>
+      <td>${f.amount}</td>
+      <td>${f.received}</td>
+      <td>${totalAfterShare}</td>
+      <td><button class="btn warn" onclick="deleteFinance('${f.id}')">❌ حذف</button></td>
     `;
+    financeTableBody.appendChild(tr);
   });
 }
+loadFinance();
 
-// حذف مصروف
+// حذف
 window.deleteFinance = async(id)=>{
-  if(confirm("هل تريد حذف المصروف؟")){
+  if(confirm("هل تريد حذف العملية؟")){
     await deleteDoc(doc(db,"finance",id));
     loadFinance();
   }
 }
-
-// الفلاتر
-document.getElementById("applyFilter").addEventListener("click",()=>{
-  const f = { teacherId: filterTeacher.value, subject: filterSubject.value.trim() };
-  loadFinance(f);
-});
-
-// الطباعة
-document.getElementById("printReport").addEventListener("click",()=>{
-  window.print();
-});
 </script>
 </body>
 </html>
