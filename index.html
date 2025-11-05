@@ -1,158 +1,194 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>نظام OMA - إدارة الطلاب (متطور)</title>
-<style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
-}
-*{box-sizing:border-box}
-body{
-  font-family: 'Cairo',sans-serif;
-  margin:0;background:linear-gradient(180deg,var(--bg),#fff);
-  color:#102027;direction:rtl;
-}
-header{
-  background:linear-gradient(90deg,var(--primary),#007bff);
-  color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
-  box-shadow:0 3px 12px rgba(2,20,40,0.08);
-}
-.wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1}
-.form-grid{display:flex;flex-wrap:wrap;gap:10px}
-input[type="text"], input[type="tel"], input[type="number"], select, textarea, .subject-field,.time-field {
-  padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
-}
-.two{width:calc(50% - 6px)}
-.three{width:calc(33.333% - 8px)}
-label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.warn{background:#ff7043}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
-.add-subj{display:inline-block;margin-top:6px}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
-th{background:var(--primary);color:#fff}
-.actions button{margin:0 6px}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
-.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.right{display:flex;gap:8px;align-items:center}
-.checkbox{width:18px;height:18px}
-/* responsive */
-@media (max-width:900px){
-  .two,.three{width:100%}
-  .controls{flex-direction:column;align-items:stretch}
-}
-/* print styles A4 */
-@media print{
-  body{background:white;padding:0}
-  header, .controls, .card .form-grid, .filters, .actions, .modal, .logo-preview { display:none !important; }
-  .print-page{box-shadow:none;margin:0;padding:0}
-}
-/* modal */
-.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
-.modal.open{display:flex}
-.modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
-.flex{display:flex;gap:8px;align-items:center}
-.logo-preview{height:60px;object-fit:contain}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>نظام OMA المتطور - إدارة الطلاب</title>
+  <style>
+    :root{
+      --primary:#004aad;
+      --accent:#ffcc33;
+      --bg:#f5f9ff;
+      --card:#fff;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: 'Cairo',sans-serif;
+      margin:0;background:linear-gradient(180deg,var(--bg),#fff);
+      color:#102027;direction:rtl;
+    }
+    header{
+      background:linear-gradient(90deg,var(--primary),#007bff);
+      color:#fff;padding:18px 16px;text-align:center;font-size:20px;font-weight:700;
+      box-shadow:0 3px 12px rgba(2,20,40,0.08);
+    }
+    .wrap{max-width:1200px;margin:22px auto;padding:12px;}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+    .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);flex:1}
+    .form-grid{display:flex;flex-wrap:wrap;gap:10px}
+    input[type="text"], input[type="tel"], input[type="number"], select, textarea, .subject-field {
+      padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;
+    }
+    .two{width:calc(50% - 6px)}
+    .three{width:calc(33.333% - 8px)}
+    label{display:block;margin-bottom:6px;font-size:13px;color:#37474f}
+    .btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn.warn{background:#ff7043}
+    .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
+    .btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
+    .add-subj{display:inline-block;margin-top:6px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+    th{background:var(--primary);color:#fff}
+    .actions button{margin:0 6px}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .right{display:flex;gap:8px;align-items:center}
+    .checkbox{width:18px;height:18px}
+    @media (max-width:900px){
+      .two,.three{width:100%}
+      .controls{flex-direction:column;align-items:stretch}
+    }
+    @media print{
+      body{background:white;padding:0}
+      header, .controls, .card .form-grid, .filters, .actions, .modal, .logo-preview { display:none !important; }
+      .print-page{box-shadow:none;margin:0;padding:0}
+    }
+    .modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
+    .modal.open{display:flex}
+    .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
+    .flex{display:flex;gap:8px;align-items:center}
+    .logo-preview{height:60px;object-fit:contain}
+  </style>
 </head>
 <body>
-<header>نظام OMA - إدارة الطلاب (النسخة المتقدمة)</header>
+<header>نظام OMA - إدارة الطلاب (متطور)</header>
 <div class="wrap">
 
-<!-- لوحة التحكم وإضافة طالب -->
-<div class="controls">
-  <div style="flex:1" class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <strong>أضف طالب جديد</strong>
-        <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
+  <div class="controls">
+    <div style="flex:1" class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <strong>أضف طالب جديد</strong>
+          <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
+        </div>
+        <div class="right">
+          <button id="openLogoBtn" class="btn ghost">رفع شعار المعهد</button>
+          <input id="searchInput" placeholder="بحث بالاسم أو الهاتف..." style="padding:8px;border-radius:8px;border:1px solid #e0e6ef" />
+          <button id="refreshBtn" class="btn">تحديث</button>
+        </div>
       </div>
-      <div class="right">
-        <button id="openLogoBtn" class="btn ghost">رفع شعار المعهد</button>
-        <input id="searchInput" placeholder="بحث بالاسم أو الهاتف..." style="padding:8px;border-radius:8px;border:1px solid #e0e6ef" />
-        <button id="refreshBtn" class="btn">تحديث</button>
-      </div>
-    </div>
 
-    <form id="studentForm" style="margin-top:12px">
-      <div class="form-grid">
-        <div class="two"><label>الاسم الكامل</label><input id="name" type="text" required /></div>
-        <div class="two"><label>رقم الموبايل</label><input id="phone" type="tel" required /></div>
-        <div class="two"><label>العنوان</label><input id="address" type="text" /></div>
-        <div class="two"><label>اسم المدرسة</label><input id="school" type="text" /></div>
-        <div class="two"><label>المرحلة الدراسية</label><input id="stage" type="text" /></div>
-        <div class="two"><label>المجموعة / الكروب</label><input id="group" type="text" placeholder="مثال: A أو 101" /></div>
+      <form id="studentForm" style="margin-top:12px">
+        <div class="form-grid">
+          <div class="two">
+            <label>الاسم الكامل</label>
+            <input id="name" type="text" required />
+          </div>
+          <div class="two">
+            <label>رقم الموبايل</label>
+            <input id="phone" type="tel" required />
+          </div>
+          <div class="two">
+            <label>العنوان</label>
+            <input id="address" type="text" />
+          </div>
+          <div class="two">
+            <label>اسم المدرسة</label>
+            <input id="school" type="text" />
+          </div>
+          <div class="two">
+            <label>المرحلة الدراسية</label>
+            <input id="stage" type="text" />
+          </div>
+          <div class="two">
+            <label>المجموعة / الكروب</label>
+            <input id="group" type="text" placeholder="مثال: A أو 101" />
+          </div>
 
-        <!-- المواد مع الأستاذ والرسوم -->
-        <div style="width:100%">
-          <label>المواد (أضف أكثر من مادة)</label>
-          <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-          <div style="margin-top:8px">
-            <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
+          <div style="width:100%">
+            <label>المواد (أضف أكثر من مادة)</label>
+            <div id="subjectsContainer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <div style="margin-top:8px">
+              <button id="addSubjectBtn" type="button" class="btn ghost small add-subj">➕ إضافة مادة</button>
+            </div>
+          </div>
+
+          <div class="two">
+            <label>إجمالي الأقساط (اختياري)</label>
+            <input id="totalFees" type="number" min="0" />
+          </div>
+          <div class="two">
+            <label>ملاحظة / وصف الطالب</label>
+            <input id="note" type="text" />
+          </div>
+
+          <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+            <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
+            <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
           </div>
         </div>
+      </form>
+    </div>
 
-        <div class="two"><label>إجمالي الأقساط (اختياري)</label><input id="totalFees" type="number" min="0" /></div>
-        <div class="two"><label>ملاحظات الطالب</label><input id="note" type="text" /></div>
-
-        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
-          <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
-          <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
+    <div style="min-width:320px" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong>طباعة / فلترة القائمة</strong>
+          <div style="font-size:13px;color:#546e7a">حدد شروط الطباعة أو اختَر طباعة مفصلة لطالب</div>
         </div>
-      </div>
-    </form>
-  </div>
-
-  <div style="min-width:320px" class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <strong>طباعة / فلترة القائمة</strong>
-        <div style="font-size:13px;color:#546e7a">حدد شروط الطباعة أو اختَر طباعة مفصلة لطالب</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="filterStage" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
-          <option value="">كل المراحل</option>
-        </select>
-        <select id="filterGroup" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
-          <option value="">كل المجموعات</option>
-        </select>
-        <button id="printFilteredBtn" class="btn">🖨️ طباعة القائمة</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filterStage" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
+            <option value="">كل المراحل</option>
+          </select>
+          <select id="filterGroup" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
+            <option value="">كل المجموعات</option>
+          </select>
+          <select id="filterInstallment" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
+            <option value="">كل الأقساط</option>
+            <option value="1">القسط الأول</option>
+            <option value="2">القسط الثاني</option>
+            <option value="3">القسط الثالث</option>
+            <option value="4">القسط الرابع</option>
+          </select>
+          <button id="printSelectedBtn" class="btn">🖨️ طباعة المحدد</button>
+          <button id="printFilteredBtn" class="btn">🖨️ طباعة القائمة</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- جدول الطلاب -->
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
+  <!-- جدول الطلاب -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:13px">اختيار جماعي</label>
+        <input id="selectAll" type="checkbox" class="checkbox" />
+      </div>
+    </div>
+
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th></th>
+          <th>الاسم</th>
+          <th>الهاتف</th>
+          <th>المرحلة</th>
+          <th>المجموعة</th>
+          <th>المواد</th>
+          <th>الأقساط</th>
+          <th>المستحقات</th>
+          <th>الخيارات</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
-  <table id="studentsTable">
-    <thead>
-      <tr>
-        <th>الاسم</th>
-        <th>الهاتف</th>
-        <th>المرحلة</th>
-        <th>المجموعة</th>
-        <th>المواد</th>
-        <th>المبلغ المدفوع / المتبقي</th>
-        <th>الخيارات</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+
 </div>
 
-<!-- Modal: student detail -->
+<!-- Modal التفاصيل -->
 <div id="modal" class="modal" aria-hidden="true">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -163,51 +199,149 @@ th{background:var(--primary);color:#fff}
   </div>
 </div>
 
-<!-- Modal: Upload logo -->
-<div id="logoModal" class="modal" aria-hidden="true">
-  <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <strong>رفع شعار المعهد</strong>
-      <button id="closeLogoModal" class="btn ghost">إغلاق</button>
-    </div>
-    <div>
-      <input id="logoInput" type="file" accept="image/*" />
-      <div style="margin-top:12px">
-        <img id="logoPreview" class="logo-preview" src="" alt="logo preview" />
-      </div>
-      <div style="margin-top:12px">
-        <button id="uploadLogoBtn" class="btn">رفع وحفظ الشعار</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Firebase -->
+<!-- Firebase JS -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-storage.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAEMoMQDiLffCCJWybFJFQ-b9iHajimme0",
-  authDomain: "oma-system-30813.firebaseapp.com",
-  projectId: "oma-system-30813",
-  storageBucket: "oma-system-30813.firebasestorage.app",
-  messagingSenderId: "905224657062",
-  appId: "1:905224657062:web:584b3e72e4cc2c58ea3c67",
-  measurementId: "G-645066LLLP"
+  apiKey: "API_KEY_HERE",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
-const auth = getAuth(app);
 
-const subjectsContainer = document.getElementById('subjectsContainer');
-const addSubjectBtn = document.getElementById('addSubjectBtn');
-const form = document.getElementById('studentForm');
-const tableBody = document.querySelector('#studentsTable tbody');
-const searchInput = document.getElementById('searchInput');
-const refreshBtn = document.getElementById('refreshBtn');
-const totalCount = document.getElementById
+const studentForm = document.getElementById("studentForm");
+const studentsTableBody = document.querySelector("#studentsTable tbody");
+const subjectsContainer = document.getElementById("subjectsContainer");
+const addSubjectBtn = document.getElementById("addSubjectBtn");
+
+let subjectsCount = 0;
+let studentsData = [];
+
+// إضافة مادة جديدة
+addSubjectBtn.addEventListener("click",()=>{
+  subjectsCount++;
+  const div = document.createElement("div");
+  div.classList.add("subject-field");
+  div.style.display="flex"; div.style.gap="6px"; div.style.alignItems="center";
+  div.innerHTML = `
+    <input type="text" placeholder="اسم المادة" class="subjName" required />
+    <input type="text" placeholder="الأستاذ" class="subjTeacher" required />
+    <input type="number" placeholder="إجمالي القسط" class="subjFee" min="0" />
+    <input type="number" placeholder="المتبقي" class="subjRemaining" min="0" />
+    <button type="button" class="btn warn small removeSubjBtn">❌</button>
+  `;
+  subjectsContainer.appendChild(div);
+
+  div.querySelector(".removeSubjBtn").addEventListener("click",()=>{
+    subjectsContainer.removeChild(div);
+  });
+});
+
+// حفظ الطالب
+studentForm.addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const school = document.getElementById("school").value.trim();
+  const stage = document.getElementById("stage").value.trim();
+  const group = document.getElementById("group").value.trim();
+  const totalFees = parseFloat(document.getElementById("totalFees").value)||0;
+  const note = document.getElementById("note").value.trim();
+
+  const subjects = [];
+  document.querySelectorAll(".subject-field").forEach(sub=>{
+    const subjName = sub.querySelector(".subjName").value.trim();
+    const subjTeacher = sub.querySelector(".subjTeacher").value.trim();
+    const subjFee = parseFloat(sub.querySelector(".subjFee").value)||0;
+    const subjRemaining = parseFloat(sub.querySelector(".subjRemaining").value)||0;
+    if(subjName && subjTeacher){
+      subjects.push({name:subjName,teacher:subjTeacher,fee:subjFee,remaining:subjRemaining,payments:[]});
+    }
+  });
+
+  if(subjects.length===0){ alert("أضف مادة واحدة على الأقل"); return;}
+
+  // حفظ في Firebase
+  try{
+    const docRef = await addDoc(collection(db,"students"),{
+      name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()
+    });
+    alert("تم حفظ الطالب بنجاح");
+    studentForm.reset();
+    subjectsContainer.innerHTML="";
+    loadStudents();
+  }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
+});
+
+// تحميل الطلاب
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,"students"));
+  studentsTableBody.innerHTML="";
+  studentsData = [];
+  snapshot.forEach(docSnap=>{
+    const student = {...docSnap.data(),id:docSnap.id};
+    studentsData.push(student);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" class="checkbox selectStudent" data-id="${student.id}"/></td>
+      <td>${student.name}</td>
+      <td>${student.phone}</td>
+      <td>${student.stage}</td>
+      <td>${student.group}</td>
+      <td>${student.subjects.map(s=>s.name).join(", ")}</td>
+      <td>${student.subjects.map(s=>"إجمالي:"+s.fee+" / المتبقي:"+s.remaining).join("<br>")}</td>
+      <td>${student.subjects.map(s=>"المعلم: "+s.teacher).join("<br>")}</td>
+      <td class="actions">
+        <button class="btn small" onclick="showStudent('${student.id}')">🔍 التفاصيل</button>
+        <button class="btn warn small" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
+      </td>
+    `;
+    studentsTableBody.appendChild(tr);
+  });
+  document.getElementById("totalCount").innerText=studentsData.length;
+}
+loadStudents();
+
+// حذف طالب
+async function deleteStudent(id){
+  if(confirm("هل تريد حذف الطالب؟")){
+    await deleteDoc(doc(db,"students",id));
+    loadStudents();
+  }
+}
+
+// عرض التفاصيل في المودال
+function showStudent(id){
+  const student = studentsData.find(s=>s.id===id);
+  if(!student) return;
+  const modal = document.getElementById("modal");
+  const body = document.getElementById("modalBody");
+  body.innerHTML=`<h3>${student.name}</h3>
+    <p>الهاتف: ${student.phone}</p>
+    <p>المرحلة: ${student.stage}</p>
+    <p>المجموعة: ${student.group}</p>
+    <p>العنوان: ${student.address}</p>
+    <p>ملاحظات: ${student.note}</p>
+    <h4>المواد والأقساط:</h4>
+    ${student.subjects.map(s=>{
+      return `<b>${s.name}</b> - المعلم: ${s.teacher} - إجمالي القسط: ${s.fee} - المتبقي: ${s.remaining}`;
+    }).join("<br>")}`;
+  modal.classList.add("open");
+}
+document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
+
+// الطباعة
+document.getElementById("printFilteredBtn").addEventListener("click",()=>{
+  window.print();
+});
+</script>
+</body>
+</html>
