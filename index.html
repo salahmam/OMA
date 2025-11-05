@@ -3,41 +3,37 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>إدارة الطلاب - OMA (نسخة متقدمة)</title>
-
+<title>نظام OMA - إدارة الطلاب مع الدروس</title>
 <style>
-  :root{
-    --primary:#004aad;
-    --accent:#ffcc33;
-    --bg:#f5f9ff;
-    --card:#fff;
-  }
-  *{box-sizing:border-box}
-  body{font-family: 'Cairo',sans-serif; margin:0; background:linear-gradient(180deg,var(--bg),#fff); color:#102027; direction:rtl;}
-  header{background:linear-gradient(90deg,var(--primary),#007bff); color:#fff; padding:18px 16px; text-align:center; font-size:20px; font-weight:700; box-shadow:0 3px 12px rgba(2,20,40,0.08);}
-  .wrap{max-width:1200px;margin:22px auto;padding:12px;}
-  .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
-  .form-grid{display:flex;flex-wrap:wrap;gap:10px;}
-  input[type="text"], input[type="tel"], input[type="number"], select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;}
-  .two{width:calc(50% - 6px);}
-  label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
-  .btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
-  .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12);}
-  table{width:100%;border-collapse:collapse;margin-top:12px;}
-  th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-  th{background:var(--primary);color:#fff;}
-  .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700;}
-  .subjects-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
-  .subjects-row select, .subjects-row input{flex:1;}
+:root{
+  --primary:#004aad;
+  --accent:#ffcc33;
+  --bg:#f5f9ff;
+  --card:#fff;
+}
+body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;}
+header{background:linear-gradient(90deg,var(--primary),#007bff);color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
+.wrap{max-width:1200px;margin:22px auto;padding:12px;}
+.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+.form-grid{display:flex;flex-wrap:wrap;gap:10px;}
+input[type="text"], input[type="tel"], input[type="number"], select, textarea {padding:8px;border:1px solid #d6dde9;border-radius:8px;width:100%;}
+.two{width:calc(50% - 6px);}
+.three{width:calc(33.333% - 8px);}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12);}
+.subjects-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
+.subjects-row input, .subjects-row select{flex:1;}
+.removeSubjBtn{background:#ff7043;color:#fff;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;}
 </style>
 </head>
 <body>
-<header>نظام OMA - إدارة الطلاب (نسخة متقدمة)</header>
-
+<header>نظام OMA - إدارة الطلاب والدروس</header>
 <div class="wrap">
+
   <div class="card">
-    <strong>أضف طالب جديد</strong>
-    <form id="studentForm" style="margin-top:12px">
+    <h3>إضافة طالب جديد</h3>
+    <form id="studentForm">
       <div class="form-grid">
         <div class="two">
           <label>الاسم الكامل</label>
@@ -49,51 +45,158 @@
         </div>
         <div class="two">
           <label>المرحلة الدراسية</label>
-          <input id="stage" type="text"/>
+          <input id="stage" type="text" />
         </div>
         <div class="two">
           <label>المجموعة / الكروب</label>
-          <input id="group" type="text"/>
+          <input id="group" type="text" />
         </div>
-
         <div style="width:100%">
           <label>المواد والدروس</label>
           <div id="subjectsContainer"></div>
-          <button id="addSubjectBtn" type="button" class="btn ghost" style="margin-top:6px">➕ إضافة مادة</button>
+          <button type="button" id="addSubjectBtn" class="btn ghost" style="margin-top:6px;">➕ إضافة مادة</button>
         </div>
-
-        <div class="two">
-          <label>إجمالي الأقساط</label>
-          <input id="totalFees" type="number" min="0"/>
-        </div>
-
-        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+        <div style="width:100%;display:flex;justify-content:flex-end;margin-top:12px">
           <button type="submit" class="btn">✅ حفظ الطالب</button>
-          <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
         </div>
       </div>
     </form>
   </div>
 
-  <div class="card" style="margin-top:16px">
-    <strong>قائمة الطلاب</strong>
-    <table id="studentsTable">
+  <div class="card" style="margin-top:20px;">
+    <h3>قائمة الطلاب</h3>
+    <table border="1" width="100%" id="studentsTable">
       <thead>
         <tr>
           <th>الاسم</th>
           <th>الهاتف</th>
           <th>المرحلة</th>
           <th>المجموعة</th>
-          <th>المواد والدروس</th>
-          <th>الأقساط</th>
-          <th>خيارات</th>
+          <th>المواد</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
+
 </div>
 
-<script type="module" src="students.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// قائمة الأساتذة مؤقتًا (يمكن جلبها من Firebase)
+let teachersCache = [
+  {id:'t1', name:'أستاذ أحمد'}, {id:'t2', name:'أستاذة سارة'}
+];
+
+const subjectsContainer = document.getElementById('subjectsContainer');
+const addSubjectBtn = document.getElementById('addSubjectBtn');
+const studentForm = document.getElementById('studentForm');
+const tableBody = document.querySelector('#studentsTable tbody');
+
+function addSubjectField(){
+  const div = document.createElement('div');
+  div.className='subjects-row';
+  div.innerHTML=`
+    <input type="text" class="subjectName" placeholder="اسم المادة" required/>
+    <select class="subjectTeacher" required>
+      <option value="">اختر الأستاذ</option>
+      ${teachersCache.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}
+    </select>
+    <input type="text" class="subjectRoom" placeholder="القاعة" required/>
+    <input type="date" class="subjectDay" required/>
+    <input type="time" class="subjectStart" required/>
+    <input type="time" class="subjectEnd" required/>
+    <button type="button" class="removeSubjBtn">❌</button>
+  `;
+  const removeBtn = div.querySelector('.removeSubjBtn');
+  removeBtn.addEventListener('click', ()=> div.remove());
+  subjectsContainer.appendChild(div);
+}
+
+addSubjectBtn.addEventListener('click', addSubjectField);
+addSubjectField(); // إضافة أول صف تلقائياً
+
+function timeOverlap(s1,e1,s2,e2){return (s1<e2)&&(s2<e1);}
+
+async function checkSmartConflicts(newSubjects){
+  const conflicts=[];
+  const snapshot = await getDocs(collection(db,'students'));
+  snapshot.forEach(docSnap=>{
+    const student = docSnap.data();
+    (student.subjects||[]).forEach(existing=>{
+      newSubjects.forEach(ns=>{
+        if(existing.day===ns.day){
+          if(existing.teacherId===ns.teacherId && timeOverlap(existing.start,existing.end,ns.start,ns.end)){
+            const t = teachersCache.find(t=>t.id===ns.teacherId);
+            conflicts.push(`تعارض مع الأستاذ ${t? t.name:'-'} في ${existing.name} يوم ${existing.day} من ${existing.start} إلى ${existing.end}`);
+          }
+          if(existing.room===ns.room && timeOverlap(existing.start,existing.end,ns.start,ns.end)){
+            conflicts.push(`القاعة ${ns.room} محجوزة في مادة ${existing.name} يوم ${existing.day}`);
+          }
+        }
+      });
+    });
+  });
+  return conflicts;
+}
+
+studentForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const stage = document.getElementById('stage').value.trim();
+  const group = document.getElementById('group').value.trim();
+
+  const subjects = Array.from(subjectsContainer.querySelectorAll('.subjects-row')).map(r=>({
+    name: r.querySelector('.subjectName').value,
+    teacherId: r.querySelector('.subjectTeacher').value,
+    room: r.querySelector('.subjectRoom').value,
+    day: r.querySelector('.subjectDay').value,
+    start: r.querySelector('.subjectStart').value,
+    end: r.querySelector('.subjectEnd').value
+  }));
+
+  const conflicts = await checkSmartConflicts(subjects);
+  if(conflicts.length){ alert("يوجد تعارضات:\n"+conflicts.join('\n')); return; }
+
+  await addDoc(collection(db,'students'),{name,phone,stage,group,subjects});
+  alert('تم حفظ الطالب بنجاح');
+  studentForm.reset(); subjectsContainer.innerHTML=''; addSubjectField();
+  loadStudents();
+});
+
+async function loadStudents(){
+  const snapshot = await getDocs(collection(db,'students'));
+  tableBody.innerHTML='';
+  snapshot.forEach(docSnap=>{
+    const s = docSnap.data();
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${s.name}</td>
+      <td>${s.phone}</td>
+      <td>${s.stage||''}</td>
+      <td>${s.group||''}</td>
+      <td>${(s.subjects||[]).map(sub=>`${sub.name} (${sub.day} ${sub.start}-${sub.end})`).join('<br/>')}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+loadStudents();
+</script>
 </body>
 </html>
