@@ -44,6 +44,7 @@ th{background:var(--primary);color:#fff}
 .modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
+.flex{display:flex;gap:8px;align-items:center}
 </style>
 </head>
 <body>
@@ -124,6 +125,7 @@ th{background:var(--primary);color:#fff}
         <th>المرحلة</th>
         <th>المجموعة</th>
         <th>الأقساط</th>
+        <th>الخيارات</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -143,7 +145,7 @@ th{background:var(--primary);color:#fff}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // 🔹 إعداد Firebase
 const firebaseConfig = {
@@ -161,20 +163,21 @@ const db = getFirestore(app);
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    window.location.href = "login.html"; // إعادة توجيه غير مسجل
+    window.location.href = "login.html";
   } else {
-    document.body.style.visibility = "visible"; // إظهار الصفحة بعد التحقق
+    document.body.style.visibility = "visible";
     loadStudents();
   }
 });
 
-// إضافة طالب
+// عناصر النموذج
 const studentForm = document.getElementById("studentForm");
 const subjectsContainer = document.getElementById("subjectsContainer");
 const addSubjectBtn = document.getElementById("addSubjectBtn");
 const studentsTableBody = document.querySelector("#studentsTable tbody");
 let studentsData = [];
 
+// إضافة مادة
 addSubjectBtn.addEventListener("click",()=>{
   const div = document.createElement("div");
   div.classList.add("subject-field");
@@ -185,10 +188,10 @@ addSubjectBtn.addEventListener("click",()=>{
     <button type="button" class="btn warn small removeSubjBtn">❌</button>
   `;
   subjectsContainer.appendChild(div);
-
   div.querySelector(".removeSubjBtn").addEventListener("click",()=>{subjectsContainer.removeChild(div);});
 });
 
+// حفظ الطالب
 studentForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
   const name = document.getElementById("name").value.trim();
@@ -233,11 +236,43 @@ async function loadStudents(){
       <td>${student.stage}</td>
       <td>${student.group}</td>
       <td>${student.subjects.map(s=>"المادة:"+s.name+" / القسط:"+s.fee).join("<br>")}</td>
+      <td class="actions">
+        <button class="btn small" onclick="showStudent('${student.id}')">🔍 التفاصيل</button>
+        <button class="btn warn small" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
+      </td>
     `;
     studentsTableBody.appendChild(tr);
   });
   document.getElementById("totalCount").innerText=studentsData.length;
 }
+
+// عرض التفاصيل
+window.showStudent = function(id){
+  const student = studentsData.find(s=>s.id===id);
+  if(!student) return;
+  const modal = document.getElementById("modal");
+  const body = document.getElementById("modalBody");
+  body.innerHTML=`<h3>${student.name}</h3>
+    <p>الهاتف: ${student.phone}</p>
+    <p>المرحلة: ${student.stage}</p>
+    <p>المجموعة: ${student.group}</p>
+    <p>العنوان: ${student.address}</p>
+    <p>ملاحظات: ${student.note}</p>
+    <h4>المواد والأقساط:</h4>
+    ${student.subjects.map(s=>`<b>${s.name}</b> - القسط: ${s.fee}`).join("<br>")}`;
+  modal.classList.add("open");
+};
+
+// إغلاق المودال
+document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
+
+// حذف طالب
+window.deleteStudent = async function(id){
+  if(confirm("هل تريد حذف الطالب؟")){
+    await deleteDoc(doc(db,"students",id));
+    loadStudents();
+  }
+};
 </script>
 </body>
 </html>
