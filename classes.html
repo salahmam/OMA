@@ -16,15 +16,36 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
 table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:#004aad;color:#fff;}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
 @media print{
   body{background:white;}
-  header,.filters,.actions,.modal{display:none !important;}
+  header,.filters,.btn{display:none !important;}
+  table{page-break-inside:avoid;}
 }
 </style>
 </head>
 <body>
 <header>نظام OMA - إدارة الحصص</header>
 <div class="wrap">
+
+<!-- فلترة الحصص -->
+<div class="card filters">
+  <strong>فلترة الحصص</strong>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <select id="filterSubject"><option value="">كل المواد</option></select>
+    <select id="filterTeacher"><option value="">كل الأساتذة</option></select>
+    <input type="text" id="filterGroup" placeholder="البحث حسب الكروب">
+    <select id="filterDay">
+      <option value="">كل الأيام</option>
+      <option value="الاثنين">الاثنين</option>
+      <option value="الثلاثاء">الثلاثاء</option>
+      <option value="الأربعاء">الأربعاء</option>
+      <option value="الخميس">الخميس</option>
+      <option value="الجمعة">الجمعة</option>
+    </select>
+    <button id="printBtn" class="btn">🖨️ طباعة</button>
+  </div>
+</div>
 
 <!-- نموذج إضافة حصة -->
 <div class="card">
@@ -69,8 +90,9 @@ th{background:#004aad;color:#fff;}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -83,34 +105,55 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, user=>{
+  if(!user) window.location.href="login.html";
+  else loadFilters();
+});
 
 const classForm = document.getElementById("classForm");
 const subjectSelect = document.getElementById("subjectSelect");
 const teacherSelect = document.getElementById("teacherSelect");
 const classesTableBody = document.querySelector("#classesTable tbody");
 
-// تحميل المواد والأساتذة
-async function loadSubjectsAndTeachers(){
-  // تحميل المواد من الطلاب أو من مجموعة مستقلة (حسب المشروع)
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const subjectsSet = new Set();
-  studentsSnap.forEach(snap=>{
-    snap.data().subjects.forEach(sub=>{
-      subjectsSet.add(sub.name);
-    });
-  });
-  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
-  subjectsSet.forEach(sub=>{subjectSelect.innerHTML+=`<option value="${sub}">${sub}</option>`});
+const filterSubject = document.getElementById("filterSubject");
+const filterTeacher = document.getElementById("filterTeacher");
+const filterGroup = document.getElementById("filterGroup");
+const filterDay = document.getElementById("filterDay");
+const printBtn = document.getElementById("printBtn");
 
-  // تحميل الأساتذة
+let teachersMap = {};
+let subjectsSet = new Set();
+let allClasses = [];
+
+// تحميل المواد والأساتذة
+async function loadFilters(){
+  // المواد من الطلاب
+  const studentsSnap = await getDocs(collection(db,"students"));
+  subjectsSet.clear();
+  studentsSnap.forEach(snap => snap.data().subjects.forEach(sub => subjectsSet.add(sub.name)));
+  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
+  filterSubject.innerHTML="<option value=''>كل المواد</option>";
+  subjectsSet.forEach(sub=>{
+    subjectSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+    filterSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
+  });
+
+  // الأساتذة
   const teachersSnap = await getDocs(collection(db,"teachers"));
   teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>";
+  filterTeacher.innerHTML="<option value=''>كل الأساتذة</option>";
+  teachersMap = {};
   teachersSnap.forEach(snap=>{
     const t = snap.data();
-    teacherSelect.innerHTML+=`<option value="${snap.id}">${t.name}</option>`;
+    teachersMap[snap.id] = t.name;
+    teacherSelect.innerHTML += `<option value="${snap.id}">${t.name}</option>`;
+    filterTeacher.innerHTML += `<option value="${snap.id}">${t.name}</option>`;
   });
+
+  loadClasses();
 }
-loadSubjectsAndTeachers();
 
 // حفظ الحصة
 classForm.addEventListener("submit", async(e)=>{
@@ -121,18 +164,14 @@ classForm.addEventListener("submit", async(e)=>{
   const day = document.getElementById("daySelect").value;
   const time = document.getElementById("timeInput").value;
 
-  // جلب الطلاب من نفس الكروب
   const studentsSnap = await getDocs(collection(db,"students"));
   const groupStudents = [];
   studentsSnap.forEach(snap=>{
     const s = snap.data();
-    if(s.group===group){
-      groupStudents.push({id:snap.id,name:s.name});
-    }
+    if(s.group === group) groupStudents.push({id: snap.id, name: s.name});
   });
 
-  await addDoc(collection(db,"classes"),{subjectId:subject,teacherId,group,day,time,students:groupStudents,attendance:[]});
-  alert("تم حفظ الحصة بنجاح");
+  await addDoc(collection(db,"classes"),{subjectId:subject,teacherId,group,day,time,students:groupStudents});
   classForm.reset();
   loadClasses();
 });
@@ -140,24 +179,44 @@ classForm.addEventListener("submit", async(e)=>{
 // تحميل الحصص
 async function loadClasses(){
   const snapshot = await getDocs(collection(db,"classes"));
-  classesTableBody.innerHTML="";
+  allClasses = [];
   snapshot.forEach(docSnap=>{
-    const cls = {...docSnap.data(),id:docSnap.id};
+    allClasses.push({...docSnap.data(),id:docSnap.id});
+  });
+  applyFilters();
+}
+
+// تطبيق الفلاتر
+function applyFilters(){
+  const filtered = allClasses.filter(cls=>{
+    const subjectMatch = !filterSubject.value || cls.subjectId === filterSubject.value;
+    const teacherMatch = !filterTeacher.value || cls.teacherId === filterTeacher.value;
+    const groupMatch = !filterGroup.value || cls.group.includes(filterGroup.value.trim());
+    const dayMatch = !filterDay.value || cls.day === filterDay.value;
+    return subjectMatch && teacherMatch && groupMatch && dayMatch;
+  });
+  renderTable(filtered);
+}
+
+// عرض الجدول
+function renderTable(classes){
+  classesTableBody.innerHTML = "";
+  classes.forEach(cls=>{
     const tr = document.createElement("tr");
-    tr.innerHTML=`
+    tr.innerHTML = `
       <td>${cls.subjectId}</td>
-      <td>${cls.teacherId}</td>
+      <td>${teachersMap[cls.teacherId]||cls.teacherId}</td>
       <td>${cls.group}</td>
       <td>${cls.day}</td>
       <td>${cls.time}</td>
-      <td>
-        <button class="btn warn" onclick="deleteClass('${cls.id}')">🗑️ حذف</button>
-      </td>
+      <td><button class="btn warn" onclick="deleteClass('${cls.id}')">🗑️ حذف</button></td>
     `;
     classesTableBody.appendChild(tr);
   });
 }
-loadClasses();
+
+// أحداث الفلاتر
+[filterSubject, filterTeacher, filterGroup, filterDay].forEach(el=>el.addEventListener("input",applyFilters));
 
 // حذف حصة
 window.deleteClass = async(id)=>{
@@ -166,6 +225,9 @@ window.deleteClass = async(id)=>{
     loadClasses();
   }
 }
+
+// الطباعة
+printBtn.addEventListener("click",()=>window.print());
 </script>
 </body>
 </html>
