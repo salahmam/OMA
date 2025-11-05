@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نظام OMA - إدارة الحصص</title>
+<title>نظام OMA - الحضور والغياب</title>
 <style>
-body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;visibility:hidden;}
+body{font-family:'Cairo',sans-serif;margin:0;background:#f5f9ff;color:#102027;direction:rtl;visibility:hidden;}
 header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
 .card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
@@ -13,57 +13,43 @@ input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:
 label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
 .btn{background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
 .btn.warn{background:#ff7043;}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
 table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:#004aad;color:#fff;}
 @media print{
   body{background:white;}
-  header,.filters,.btn{display:none !important;}
+  header,.filters,.actions,.btn{display:none !important;}
   table{page-break-inside:avoid;}
 }
 </style>
 </head>
 <body>
-<header>نظام OMA - إدارة الحصص</header>
+<header>نظام OMA - الحضور والغياب</header>
 <div class="wrap">
 
-<!-- نموذج إضافة حصة -->
-<div class="card">
-  <strong>أضف حصة جديدة</strong>
-  <form id="classForm">
-    <label>المادة</label>
-    <select id="subjectSelect" required></select>
-    <label>الأستاذ</label>
-    <select id="teacherSelect" required></select>
-    <label>المجموعة / الكروب</label>
-    <input id="groupInput" type="text" placeholder="مثال: A أو 101" required>
-    <label>اليوم</label>
-    <select id="daySelect" required>
+<!-- فلاتر -->
+<div class="card filters">
+  <strong>فلترة الحضور</strong>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">
+    <select id="filterSubject"><option value="">اختر المادة</option></select>
+    <select id="filterTeacher"><option value="">اختر الأستاذ</option></select>
+    <input id="filterGroup" type="text" placeholder="المجموعة / الكروب">
+    <select id="filterDay">
+      <option value="">اختر اليوم</option>
       <option value="الاثنين">الاثنين</option>
       <option value="الثلاثاء">الثلاثاء</option>
       <option value="الأربعاء">الأربعاء</option>
       <option value="الخميس">الخميس</option>
       <option value="الجمعة">الجمعة</option>
     </select>
-    <label>الوقت</label>
-    <input id="timeInput" type="time" required>
-    <button type="submit" class="btn">✅ حفظ الحصة</button>
-  </form>
+    <button id="printBtn" class="btn">🖨️ طباعة</button>
+  </div>
 </div>
 
-<!-- فلاتر الطباعة -->
-<div class="filters">
-  <select id="filterSubject"><option value="">جميع المواد</option></select>
-  <select id="filterTeacher"><option value="">جميع الأساتذة</option></select>
-  <input type="text" id="filterGroup" placeholder="فلتر حسب الكروب">
-  <button class="btn" id="printBtn">🖨️ طباعة</button>
-</div>
-
-<!-- جدول الحصص -->
+<!-- جدول الحضور -->
 <div class="card">
-  <strong>قائمة الحصص</strong>
-  <table id="classesTable">
+  <strong>قائمة الحضور</strong>
+  <table id="attendanceTable">
     <thead>
       <tr>
         <th>المادة</th>
@@ -71,17 +57,20 @@ th{background:#004aad;color:#fff;}
         <th>المجموعة</th>
         <th>اليوم</th>
         <th>الوقت</th>
-        <th>خيارات</th>
+        <th>الطالب</th>
+        <th>الحضور</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 </div>
 
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // إعداد Firebase
 const firebaseConfig = {
@@ -97,129 +86,98 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// التحقق من تسجيل الدخول
-onAuthStateChanged(auth, user => {
-  if (!user) window.location.href="login.html";
-  else {
-    document.body.style.visibility="visible";
-    loadSubjectsAndTeachers();
-    loadClasses();
-  }
+onAuthStateChanged(auth,user=>{
+  if(!user){ window.location.href="login.html"; }
+  else{ document.body.style.visibility="visible"; loadFilters(); loadAttendance(); }
 });
 
-// العناصر
-const classForm = document.getElementById("classForm");
-const subjectSelect = document.getElementById("subjectSelect");
-const teacherSelect = document.getElementById("teacherSelect");
-const classesTableBody = document.querySelector("#classesTable tbody");
-const filterSubject = document.getElementById("filterSubject");
-const filterTeacher = document.getElementById("filterTeacher");
-const filterGroup = document.getElementById("filterGroup");
-const printBtn = document.getElementById("printBtn");
+const filterSubject=document.getElementById("filterSubject");
+const filterTeacher=document.getElementById("filterTeacher");
+const filterGroup=document.getElementById("filterGroup");
+const filterDay=document.getElementById("filterDay");
+const printBtn=document.getElementById("printBtn");
+const attendanceTable=document.querySelector("#attendanceTable tbody");
 
-// تحميل المواد والأساتذة
-async function loadSubjectsAndTeachers(){
-  // المواد من الطلاب
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const subjectsSet = new Set();
-  studentsSnap.forEach(snap=>{
-    snap.data().subjects.forEach(sub=>subjectsSet.add(sub.name));
+// تحميل بيانات الفلاتر
+async function loadFilters(){
+  const subjectsSet=new Set();
+  const teachersSnap=await getDocs(collection(db,"teachers"));
+  filterTeacher.innerHTML="<option value=''>اختر الأستاذ</option>";
+  teachersSnap.forEach(tSnap=>{
+    const t=tSnap.data();
+    filterTeacher.innerHTML+=`<option value="${tSnap.id}">${t.name}</option>`;
+    t.subjects.forEach(s=>subjectsSet.add(s.name));
   });
-  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
-  filterSubject.innerHTML="<option value=''>جميع المواد</option>";
-  subjectsSet.forEach(sub=>{
-    subjectSelect.innerHTML+=`<option value="${sub}">${sub}</option>`;
-    filterSubject.innerHTML+=`<option value="${sub}">${sub}</option>`;
+  filterSubject.innerHTML="<option value=''>اختر المادة</option>";
+  subjectsSet.forEach(s=>filterSubject.innerHTML+=`<option value="${s}">${s}</option>`);
+}
+
+// تحميل الحضور
+async function loadAttendance(){
+  const snapshot=await getDocs(collection(db,"classes"));
+  attendanceTable.innerHTML="";
+  snapshot.forEach(clsSnap=>{
+    const cls={...clsSnap.data(),id:clsSnap.id};
+    cls.students.forEach(st=>{
+      const tr=document.createElement("tr");
+      tr.dataset.subject=cls.subjectId;
+      tr.dataset.teacher=cls.teacherId;
+      tr.dataset.group=cls.group;
+      tr.dataset.day=cls.day;
+      tr.innerHTML=`
+        <td>${cls.subjectId}</td>
+        <td>${cls.teacherId}</td>
+        <td>${cls.group}</td>
+        <td>${cls.day}</td>
+        <td>${cls.time}</td>
+        <td>${st.name}</td>
+        <td>
+          <select data-class="${cls.id}" data-student="${st.id}" class="attendanceSelect">
+            <option value="حاضر" ${cls.attendance.find(a=>a.studentId===st.id)?.status==="حاضر"?"selected":""}>حاضر</option>
+            <option value="غائب" ${cls.attendance.find(a=>a.studentId===st.id)?.status==="غائب"?"selected":""}>غائب</option>
+          </select>
+        </td>
+      `;
+      attendanceTable.appendChild(tr);
+    });
   });
 
-  // الأساتذة
-  const teachersSnap = await getDocs(collection(db,"teachers"));
-  teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>";
-  filterTeacher.innerHTML="<option value=''>جميع الأساتذة</option>";
-  teachersSnap.forEach(snap=>{
-    const t = snap.data();
-    teacherSelect.innerHTML+=`<option value="${snap.id}">${t.name}</option>`;
-    filterTeacher.innerHTML+=`<option value="${snap.id}">${t.name}</option>`;
+  document.querySelectorAll(".attendanceSelect").forEach(sel=>{
+    sel.addEventListener("change",async(e)=>{
+      const clsId=e.target.dataset.class;
+      const stId=e.target.dataset.student;
+      const clsRef=doc(db,"classes",clsId);
+      const clsDoc=await getDocs(collection(db,"classes"));
+      // تحديث الحضور في قاعدة البيانات
+      const clsSnap=await getDocs(collection(db,"classes"));
+      // استخدم طريقة مناسبة لحفظ الحالة
+      const attendanceRef=clsRef;
+      const clsData=(await clsRef.get()).data?.() || {};
+      let attendanceArr=clsData.attendance || [];
+      const idx=attendanceArr.findIndex(a=>a.studentId===stId);
+      if(idx>=0){ attendanceArr[idx].status=e.target.value; }
+      else{ attendanceArr.push({studentId:stId,status:e.target.value}); }
+      await updateDoc(clsRef,{attendance:attendanceArr});
+    });
   });
 }
 
-// حفظ الحصة
-classForm.addEventListener("submit", async e=>{
-  e.preventDefault();
-  const subject = subjectSelect.value;
-  const teacherId = teacherSelect.value;
-  const teacherName = teacherSelect.options[teacherSelect.selectedIndex].text;
-  const group = document.getElementById("groupInput").value.trim();
-  const day = document.getElementById("daySelect").value;
-  const time = document.getElementById("timeInput").value;
-
-  // جلب الطلاب من نفس الكروب
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const groupStudents = [];
-  studentsSnap.forEach(snap=>{
-    const s = snap.data();
-    if(s.group===group){
-      groupStudents.push({id:snap.id,name:s.name});
-    }
-  });
-
-  await addDoc(collection(db,"classes"),{
-    subject,
-    teacherId,
-    teacherName,
-    group,
-    day,
-    time,
-    students:groupStudents,
-    attendance:[]
-  });
-  alert("تم حفظ الحصة بنجاح");
-  classForm.reset();
-  loadClasses();
+// تطبيق الفلاتر
+[filterSubject,filterTeacher,filterGroup,filterDay].forEach(el=>{
+  el.addEventListener("change",applyFilters);
 });
-
-// تحميل الحصص
-async function loadClasses(){
-  const snapshot = await getDocs(collection(db,"classes"));
-  classesTableBody.innerHTML="";
-  snapshot.forEach(docSnap=>{
-    const cls = {...docSnap.data(),id:docSnap.id};
-
-    // تطبيق الفلاتر
-    if(filterSubject.value && cls.subject!==filterSubject.value) return;
-    if(filterTeacher.value && cls.teacherId!==filterTeacher.value) return;
-    if(filterGroup.value && !cls.group.includes(filterGroup.value)) return;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML=`
-      <td>${cls.subject}</td>
-      <td>${cls.teacherName}</td>
-      <td>${cls.group}</td>
-      <td>${cls.day}</td>
-      <td>${cls.time}</td>
-      <td>
-        <button class="btn warn" onclick="deleteClass('${cls.id}')">🗑️ حذف</button>
-      </td>
-    `;
-    classesTableBody.appendChild(tr);
+function applyFilters(){
+  const s=filterSubject.value, t=filterTeacher.value, g=filterGroup.value.trim(), d=filterDay.value;
+  document.querySelectorAll("#attendanceTable tbody tr").forEach(tr=>{
+    tr.style.display=( (s&&tr.dataset.subject!==s) ||
+                     (t&&tr.dataset.teacher!==t) ||
+                     (g&&tr.dataset.group!==g) ||
+                     (d&&tr.dataset.day!==d) ) ? "none":"table-row";
   });
 }
-
-// حذف حصة
-window.deleteClass = async id=>{
-  if(confirm("هل تريد حذف الحصة؟")){
-    await deleteDoc(doc(db,"classes",id));
-    loadClasses();
-  }
-}
-
-// فلاتر
-filterSubject.addEventListener("change", loadClasses);
-filterTeacher.addEventListener("change", loadClasses);
-filterGroup.addEventListener("input", loadClasses);
 
 // طباعة
-printBtn.addEventListener("click", ()=>{window.print();});
+printBtn.addEventListener("click",()=>{window.print();});
 </script>
 </body>
 </html>
