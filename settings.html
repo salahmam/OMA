@@ -2,174 +2,171 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>الإعدادات - نظام OMA</title>
 <style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
-}
-*{box-sizing:border-box}
-body{
-  font-family:'Cairo',sans-serif;
-  background:linear-gradient(180deg,var(--bg),#fff);
-  margin:0;direction:rtl;
-  visibility:hidden;
-}
-header{
-  background:linear-gradient(90deg,var(--primary),#007bff);
-  color:white;
-  padding:18px;
-  text-align:center;
-  font-size:20px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-header button{
-  background:#ff5555;
-  color:white;
-  border:none;
-  padding:8px 14px;
-  border-radius:8px;
-  cursor:pointer;
-}
-.wrap{max-width:800px;margin:30px auto;padding:16px}
-.card{
-  background:var(--card);
-  border-radius:10px;
-  padding:16px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.06);
-}
-label{display:block;margin-bottom:4px;font-size:13px}
-input,textarea{
-  width:100%;
-  padding:10px;
-  margin-bottom:12px;
-  border:1px solid #ccc;
-  border-radius:8px;
-  font-size:15px;
-}
-textarea{resize:none;height:70px}
-.btn{
-  background:var(--primary);
-  color:white;
-  padding:10px 16px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:bold;
-}
+  :root {
+    --primary: #004aad;
+    --accent: #ffcc33;
+    --bg: #f5f9ff;
+  }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(180deg, var(--bg), #fff);
+    margin: 0;
+    color: #102027;
+    visibility: hidden;
+  }
+  header {
+    background: linear-gradient(90deg, var(--primary), #007bff);
+    color: white;
+    padding: 16px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  .container {
+    max-width: 700px;
+    margin: 30px auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 20px;
+  }
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  input[type="text"], input[type="number"], input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover { opacity: 0.9; }
+  .logout {
+    background: #ff5252;
+    margin-top: 10px;
+  }
+  .logo-preview {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .logo-preview img {
+    max-width: 120px;
+    border-radius: 10px;
+  }
 </style>
 </head>
 <body>
-<header>
-  الإعدادات العامة
-  <button id="logoutBtn">🔓 خروج</button>
-</header>
+  <header>⚙️ إعدادات النظام</header>
 
-<div class="wrap">
-  <div class="card">
-    <h3>⚙️ إعدادات النظام</h3>
+  <div class="container">
+    <h3>معلومات المعهد</h3>
+    <div class="logo-preview" id="logoPreview"></div>
     <form id="settingsForm">
       <label>اسم المعهد</label>
-      <input id="instituteName" required>
+      <input type="text" id="instituteName" placeholder="مثال: معهد النخبة التعليمي" required>
 
-      <label>الشعار (رابط صورة)</label>
-      <input id="logoUrl">
+      <label>نسبة المعهد (%)</label>
+      <input type="number" id="instituteShare" placeholder="أدخل نسبة المعهد من الإيرادات" required>
 
-      <label>رقم الهاتف</label>
-      <input id="phone">
+      <label>رفع شعار المعهد</label>
+      <input type="file" id="instituteLogo" accept="image/*">
 
-      <label>العنوان</label>
-      <textarea id="address"></textarea>
-
-      <label>رابط الفيسبوك</label>
-      <input id="facebook">
-
-      <label>رابط إنستغرام</label>
-      <input id="instagram">
-
-      <label>سنة التأسيس</label>
-      <input id="founded">
-
-      <div style="text-align:end">
-        <button type="submit" class="btn">💾 حفظ الإعدادات</button>
-      </div>
+      <button type="submit">💾 حفظ الإعدادات</button>
     </form>
+
+    <button id="logoutBtn" class="logout">🚪 تسجيل الخروج</button>
   </div>
-</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// إعداد Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-  authDomain: "oma2-d36fa.firebaseapp.com",
-  projectId: "oma2-d36fa",
-  storageBucket: "oma2-d36fa.firebasestorage.app",
-  messagingSenderId: "774171603105",
-  appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
-  measurementId: "G-QHPZG4JLB8"
+  apiKey: "API_KEY_HERE",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+const auth = getAuth();
+const storage = getStorage(app);
 
-// تحقق من تسجيل الدخول
-onAuthStateChanged(auth, async (user)=>{
-  if(!user){
-    window.location.href="login.html";
-  } else {
-    document.body.style.visibility="visible";
-    await loadSettings();
-  }
-});
+// ✅ الحماية من الخروج المفاجئ
+if (!localStorage.getItem("loggedIn")) {
+  window.location.href = "login.html";
+} else {
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+    } else {
+      document.body.style.visibility = "visible";
+      loadSettings();
+    }
+  });
+}
 
-// زر الخروج
-document.getElementById("logoutBtn").addEventListener("click", async ()=>{
-  await signOut(auth);
-  window.location.href="login.html";
-});
-
-// تحميل الإعدادات من Firestore
-async function loadSettings(){
-  const ref = doc(db,"config","settings");
-  const snap = await getDoc(ref);
-  if(snap.exists()){
+// ✅ تحميل الإعدادات عند الدخول
+async function loadSettings() {
+  const docRef = doc(db, "settings", "institute");
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
     const data = snap.data();
-    document.getElementById("instituteName").value = data.instituteName || "";
-    document.getElementById("logoUrl").value = data.logoUrl || "";
-    document.getElementById("phone").value = data.phone || "";
-    document.getElementById("address").value = data.address || "";
-    document.getElementById("facebook").value = data.facebook || "";
-    document.getElementById("instagram").value = data.instagram || "";
-    document.getElementById("founded").value = data.founded || "";
+    document.getElementById("instituteName").value = data.name || "";
+    document.getElementById("instituteShare").value = data.share || "";
+    if (data.logoURL) {
+      document.getElementById("logoPreview").innerHTML = `<img src="${data.logoURL}" alt="شعار المعهد">`;
+    }
   }
 }
 
-// حفظ الإعدادات
-document.getElementById("settingsForm").addEventListener("submit", async(e)=>{
+// ✅ حفظ الإعدادات
+document.getElementById("settingsForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const name = document.getElementById("instituteName").value.trim();
+  const share = parseFloat(document.getElementById("instituteShare").value) || 0;
+  const logoFile = document.getElementById("instituteLogo").files[0];
 
-  const data = {
-    instituteName: document.getElementById("instituteName").value,
-    logoUrl: document.getElementById("logoUrl").value,
-    phone: document.getElementById("phone").value,
-    address: document.getElementById("address").value,
-    facebook: document.getElementById("facebook").value,
-    instagram: document.getElementById("instagram").value,
-    founded: document.getElementById("founded").value
-  };
+  let logoURL = null;
 
-  await setDoc(doc(db,"config","settings"), data);
+  if (logoFile) {
+    const storageRef = ref(storage, "logos/" + logoFile.name);
+    await uploadBytes(storageRef, logoFile);
+    logoURL = await getDownloadURL(storageRef);
+  }
+
+  await setDoc(doc(db, "settings", "institute"), {
+    name, share, logoURL
+  });
+
   alert("✅ تم حفظ الإعدادات بنجاح");
+  loadSettings();
+});
+
+// ✅ تسجيل الخروج
+document.getElementById("logoutBtn").addEventListener("click", async ()=>{
+  await signOut(auth);
+  localStorage.removeItem("loggedIn");
+  window.location.href = "login.html";
 });
 </script>
 </body>
