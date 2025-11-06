@@ -36,6 +36,11 @@ label{display:block;margin-bottom:4px;font-size:13px}
 table{width:100%;border-collapse:collapse;margin-top:12px}
 th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}
 th{background:var(--primary);color:#fff}
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { position: absolute; top: 0; right: 0; width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -99,12 +104,19 @@ th{background:var(--primary);color:#fff}
   </div>
 </div>
 
+<!-- منطقة الطباعة -->
+<div id="printArea" style="display:none;direction:rtl;text-align:center;font-family:'Cairo',sans-serif">
+  <h2>استمارة الطالب</h2>
+  <div id="printContent"></div>
+  <p style="margin-top:20px;font-size:13px;color:#777">تاريخ الطباعة: <span id="printDate"></span></p>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-// 🔹 إعداد Firebase
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
   authDomain: "oma2-d36fa.firebaseapp.com",
@@ -119,7 +131,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// 🔒 التحقق من تسجيل الدخول
+// التحقق من تسجيل الدخول
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     window.location.href = "login.html";
@@ -129,14 +141,14 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// 🚪 تسجيل الخروج
+// تسجيل الخروج
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   await signOut(auth);
   alert("تم تسجيل الخروج");
   window.location.href = "login.html";
 });
 
-// 🧾 جلب أسماء الأساتذة من قاعدة البيانات
+// تحميل أسماء الأساتذة من Firestore
 let teachersList = [];
 async function loadTeachers() {
   const q = query(collection(db, "teachers"));
@@ -144,7 +156,7 @@ async function loadTeachers() {
   teachersList = snap.docs.map(doc => doc.data().name);
 }
 
-// ➕ إضافة مادة
+// زر إضافة مادة
 const addSubjectBtn = document.getElementById("addSubjectBtn");
 const subjectsContainer = document.getElementById("subjectsContainer");
 
@@ -196,7 +208,7 @@ addSubjectBtn.addEventListener("click", async () => {
   subjectsContainer.appendChild(div);
 });
 
-// 💾 حفظ الطالب
+// حفظ الطالب
 const form = document.getElementById("studentForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -225,7 +237,7 @@ form.addEventListener("submit", async (e) => {
   loadStudents();
 });
 
-// 📋 عرض الطلاب
+// عرض الطلاب
 async function loadStudents() {
   const q = query(collection(db, "students"));
   const snap = await getDocs(q);
@@ -240,10 +252,56 @@ async function loadStudents() {
       <td>${s.stage || "-"}</td>
       <td>${s.group || "-"}</td>
       <td>${s.subjects ? s.subjects.length : 0}</td>
-      <td><button class="btn small">🖨️ طباعة</button></td>
+      <td><button class="btn small" onclick='printStudent(${JSON.stringify(JSON.stringify(s))})'>🖨️ طباعة</button></td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+// الطباعة
+window.printStudent = function(dataStr){
+  const s = JSON.parse(dataStr);
+  const area = document.getElementById("printArea");
+  const content = document.getElementById("printContent");
+  const date = document.getElementById("printDate");
+  date.textContent = new Date().toLocaleString();
+
+  let subjectsHTML = "";
+  if(s.subjects && s.subjects.length > 0){
+    subjectsHTML = `
+      <table border="1" style="width:100%;border-collapse:collapse;margin-top:10px">
+        <tr style="background:#004aad;color:white">
+          <th>المادة</th>
+          <th>الأستاذ</th>
+          <th>إجمالي القسط</th>
+          <th>المدفوع</th>
+          <th>المتبقي</th>
+        </tr>
+        ${s.subjects.map(sub=>`
+          <tr>
+            <td>${sub.name}</td>
+            <td>${sub.teacher}</td>
+            <td>${sub.total}</td>
+            <td>${sub.paid}</td>
+            <td>${sub.remaining}</td>
+          </tr>
+        `).join("")}
+      </table>
+    `;
+  }
+
+  content.innerHTML = `
+    <h3>${s.name}</h3>
+    <p>📞 ${s.phone}</p>
+    <p>🏫 ${s.school || "-"}</p>
+    <p>📚 ${s.stage || "-"}</p>
+    <p>👥 المجموعة: ${s.group || "-"}</p>
+    ${subjectsHTML}
+  `;
+
+  area.style.display = "block";
+  window.print();
+  area.style.display = "none";
 }
 </script>
 </body>
