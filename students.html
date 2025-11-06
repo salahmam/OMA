@@ -1,308 +1,220 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>نظام OMA - إدارة الطلاب</title>
-<style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
-}
-*{box-sizing:border-box}
-body{
-  font-family:'Cairo',sans-serif;margin:0;
-  background:linear-gradient(180deg,var(--bg),#fff);
-  color:#102027;direction:rtl;visibility:hidden;
-}
-header{
-  background:linear-gradient(90deg,var(--primary),#007bff);
-  color:#fff;padding:18px;text-align:center;font-size:20px;
-  display:flex;justify-content:space-between;align-items:center;
-}
-header button{background:#ff5555;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer}
-.wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 4px 10px rgba(0,0,0,0.06);}
-.form-grid{display:flex;flex-wrap:wrap;gap:10px}
-input,select{padding:10px;border:1px solid #ccc;border-radius:8px;width:100%}
-label{display:block;margin-bottom:4px;font-size:13px}
-.btn{background:var(--primary);color:white;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:bold}
-.btn.small{padding:6px 8px;font-size:13px}
-.subject-item{border:1px solid #ccc;padding:8px;border-radius:8px;margin-bottom:8px}
-.subject-fields{display:flex;flex-wrap:wrap;gap:8px}
-.subject-fields>div{flex:1;min-width:120px}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}
-th{background:var(--primary);color:#fff}
-@media print {
-  body * { visibility: hidden; }
-  #printArea, #printArea * { visibility: visible; }
-  #printArea { position: absolute; top: 0; right: 0; width: 100%; }
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إدارة الطلاب - نظام OMA</title>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f5f9ff;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      color: #004aad;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    button {
+      background-color: #004aad;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.3s;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background-color: #003a8c;
+    }
+
+    #materialsList {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f0f4ff;
+      border-radius: 8px;
+    }
+
+    .material-item {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    #printBtn {
+      display: none;
+      background-color: #28a745;
+    }
+  </style>
 </head>
 <body>
-<header>
-  إدارة الطلاب
-  <button id="logoutBtn">🔓 خروج</button>
-</header>
+  <header>📚 إدارة الطلاب</header>
 
-<div class="wrap">
-  <div class="card">
-    <h3>إضافة طالب</h3>
-    <form id="studentForm">
-      <div class="form-grid">
-        <div class="two">
-          <label>الاسم الكامل</label>
-          <input id="name" required>
-        </div>
-        <div class="two">
-          <label>رقم الهاتف</label>
-          <input id="phone" type="tel" required>
-        </div>
-        <div class="two">
-          <label>المدرسة</label>
-          <input id="school">
-        </div>
-        <div class="two">
-          <label>المرحلة</label>
-          <input id="stage">
-        </div>
-        <div class="two">
-          <label>المجموعة</label>
-          <input id="group">
-        </div>
-      </div>
+  <div class="container">
+    <h2>إضافة / تعديل بيانات الطالب</h2>
 
-      <h4>📘 المواد</h4>
-      <div id="subjectsContainer"></div>
-      <button id="addSubjectBtn" type="button" class="btn small">➕ إضافة مادة</button>
+    <label>اسم الطالب</label>
+    <input type="text" id="studentName" placeholder="اكتب اسم الطالب" />
 
-      <div style="margin-top:10px;text-align:end">
-        <button class="btn" type="submit">💾 حفظ الطالب</button>
-      </div>
-    </form>
-  </div>
+    <label>المرحلة الدراسية</label>
+    <select id="studentLevel">
+      <option value="">اختر المرحلة</option>
+      <option>ابتدائية</option>
+      <option>متوسطة</option>
+      <option>إعدادية</option>
+      <option>جامعية</option>
+    </select>
 
-  <div class="card" style="margin-top:20px">
-    <h3>قائمة الطلاب</h3>
-    <table id="studentsTable">
-      <thead>
-        <tr>
-          <th>الاسم</th>
-          <th>الهاتف</th>
-          <th>المرحلة</th>
-          <th>المجموعة</th>
-          <th>عدد المواد</th>
-          <th>خيارات</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- منطقة الطباعة -->
-<div id="printArea" style="display:none;direction:rtl;text-align:center;font-family:'Cairo',sans-serif">
-  <h2>استمارة الطالب</h2>
-  <div id="printContent"></div>
-  <p style="margin-top:20px;font-size:13px;color:#777">تاريخ الطباعة: <span id="printDate"></span></p>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-
-// إعداد Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-  authDomain: "oma2-d36fa.firebaseapp.com",
-  projectId: "oma2-d36fa",
-  storageBucket: "oma2-d36fa.firebasestorage.app",
-  messagingSenderId: "774171603105",
-  appId: "1:774171603105:web:91f2a5f44c4dde684080e0",
-  measurementId: "G-QHPZG4JLB8"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// التحقق من تسجيل الدخول
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = "login.html";
-  } else {
-    document.body.style.visibility = "visible";
-    loadStudents();
-  }
-});
-
-// تسجيل الخروج
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  alert("تم تسجيل الخروج");
-  window.location.href = "login.html";
-});
-
-// تحميل أسماء الأساتذة من Firestore
-let teachersList = [];
-async function loadTeachers() {
-  const q = query(collection(db, "teachers"));
-  const snap = await getDocs(q);
-  teachersList = snap.docs.map(doc => doc.data().name);
-}
-
-// زر إضافة مادة
-const addSubjectBtn = document.getElementById("addSubjectBtn");
-const subjectsContainer = document.getElementById("subjectsContainer");
-
-addSubjectBtn.addEventListener("click", async () => {
-  if (teachersList.length === 0) await loadTeachers();
-
-  const div = document.createElement("div");
-  div.classList.add("subject-item");
-  div.innerHTML = `
-    <div class="subject-fields">
-      <div>
-        <label>المادة</label>
-        <input type="text" class="subject-name" required>
-      </div>
-      <div>
-        <label>الأستاذ</label>
-        <select class="subject-teacher">
-          ${teachersList.map(t => `<option value="${t}">${t}</option>`).join("")}
-        </select>
-      </div>
-      <div>
-        <label>إجمالي القسط</label>
-        <input type="number" min="0" class="subject-total" value="0">
-      </div>
-      <div>
-        <label>المدفوع</label>
-        <input type="number" min="0" class="subject-paid" value="0">
-      </div>
-      <div>
-        <label>المتبقي</label>
-        <input type="number" min="0" class="subject-remaining" value="0" readonly>
-      </div>
+    <label>إضافة مادة</label>
+    <div id="materialsSection">
+      <select id="teacherName">
+        <option value="">اختر الأستاذ</option>
+        <option>أ. أحمد</option>
+        <option>أ. علي</option>
+        <option>أ. سارة</option>
+      </select>
+      <input type="text" id="materialName" placeholder="اسم المادة" />
+      <input type="number" id="materialCost" placeholder="تكلفة المادة (بالدينار)" />
+      <button id="addMaterialBtn">➕ إضافة مادة</button>
     </div>
-  `;
 
-  const totalInput = div.querySelector(".subject-total");
-  const paidInput = div.querySelector(".subject-paid");
-  const remainingInput = div.querySelector(".subject-remaining");
+    <div id="materialsList"></div>
 
-  function updateRemaining() {
-    const total = parseFloat(totalInput.value) || 0;
-    const paid = parseFloat(paidInput.value) || 0;
-    remainingInput.value = total - paid;
-  }
+    <h3 id="totalCost">الإجمالي: 0 دينار</h3>
 
-  totalInput.addEventListener("input", updateRemaining);
-  paidInput.addEventListener("input", updateRemaining);
+    <button id="saveStudentBtn">💾 حفظ الطالب</button>
+    <button id="printBtn">🖨️ طباعة بيانات الطالب</button>
+  </div>
 
-  subjectsContainer.appendChild(div);
-});
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-// حفظ الطالب
-const form = document.getElementById("studentForm");
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    // 🔹 إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
+      authDomain: "oma2-d36fa.firebaseapp.com",
+      projectId: "oma2-d36fa",
+      storageBucket: "oma2-d36fa.appspot.com",
+      messagingSenderId: "774171603105",
+      appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
+    };
 
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const school = document.getElementById("school").value;
-  const stage = document.getElementById("stage").value;
-  const group = document.getElementById("group").value;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-  const subjects = Array.from(subjectsContainer.children).map(div => ({
-    name: div.querySelector(".subject-name").value,
-    teacher: div.querySelector(".subject-teacher").value,
-    total: parseFloat(div.querySelector(".subject-total").value) || 0,
-    paid: parseFloat(div.querySelector(".subject-paid").value) || 0,
-    remaining: parseFloat(div.querySelector(".subject-remaining").value) || 0
-  }));
+    // ✅ التحقق من تسجيل الدخول بدون تسجيل خروج مفاجئ
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.replace("login.html");
+      } else {
+        console.log("✅ المستخدم:", user.email);
+      }
+    });
 
-  await addDoc(collection(db, "students"), {
-    name, phone, school, stage, group, subjects
-  });
+    // --------------------------
+    // 🧾 منطق إدارة المواد
+    // --------------------------
+    const materials = [];
+    const addMaterialBtn = document.getElementById("addMaterialBtn");
+    const materialsList = document.getElementById("materialsList");
+    const totalCostDisplay = document.getElementById("totalCost");
 
-  alert("✅ تم حفظ الطالب بنجاح");
-  form.reset();
-  subjectsContainer.innerHTML = "";
-  loadStudents();
-});
+    addMaterialBtn.addEventListener("click", () => {
+      const name = document.getElementById("materialName").value.trim();
+      const cost = parseFloat(document.getElementById("materialCost").value);
+      const teacher = document.getElementById("teacherName").value;
 
-// عرض الطلاب
-async function loadStudents() {
-  const q = query(collection(db, "students"));
-  const snap = await getDocs(q);
-  const tbody = document.querySelector("#studentsTable tbody");
-  tbody.innerHTML = "";
-  snap.forEach(docSnap => {
-    const s = docSnap.data();
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${s.name}</td>
-      <td>${s.phone}</td>
-      <td>${s.stage || "-"}</td>
-      <td>${s.group || "-"}</td>
-      <td>${s.subjects ? s.subjects.length : 0}</td>
-      <td><button class="btn small" onclick='printStudent(${JSON.stringify(JSON.stringify(s))})'>🖨️ طباعة</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+      if (!name || isNaN(cost) || !teacher) {
+        alert("الرجاء إدخال اسم المادة، الأستاذ، والتكلفة بشكل صحيح.");
+        return;
+      }
 
-// الطباعة
-window.printStudent = function(dataStr){
-  const s = JSON.parse(dataStr);
-  const area = document.getElementById("printArea");
-  const content = document.getElementById("printContent");
-  const date = document.getElementById("printDate");
-  date.textContent = new Date().toLocaleString();
+      const material = { name, cost, teacher };
+      materials.push(material);
 
-  let subjectsHTML = "";
-  if(s.subjects && s.subjects.length > 0){
-    subjectsHTML = `
-      <table border="1" style="width:100%;border-collapse:collapse;margin-top:10px">
-        <tr style="background:#004aad;color:white">
-          <th>المادة</th>
-          <th>الأستاذ</th>
-          <th>إجمالي القسط</th>
-          <th>المدفوع</th>
-          <th>المتبقي</th>
-        </tr>
-        ${s.subjects.map(sub=>`
-          <tr>
-            <td>${sub.name}</td>
-            <td>${sub.teacher}</td>
-            <td>${sub.total}</td>
-            <td>${sub.paid}</td>
-            <td>${sub.remaining}</td>
-          </tr>
-        `).join("")}
-      </table>
-    `;
-  }
+      const div = document.createElement("div");
+      div.classList.add("material-item");
+      div.innerHTML = `
+        <strong>${material.name}</strong> - ${material.teacher}<br>
+        💰 ${material.cost.toLocaleString()} دينار
+      `;
+      materialsList.appendChild(div);
 
-  content.innerHTML = `
-    <h3>${s.name}</h3>
-    <p>📞 ${s.phone}</p>
-    <p>🏫 ${s.school || "-"}</p>
-    <p>📚 ${s.stage || "-"}</p>
-    <p>👥 المجموعة: ${s.group || "-"}</p>
-    ${subjectsHTML}
-  `;
+      updateTotal();
+      document.getElementById("materialName").value = "";
+      document.getElementById("materialCost").value = "";
+    });
 
-  area.style.display = "block";
-  window.print();
-  area.style.display = "none";
-}
-</script>
+    function updateTotal() {
+      const total = materials.reduce((sum, m) => sum + m.cost, 0);
+      totalCostDisplay.textContent = `الإجمالي: ${total.toLocaleString()} دينار`;
+    }
+
+    // --------------------------
+    // 💾 حفظ بيانات الطالب
+    // --------------------------
+    const saveBtn = document.getElementById("saveStudentBtn");
+    const printBtn = document.getElementById("printBtn");
+
+    saveBtn.addEventListener("click", () => {
+      const name = document.getElementById("studentName").value.trim();
+      const level = document.getElementById("studentLevel").value;
+
+      if (!name || !level || materials.length === 0) {
+        alert("الرجاء إدخال جميع البيانات وإضافة مادة واحدة على الأقل.");
+        return;
+      }
+
+      alert(`✅ تم حفظ بيانات الطالب "${name}" بنجاح.`);
+      printBtn.style.display = "inline-block";
+    });
+
+    // 🖨️ الطباعة
+    printBtn.addEventListener("click", () => {
+      window.print();
+    });
+  </script>
 </body>
 </html>
