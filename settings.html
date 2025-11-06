@@ -3,99 +3,82 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>الإعدادات - نظام OMA</title>
+<title>نظام OMA - الإعدادات المركزية</title>
 <style>
-  :root {
-    --primary: #004aad;
-    --accent: #ffcc33;
-    --bg: #f5f9ff;
-  }
-  body {
-    font-family: 'Cairo', sans-serif;
-    background: linear-gradient(180deg, var(--bg), #fff);
-    margin: 0;
-    color: #102027;
-    visibility: hidden;
-  }
-  header {
-    background: linear-gradient(90deg, var(--primary), #007bff);
-    color: white;
-    padding: 16px;
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-  }
-  .container {
-    max-width: 700px;
-    margin: 30px auto;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    padding: 20px;
-  }
-  label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
-  }
-  input[type="text"], input[type="number"], input[type="file"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccd;
-    border-radius: 8px;
-    margin-bottom: 15px;
-  }
-  button {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  button:hover { opacity: 0.9; }
-  .logout {
-    background: #ff5252;
-    margin-top: 10px;
-  }
-  .logo-preview {
-    text-align: center;
-    margin-bottom: 15px;
-  }
-  .logo-preview img {
-    max-width: 120px;
-    border-radius: 10px;
-  }
+body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
+header{background:#004aad;color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
+.wrap{max-width:1200px;margin:22px auto;padding:12px;}
+.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
+label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
+.btn{background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:8px;}
+.btn.warn{background:#ff7043;}
+table{width:100%;border-collapse:collapse;margin-top:12px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th{background:#004aad;color:#fff;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.filters select{flex:1;}
 </style>
 </head>
 <body>
-  <header>⚙️ إعدادات النظام</header>
+<header>نظام OMA - الإعدادات المركزية</header>
+<div class="wrap">
 
-  <div class="container">
-    <h3>معلومات المعهد</h3>
-    <div class="logo-preview" id="logoPreview"></div>
-    <form id="settingsForm">
-      <label>اسم المعهد</label>
-      <input type="text" id="instituteName" placeholder="مثال: معهد النخبة التعليمي" required>
+<!-- إعدادات النسب -->
+<div class="card">
+  <strong>إعدادات النسب</strong>
+  <form id="settingsForm">
+    <label>نسبة المعهد %</label>
+    <input id="instituteShare" type="number" min="0" max="100">
+    <label>نسبة الأستاذ %</label>
+    <input id="teacherShare" type="number" min="0" max="100">
+    <button type="submit" class="btn">✅ حفظ الإعدادات</button>
+  </form>
+</div>
 
-      <label>نسبة المعهد (%)</label>
-      <input type="number" id="instituteShare" placeholder="أدخل نسبة المعهد من الإيرادات" required>
+<!-- إدارة المستخدمين -->
+<div class="card">
+  <strong>إدارة دخول المستخدمين</strong>
+  <form id="userForm">
+    <label>نوع الحساب</label>
+    <select id="userType">
+      <option value="student">طالب</option>
+      <option value="teacher">أستاذ</option>
+      <option value="admin">مدير/محاسب</option>
+    </select>
+    <label>الاسم الكامل</label>
+    <input id="userName" type="text" required>
+    <label>البريد الإلكتروني</label>
+    <input id="userEmail" type="email" required>
+    <label>كلمة المرور</label>
+    <input id="userPassword" type="password" required>
+    <button type="submit" class="btn">✅ إضافة المستخدم</button>
+  </form>
+</div>
 
-      <label>رفع شعار المعهد</label>
-      <input type="file" id="instituteLogo" accept="image/*">
-
-      <button type="submit">💾 حفظ الإعدادات</button>
-    </form>
-
-    <button id="logoutBtn" class="logout">🚪 تسجيل الخروج</button>
+<!-- فلاتر وعرض المستخدمين -->
+<div class="card">
+  <strong>قائمة المستخدمين</strong>
+  <div class="filters">
+    <select id="filterType"><option value="">فلترة حسب النوع</option><option value="student">طالب</option><option value="teacher">أستاذ</option><option value="admin">مدير/محاسب</option></select>
   </div>
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>البريد الإلكتروني</th>
+        <th>النوع</th>
+        <th>خيارات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -108,66 +91,72 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth();
-const storage = getStorage(app);
+const auth = getAuth(app);
 
-// ✅ الحماية من الخروج المفاجئ
-if (!localStorage.getItem("loggedIn")) {
-  window.location.href = "login.html";
-} else {
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-    } else {
-      document.body.style.visibility = "visible";
-      loadSettings();
-    }
-  });
-}
+// تأمين الصفحة
+onAuthStateChanged(auth,user=>{
+  if(!user) window.location.href="login.html";
+});
 
-// ✅ تحميل الإعدادات عند الدخول
-async function loadSettings() {
-  const docRef = doc(db, "settings", "institute");
-  const snap = await getDoc(docRef);
-  if (snap.exists()) {
-    const data = snap.data();
-    document.getElementById("instituteName").value = data.name || "";
-    document.getElementById("instituteShare").value = data.share || "";
-    if (data.logoURL) {
-      document.getElementById("logoPreview").innerHTML = `<img src="${data.logoURL}" alt="شعار المعهد">`;
-    }
-  }
-}
-
-// ✅ حفظ الإعدادات
-document.getElementById("settingsForm").addEventListener("submit", async (e) => {
+// حفظ نسب المعهد والأستاذ
+const settingsForm = document.getElementById("settingsForm");
+settingsForm.addEventListener("submit",async(e)=>{
   e.preventDefault();
-  const name = document.getElementById("instituteName").value.trim();
-  const share = parseFloat(document.getElementById("instituteShare").value) || 0;
-  const logoFile = document.getElementById("instituteLogo").files[0];
-
-  let logoURL = null;
-
-  if (logoFile) {
-    const storageRef = ref(storage, "logos/" + logoFile.name);
-    await uploadBytes(storageRef, logoFile);
-    logoURL = await getDownloadURL(storageRef);
+  const inst = parseFloat(document.getElementById("instituteShare").value)||0;
+  const teach = parseFloat(document.getElementById("teacherShare").value)||0;
+  const settingsRef = doc(db,"settings","shares");
+  try{
+    await updateDoc(settingsRef,{institute:inst,teacher:teach});
+    alert("تم حفظ الإعدادات");
+  }catch(err){
+    // إذا لم يكن موجودًا ننشئه
+    await setDoc(settingsRef,{institute:inst,teacher:teach});
+    alert("تم إنشاء وحفظ الإعدادات");
   }
+});
 
-  await setDoc(doc(db, "settings", "institute"), {
-    name, share, logoURL
+// إضافة مستخدم
+const userForm = document.getElementById("userForm");
+const usersTableBody = document.querySelector("#usersTable tbody");
+
+userForm.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const type = document.getElementById("userType").value;
+  const name = document.getElementById("userName").value.trim();
+  const email = document.getElementById("userEmail").value.trim();
+  const password = document.getElementById("userPassword").value.trim();
+  try{
+    await addDoc(collection(db,"users"),{type,name,email,password,createdAt:new Date()});
+    alert("تم إضافة المستخدم");
+    userForm.reset();
+    loadUsers();
+  }catch(err){console.error(err);alert("خطأ أثناء الحفظ");}
+});
+
+// تحميل المستخدمين
+async function loadUsers(){
+  const snapshot = await getDocs(collection(db,"users"));
+  usersTableBody.innerHTML="";
+  snapshot.forEach(docSnap=>{
+    const u = {...docSnap.data(),id:docSnap.id};
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${u.name}</td>
+      <td>${u.email}</td>
+      <td>${u.type}</td>
+      <td><button class="btn warn" onclick="deleteUser('${u.id}')">🗑️ حذف</button></td>
+    `;
+    usersTableBody.appendChild(tr);
   });
+}
+loadUsers();
 
-  alert("✅ تم حفظ الإعدادات بنجاح");
-  loadSettings();
-});
-
-// ✅ تسجيل الخروج
-document.getElementById("logoutBtn").addEventListener("click", async ()=>{
-  await signOut(auth);
-  localStorage.removeItem("loggedIn");
-  window.location.href = "login.html";
-});
+window.deleteUser = async(id)=>{
+  if(confirm("هل تريد حذف هذا المستخدم؟")){
+    await deleteDoc(doc(db,"users",id));
+    loadUsers();
+  }
+}
 </script>
 </body>
 </html>
