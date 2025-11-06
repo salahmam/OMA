@@ -67,24 +67,14 @@ th{background:var(--primary);color:#fff;}
     <label>المرحلة الدراسية</label>
     <select id="stage">
       <option value="">اختر المرحلة</option>
-      <option>الأول ابتدائي</option>
-      <option>الثاني ابتدائي</option>
-      <option>الثالث ابتدائي</option>
-      <option>الرابع ابتدائي</option>
-      <option>الخامس ابتدائي</option>
-      <option>السادس ابتدائي</option>
-      <option>الأول إعدادي علمي</option>
-      <option>الأول إعدادي أدبي</option>
-      <option>الثاني إعدادي علمي</option>
-      <option>الثاني إعدادي أدبي</option>
-      <option>الثالث إعدادي علمي</option>
-      <option>الثالث إعدادي أدبي</option>
-      <option>الرابع إعدادي علمي</option>
-      <option>الرابع إعدادي أدبي</option>
-      <option>الخامس إعدادي علمي</option>
-      <option>الخامس إعدادي أدبي</option>
-      <option>السادس إعدادي علمي</option>
-      <option>السادس إعدادي أدبي</option>
+      <option>الأول ابتدائي</option><option>الثاني ابتدائي</option><option>الثالث ابتدائي</option>
+      <option>الرابع ابتدائي</option><option>الخامس ابتدائي</option><option>السادس ابتدائي</option>
+      <option>الأول إعدادي علمي</option><option>الأول إعدادي أدبي</option>
+      <option>الثاني إعدادي علمي</option><option>الثاني إعدادي أدبي</option>
+      <option>الثالث إعدادي علمي</option><option>الثالث إعدادي أدبي</option>
+      <option>الرابع إعدادي علمي</option><option>الرابع إعدادي أدبي</option>
+      <option>الخامس إعدادي علمي</option><option>الخامس إعدادي أدبي</option>
+      <option>السادس إعدادي علمي</option><option>السادس إعدادي أدبي</option>
     </select>
     <label>الكروب</label>
     <select id="group">
@@ -150,7 +140,7 @@ th{background:var(--primary);color:#fff;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "API_KEY_HERE",
@@ -170,19 +160,20 @@ const subjectsContainer = document.getElementById("subjectsContainer");
 const addSubjectBtn = document.getElementById("addSubjectBtn");
 let teachersData = [];
 
+// إضافة مادة جديدة
 addSubjectBtn.addEventListener("click",()=>{
   const div = document.createElement("div");
   div.classList.add("subject-field");
   div.innerHTML = `
     <input type="text" placeholder="اسم المادة" class="subjName" required />
-    <input type="number" placeholder="إجمالي المستحقات" class="subjFee" min="0" />
+    <input type="number" placeholder="المستحق" class="subjFee" min="0" />
     <button type="button" class="btn small addPaymentBtn">💰 دفعة</button>
     <button type="button" class="btn warn small removeSubjBtn">❌</button>
   `;
   subjectsContainer.appendChild(div);
-  
+
   div.querySelector(".removeSubjBtn").addEventListener("click",()=>subjectsContainer.removeChild(div));
-  
+
   div.querySelector(".addPaymentBtn").addEventListener("click",()=>{
     const payment = prompt("أدخل مبلغ الدفعة:");
     if(payment && !isNaN(payment)){
@@ -197,6 +188,7 @@ addSubjectBtn.addEventListener("click",()=>{
   });
 });
 
+// حفظ الأستاذ
 teacherForm.addEventListener("submit", async(e)=>{
   e.preventDefault();
   const name = document.getElementById("name").value.trim();
@@ -206,7 +198,7 @@ teacherForm.addEventListener("submit", async(e)=>{
   const group = document.getElementById("group").value;
   const totalFees = parseFloat(document.getElementById("totalFees").value)||0;
   const note = document.getElementById("note").value.trim();
-  
+
   const subjects = [];
   document.querySelectorAll(".subject-field").forEach(sub=>{
     const subjName = sub.querySelector(".subjName").value.trim();
@@ -214,9 +206,9 @@ teacherForm.addEventListener("submit", async(e)=>{
     const payments = sub.payments||[];
     if(subjName) subjects.push({name:subjName,fee:subjFee,payments});
   });
-  
+
   if(subjects.length===0){ alert("أضف مادة واحدة على الأقل"); return;}
-  
+
   try{
     await addDoc(collection(db,"teachers"),{name,phone,address,stage,group,totalFees,note,subjects,createdAt:new Date()});
     alert("تم حفظ الأستاذ بنجاح");
@@ -226,18 +218,14 @@ teacherForm.addEventListener("submit", async(e)=>{
   }catch(err){console.error(err);alert("حدث خطأ أثناء الحفظ");}
 });
 
+// تحميل الأساتذة
 async function loadTeachers(){
   const snapshot = await getDocs(collection(db,"teachers"));
   teachersTableBody.innerHTML="";
   teachersData=[];
-  const stagesSet = new Set(), groupsSet = new Set(), subjectsSet = new Set();
   snapshot.forEach(docSnap=>{
     const t = {...docSnap.data(),id:docSnap.id};
     teachersData.push(t);
-    if(t.stage) stagesSet.add(t.stage);
-    if(t.group) groupsSet.add(t.group);
-    t.subjects.forEach(s=>subjectsSet.add(s.name));
-    
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${t.name}</td>
@@ -253,13 +241,10 @@ async function loadTeachers(){
     `;
     teachersTableBody.appendChild(tr);
   });
-  // إعداد الفلاتر
-  const fs=document.getElementById("filterStage"); fs.innerHTML="<option value=''>فلترة حسب المرحلة</option>"; stagesSet.forEach(s=>fs.innerHTML+=`<option>${s}</option>`);
-  const fg=document.getElementById("filterGroup"); fg.innerHTML="<option value=''>فلترة حسب الكروب</option>"; groupsSet.forEach(g=>fg.innerHTML+=`<option>${g}</option>`);
-  const fsub=document.getElementById("filterSubject"); fsub.innerHTML="<option value=''>فلترة حسب المادة</option>"; subjectsSet.forEach(s=>fsub.innerHTML+=`<option>${s}</option>`);
   document.body.style.visibility="visible";
 }
 
+// حذف الأستاذ
 window.deleteTeacher = async function(id){
   if(confirm("هل تريد حذف الأستاذ؟")){
     await deleteDoc(doc(db,"teachers",id));
@@ -267,25 +252,39 @@ window.deleteTeacher = async function(id){
   }
 }
 
+// عرض التفاصيل والاستمارة
 window.showTeacher = function(id){
   const t = teachersData.find(x=>x.id===id);
   if(!t) return;
   const modal = document.getElementById("modal");
   const body = document.getElementById("modalBody");
-  body.innerHTML=`<h3>${t.name}</h3>
+  body.innerHTML=`<div style="text-align:center">
+    <h2>🏫 شعار المعهد</h2>
+    <h3>${t.name}</h3>
     <p>الهاتف: ${t.phone}</p>
     <p>المرحلة: ${t.stage}</p>
     <p>الكروب: ${t.group}</p>
     <p>العنوان: ${t.address}</p>
     <p>ملاحظات: ${t.note}</p>
     <h4>المواد والمستحقات:</h4>
-    ${t.subjects.map(s=>{
-      return `<b>${s.name}</b> - المستحق: ${s.fee}<br>الدفعات:<br>${s.payments.map(p=>p.amount+" بتاريخ "+p.date).join("<br>")}`;
-    }).join("<hr>")}`;
+    ${t.subjects.map(s=>`<b>${s.name}</b> - المستحق: ${s.fee}<br>الدفعات:<br>${s.payments.map(p=>p.amount+" بتاريخ "+p.date).join("<br>")}`).join("<hr>")}
+  </div>`;
   modal.classList.add("open");
 }
 
+// إغلاق نافذة التفاصيل
 document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("modal").classList.remove("open")});
+
+// طباعة استمارة الأستاذ
+document.getElementById("printTeacherBtn").addEventListener("click",()=>{
+  const content = document.getElementById("modalBody").innerHTML;
+  const printWindow = window.open("","طباعة","height=600,width=800");
+  printWindow.document.write("<html><head><title>استمارة الأستاذ</title></head><body>"+content+"</body></html>");
+  printWindow.document.close();
+  printWindow.print();
+});
+
+loadTeachers();
 </script>
 </body>
 </html>
