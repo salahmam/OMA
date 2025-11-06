@@ -5,29 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام OMA - إدارة الأساتذة</title>
 <style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-  --card:#fff;
-}
+:root{--primary:#004aad;--accent:#ffcc33;--bg:#f5f9ff;--card:#fff;}
 *{box-sizing:border-box;}
-body{
-  font-family:'Cairo',sans-serif;
-  margin:0;
-  background:var(--bg);
-  color:#102027;
-  direction:rtl;
-  visibility:hidden;
-}
-header{
-  background:var(--primary);
-  color:#fff;
-  padding:18px;
-  text-align:center;
-  font-size:20px;
-  font-weight:700;
-}
+body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
+header{background:var(--primary);color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
 .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:16px;}
 input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
@@ -41,11 +22,9 @@ table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:var(--primary);color:#fff;}
 .actions button{margin:0 4px;}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700;}
-.modal { position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999;}
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto}
-.flex{display:flex;gap:8px;align-items:center}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
 .filters select{flex:1;}
 </style>
@@ -67,14 +46,14 @@ th{background:var(--primary);color:#fff;}
     <label>المرحلة الدراسية</label>
     <select id="stage">
       <option value="">اختر المرحلة</option>
-      <option>الأول ابتدائي</option><option>الثاني ابتدائي</option><option>الثالث ابتدائي</option>
-      <option>الرابع ابتدائي</option><option>الخامس ابتدائي</option><option>السادس ابتدائي</option>
-      <option>الأول إعدادي علمي</option><option>الأول إعدادي أدبي</option>
-      <option>الثاني إعدادي علمي</option><option>الثاني إعدادي أدبي</option>
-      <option>الثالث إعدادي علمي</option><option>الثالث إعدادي أدبي</option>
-      <option>الرابع إعدادي علمي</option><option>الرابع إعدادي أدبي</option>
-      <option>الخامس إعدادي علمي</option><option>الخامس إعدادي أدبي</option>
-      <option>السادس إعدادي علمي</option><option>السادس إعدادي أدبي</option>
+      <option>أول ابتدائي</option><option>ثاني ابتدائي</option><option>ثالث ابتدائي</option>
+      <option>رابع ابتدائي</option><option>خامس ابتدائي</option><option>سادس ابتدائي</option>
+      <option>أول إعدادي علمي</option><option>أول إعدادي أدبي</option>
+      <option>ثاني إعدادي علمي</option><option>ثاني إعدادي أدبي</option>
+      <option>ثالث إعدادي علمي</option><option>ثالث إعدادي أدبي</option>
+      <option>رابع إعدادي علمي</option><option>رابع إعدادي أدبي</option>
+      <option>خامس إعدادي علمي</option><option>خامس إعدادي أدبي</option>
+      <option>سادس إعدادي علمي</option><option>سادس إعدادي أدبي</option>
     </select>
     <label>الكروب</label>
     <select id="group">
@@ -90,6 +69,8 @@ th{background:var(--primary);color:#fff;}
     </div>
     <label>إجمالي المستحقات من المعهد</label>
     <input id="totalFees" type="number" min="0">
+    <label>نسبة الأستاذ (%)</label>
+    <input id="teacherPercent" type="number" min="0" max="100">
     <label>ملاحظات</label>
     <input id="note" type="text">
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
@@ -117,6 +98,7 @@ th{background:var(--primary);color:#fff;}
         <th>الكروب</th>
         <th>المواد</th>
         <th>المستحقات</th>
+        <th>نسبة الأستاذ</th>
         <th>خيارات</th>
       </tr>
     </thead>
@@ -124,7 +106,7 @@ th{background:var(--primary);color:#fff;}
   </table>
 </div>
 
-<!-- نافذة التفاصيل والدفعات -->
+<!-- نافذة التفاصيل -->
 <div id="modal" class="modal" aria-hidden="true">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -146,7 +128,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
-  storageBucket: "oma0-33cc0.firebasestorage.app",
+  storageBucket: "oma0-33cc0.appspot.com",
   messagingSenderId: "899300774863",
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
@@ -198,6 +180,7 @@ teacherForm.addEventListener("submit", async(e)=>{
   const stage = document.getElementById("stage").value;
   const group = document.getElementById("group").value;
   const totalFees = parseFloat(document.getElementById("totalFees").value)||0;
+  const teacherPercent = parseFloat(document.getElementById("teacherPercent").value)||0;
   const note = document.getElementById("note").value.trim();
 
   const subjects = [];
@@ -211,7 +194,7 @@ teacherForm.addEventListener("submit", async(e)=>{
   if(subjects.length===0){ alert("أضف مادة واحدة على الأقل"); return;}
 
   try{
-    await addDoc(collection(db,"teachers"),{name,phone,address,stage,group,totalFees,note,subjects,createdAt:new Date()});
+    await addDoc(collection(db,"teachers"),{name,phone,address,stage,group,totalFees,teacherPercent,note,subjects,createdAt:new Date()});
     alert("تم حفظ الأستاذ بنجاح");
     teacherForm.reset();
     subjectsContainer.innerHTML="";
@@ -227,6 +210,7 @@ async function loadTeachers(){
   snapshot.forEach(docSnap=>{
     const t = {...docSnap.data(),id:docSnap.id};
     teachersData.push(t);
+    const teacherShare = (t.totalFees * t.teacherPercent/100).toFixed(2);
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${t.name}</td>
@@ -235,6 +219,7 @@ async function loadTeachers(){
       <td>${t.group}</td>
       <td>${t.subjects.map(s=>`${s.name} (المتبقي:${s.fee})`).join("<br>")}</td>
       <td>${t.totalFees}</td>
+      <td>${teacherShare}</td>
       <td class="actions">
         <button class="btn small" onclick="showTeacher('${t.id}')">🔍 التفاصيل</button>
         <button class="btn warn small" onclick="deleteTeacher('${t.id}')">🗑️ حذف</button>
@@ -259,6 +244,8 @@ window.showTeacher = function(id){
   if(!t) return;
   const modal = document.getElementById("modal");
   const body = document.getElementById("modalBody");
+  const teacherShare = (t.totalFees * t.teacherPercent/100).toFixed(2);
+  const instituteShare = (t.totalFees - teacherShare).toFixed(2);
   body.innerHTML=`<div style="text-align:center">
     <h2>🏫 شعار المعهد</h2>
     <h3>${t.name}</h3>
@@ -267,7 +254,10 @@ window.showTeacher = function(id){
     <p>الكروب: ${t.group}</p>
     <p>العنوان: ${t.address}</p>
     <p>ملاحظات: ${t.note}</p>
-    <h4>المواد والمستحقات:</h4>
+    <p>إجمالي المستحقات: ${t.totalFees}</p>
+    <p>نسبة الأستاذ: ${teacherShare}</p>
+    <p>حصة المعهد: ${instituteShare}</p>
+    <h4>المواد والدفعات:</h4>
     ${t.subjects.map(s=>`<b>${s.name}</b> - المستحق: ${s.fee}<br>الدفعات:<br>${s.payments.map(p=>p.amount+" بتاريخ "+p.date).join("<br>")}`).join("<hr>")}
   </div>`;
   modal.classList.add("open");
@@ -281,6 +271,15 @@ document.getElementById("printTeacherBtn").addEventListener("click",()=>{
   const content = document.getElementById("modalBody").innerHTML;
   const printWindow = window.open("","طباعة","height=600,width=800");
   printWindow.document.write("<html><head><title>استمارة الأستاذ</title></head><body>"+content+"</body></html>");
+  printWindow.document.close();
+  printWindow.print();
+});
+
+// طباعة قائمة الأساتذة
+document.getElementById("printListBtn").addEventListener("click",()=>{
+  const content = document.getElementById("teachersTable").outerHTML;
+  const printWindow = window.open("","طباعة","height=600,width=800");
+  printWindow.document.write("<html><head><title>قائمة الأساتذة</title></head><body>"+content+"</body></html>");
   printWindow.document.close();
   printWindow.print();
 });
