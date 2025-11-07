@@ -81,26 +81,8 @@ footer {
   <footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { 
-    getAuth, 
-    signInWithEmailAndPassword,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-
-  // 🔹 إعدادات مشروعك الجديد
-  const firebaseConfig = {
-    apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
-    authDomain: "oma0-33cc0.firebaseapp.com",
-    projectId: "oma0-33cc0",
-    storageBucket: "oma0-33cc0.firebasestorage.app",
-    messagingSenderId: "899300774863",
-    appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
-    measurementId: "G-5CKWYQT9XZ"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+  import { app, auth } from "https://salahmam.github.io/OMA/firebase-config.js";
+  import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
@@ -111,7 +93,7 @@ footer {
   onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log("🔹 المستخدم مسجّل الدخول:", user.email);
-      window.location.href = "dashboard.html"; // تعديل المسار إذا لزم
+      window.location.href = "dashboard.html"; 
     }
   });
 
@@ -150,6 +132,6 @@ footer {
       }
     }
   });
-  </script>
+</script>
 </body>
 </html>
