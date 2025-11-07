@@ -25,9 +25,6 @@ th{background:var(--primary);color:#fff;}
 .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:720px;width:94%;max-height:90vh;overflow:auto;}
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-.filters select{flex:1;}
-/* تصميم احترافي للطباعة */
 @media print {
   body{background:#fff;color:#000;}
   table, th, td{border:1px solid #000;}
@@ -139,6 +136,19 @@ const teachersTableBody = document.querySelector("#teachersTable tbody");
 const subjectsContainer = document.getElementById("subjectsContainer");
 const addSubjectBtn = document.getElementById("addSubjectBtn");
 let teachersData = [];
+let studentsData = [];
+
+// تحميل بيانات الطلاب
+async function loadStudents(){
+  try{
+    const snapshot = await getDocs(collection(db,"students"));
+    studentsData = [];
+    snapshot.forEach(docSnap=>{
+      const s = {...docSnap.data(),id:docSnap.id};
+      studentsData.push(s);
+    });
+  }catch(err){console.error(err);}
+}
 
 // إضافة مادة جديدة
 addSubjectBtn.addEventListener("click",()=>{
@@ -184,11 +194,23 @@ teacherForm.addEventListener("submit", async(e)=>{
 // تحميل الأساتذة
 async function loadTeachers(){
   try{
+    await loadStudents(); // جلب بيانات الطلاب قبل عرض الأساتذة
     const snapshot = await getDocs(collection(db,"teachers"));
     teachersTableBody.innerHTML="";
     teachersData=[];
     snapshot.forEach(docSnap=>{
       const t = {...docSnap.data(),id:docSnap.id};
+      // حساب المستحق لكل مادة من الطلاب
+      t.subjects.forEach(sub=>{
+        let total = 0;
+        studentsData.forEach(stu=>{
+          if(stu.stage===t.stage && stu.group===t.group){
+            const studentSub = stu.subjects?.find(s=>s.name===sub.name);
+            if(studentSub) total += studentSub.fee || 0;
+          }
+        });
+        sub.remaining = total - (sub.payments?.reduce((a,b)=>a+b.amount,0)||0);
+      });
       teachersData.push(t);
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -244,7 +266,7 @@ window.showTeacher = async function(id){
         const date = new Date().toLocaleDateString();
         if(!t.subjects[subIndex].payments) t.subjects[subIndex].payments=[];
         t.subjects[subIndex].payments.push({amount:parseFloat(payment),date});
-        t.subjects[subIndex].remaining = (t.subjects[subIndex].remaining||0) - parseFloat(payment);
+        t.subjects[subIndex].remaining -= parseFloat(payment);
         if(t.subjects[subIndex].remaining < 0) t.subjects[subIndex].remaining = 0;
         const docRef = doc(db,"teachers",t.id);
         await updateDoc(docRef,{subjects:t.subjects});
