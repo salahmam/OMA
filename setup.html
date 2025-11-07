@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة الحصص - المعهد</title>
+<title>تهيئة الحضور والغياب - المعهد</title>
 <style>
 body { font-family:'Cairo',sans-serif; padding:30px; background:#f5f9ff; color:#102027; }
 button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; }
@@ -13,8 +13,8 @@ pre { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; whit
 </head>
 <body>
 
-<h2>🚀 تهيئة Collection الحصص - المعهد</h2>
-<p>اضغط على الزر لإنشاء جميع الحقول الأساسية لكل حصة جديدة تلقائيًا.</p>
+<h2>🚀 تهيئة Collection الحضور والغياب - المعهد</h2>
+<p>اضغط على الزر لإنشاء جميع الحقول الأساسية لكل حصة لتسجيل الحضور والغياب.</p>
 <button id="initBtn">ابدأ التهيئة</button>
 <pre id="log"></pre>
 
@@ -43,30 +43,26 @@ const initBtn = document.getElementById("initBtn");
 
 function addLog(msg){ log.textContent += msg + "\n"; }
 
-// ✅ إنشاء هيكل حصة جديد
-async function createClass(classId){
-  const classRef = doc(db, "classes", classId);
+// ✅ إنشاء هيكل تسجيل حضور لدرس جديد
+async function createAttendance(classId){
+  const attRef = doc(db, "attendance", classId);
 
-  if((await getDoc(classRef)).exists()){
-    addLog(`⚠️ الحصة ${classId} موجودة مسبقًا`);
+  if((await getDoc(attRef)).exists()){
+    addLog(`⚠️ تسجيل الحضور للحصة ${classId} موجود مسبقًا`);
     return;
   }
 
-  await setDoc(classRef, {
-    subject: "",
-    teacherId: "",
-    group: "",
-    room: "",          // القاعة
-    day: "",           // يوم الأسبوع
-    startTime: "",     // وقت البداية
-    endTime: "",       // وقت النهاية
-    students: [],      // الطلاب المسجلين بالحصة
-    attendance: [],    // الحضور والغياب
+  await setDoc(attRef, {
+    classId: classId,
+    students: [],       // كل الطلاب المرتبطين بالحصة
+    present: [],        // الطلاب الحاضرون
+    absent: [],         // الطلاب الغائبون
+    date: "",           // تاريخ الحصة
     notes: "",
     createdAt: new Date().toISOString()
   });
 
-  addLog(`✅ تم إنشاء هيكل الحصة ${classId}`);
+  addLog(`✅ تم إنشاء هيكل الحضور والغياب للحصة ${classId}`);
 }
 
 initBtn.addEventListener("click", async()=>{
@@ -74,12 +70,12 @@ initBtn.addEventListener("click", async()=>{
   initBtn.textContent = "⏳ جاري التهيئة...";
 
   try {
-    // أمثلة حصص تجريبية
-    await createClass("class_001");
-    await createClass("class_002");
-    await createClass("class_003");
+    // أمثلة تسجيل حضور لثلاث حصص
+    await createAttendance("class_001");
+    await createAttendance("class_002");
+    await createAttendance("class_003");
 
-    addLog("\n🎉 تم تهيئة جميع الحقول الأساسية للحصص بنجاح!");
+    addLog("\n🎉 تم تهيئة جميع الحقول الأساسية للحضور والغياب بنجاح!");
     initBtn.textContent = "تم الانتهاء";
   } catch(e){
     addLog("❌ خطأ أثناء التهيئة: "+e.message);
