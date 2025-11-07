@@ -119,13 +119,17 @@ th{background:var(--primary);color:#fff}
 </div>
 
 <script type="module">
-// ---------------- Firebase ----------------
+// -------------- IMPORTS (مجمّعة في الأعلى، لا تعديل لاحق هنا) --------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// safety: log early so we can see if module loads
+console.log('teachers.js module loaded');
+
+// ---------------- Firebase config + init ----------------
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -357,7 +361,6 @@ window.showTeacher = async function(id){
   const t = teachersData.find(x=>x.id===id);
   if(!t) return;
   modalTitle.textContent = `تفاصيل الأستاذ: ${t.name}`;
-  // build HTML: top right = teacher info, top left = financial summary, bottom = tables
   const totalAll = t.subjects.reduce((a,b)=>a + (b.total||0), 0);
   const receivedAll = t.subjects.reduce((a,b)=>a + (b.received||0), 0);
   const remainingAll = t.subjects.reduce((a,b)=>a + (b.remaining||0), 0);
@@ -380,7 +383,6 @@ window.showTeacher = async function(id){
     </table>
   `;
 
-  // subjects detail + payments list and add-payment buttons
   let subjectsHtml = t.subjects.map((s, idx)=> {
     const paymentsHtml = (s.payments||[]).map(p=>`<div>${p.amount} — ${p.date}</div>`).join('') || '<div>-</div>';
     return `<div style="border:1px solid #eee;padding:8px;margin-bottom:8px">
@@ -405,10 +407,8 @@ window.showTeacher = async function(id){
     <div style="margin-top:12px;text-align:right"><button id="savePaymentsBtn" class="btn">حفظ التغييرات</button></div>
   `;
 
-  // open modal
   modal.classList.add('open');
 
-  // attach add-payment handlers
   modalBody.querySelectorAll('.addPaymentBtn').forEach(btn=>{
     btn.addEventListener('click', async (ev)=>{
       const idx = parseInt(btn.dataset.idx);
@@ -419,9 +419,7 @@ window.showTeacher = async function(id){
       const date = new Date().toLocaleDateString();
       if(!t.subjects[idx].payments) t.subjects[idx].payments = [];
       t.subjects[idx].payments.push({ amount: amt, date });
-      // update computed values
       t.subjects[idx].received = (t.subjects[idx].payments || []).reduce((a,b)=>a + (b.amount||0), 0);
-      // recompute remaining by scanning students again (safer)
       let total = 0;
       studentsData.forEach(st => {
         if(st.stage === t.subjects[idx].stage && st.group === t.subjects[idx].group){
@@ -431,13 +429,11 @@ window.showTeacher = async function(id){
       });
       t.subjects[idx].total = total;
       t.subjects[idx].remaining = Math.max(0, (t.subjects[idx].total || 0) - (t.subjects[idx].received || 0));
-      // reflect UI quickly
       showTeacher(t.id);
       alert('تم تسجيل الدفعة');
     });
   });
 
-  // savePaymentsBtn to persist all subject payments to Firestore
   document.getElementById('savePaymentsBtn').addEventListener('click', async ()=>{
     try{
       await updateDoc(doc(db,'teachers',t.id), { subjects: t.subjects });
@@ -456,7 +452,6 @@ printTeacherBtn.addEventListener('click', ()=>{
   const teacher = teachersData.find(t => t.name === title);
   if(!teacher){ alert('لا توجد بيانات للطباعة'); return; }
 
-  // recompute totals (safety)
   teacher.subjects.forEach(s=>{
     s.received = (s.payments || []).reduce((a,b)=>a + (b.amount||0), 0);
     let total = 0;
@@ -474,7 +469,6 @@ printTeacherBtn.addEventListener('click', ()=>{
   const receivedAll = teacher.subjects.reduce((a,b)=>a + (b.received||0), 0);
   const remainingAll = Math.max(0, totalAll - receivedAll);
 
-  // build payments rows
   let paymentsRows = '';
   teacher.subjects.forEach(s=>{
     if((s.payments||[]).length === 0){
@@ -577,9 +571,6 @@ function populateFilters(){
   // fill stage/group selects in subject rows defaults if needed
 }
 loadInitial();
-
-// helper missing imports fix
-import { getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 </script>
 </body>
