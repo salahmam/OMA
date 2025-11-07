@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة المعاهد - OMA</title>
+<style>
+  body{font-family:'Cairo',sans-serif;background:#f5f9ff;padding:20px;color:#102027}
+  header{background:#004aad;color:#fff;padding:12px;border-radius:8px;text-align:center;margin-bottom:20px}
+  .wrap{max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+  h2{color:#004aad;text-align:center;margin-bottom:20px}
+  label{display:block;margin-top:12px;font-weight:600}
+  input[type=text], input[type=email], input[type=password]{width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;margin-top:4px}
+  button{margin-top:16px;padding:10px 16px;background:#004aad;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+  table{width:100%;border-collapse:collapse;margin-top:20px}
+  th,td{border:1px solid #ccc;padding:8px;text-align:center}
+  th{background:#004aad;color:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>إدارة المعاهد</h1>
+</header>
+
+<div class="wrap">
+  <h2>إضافة معهد جديد</h2>
+  <form id="addInstituteForm">
+    <label>اسم المعهد</label>
+    <input type="text" id="instName" required placeholder="اسم المعهد">
+
+    <label>إيميل المدير</label>
+    <input type="email" id="instEmail" required placeholder="admin@example.com">
+
+    <label>كلمة المرور</label>
+    <input type="password" id="instPassword" required placeholder="كلمة المرور">
+
+    <button type="submit">💾 إضافة المعهد</button>
+  </form>
+  <div id="msg" style="margin-top:12px;color:green;"></div>
+
+  <h2 style="margin-top:40px">قائمة المعاهد</h2>
+  <table>
+    <thead><tr><th>اسم المعهد</th><th>إيميل المدير</th><th>تاريخ الإنشاء</th></tr></thead>
+    <tbody id="institutesList"></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, orderBy, query } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const addInstituteForm = document.getElementById('addInstituteForm');
+const msg = document.getElementById('msg');
+const institutesList = document.getElementById('institutesList');
+
+// تأكد أن المسؤول مسجل الدخول
+onAuthStateChanged(auth, user=>{
+  if(!user) window.location.href='login.html';
+  loadInstitutes();
+});
+
+// إضافة معهد جديد
+addInstituteForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = document.getElementById('instName').value.trim();
+  const email = document.getElementById('instEmail').value.trim();
+  const password = document.getElementById('instPassword').value.trim();
+  const createdAt = new Date().toISOString();
+
+  try{
+    // إنشاء مستخدم Firebase Auth للمدير
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userId = userCredential.user.uid;
+
+    // إنشاء وثيقة المعهد في Firestore
+    const docRef = await addDoc(collection(db,'institutes'), {
+      name, email, userId, createdAt
+    });
+
+    // إنشاء مجموعات افتراضية للمعهد (قاعدة بيانات منفصلة افتراضية)
+    const instituteId = docRef.id;
+    await addDoc(collection(db, `institute_${instituteId}/settings`), { createdAt });
+
+    msg.textContent = 'تم إنشاء المعهد بنجاح ✅';
+    addInstituteForm.reset();
+    loadInstitutes();
+  }catch(err){
+    console.error(err);
+    msg.textContent = 'حدث خطأ أثناء إنشاء المعهد ❌';
+  }
+});
+
+// تحميل قائمة المعاهد
+async function loadInstitutes(){
+  institutesList.innerHTML = '';
+  try{
+    const q = query(collection(db,'institutes'), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    snap.forEach(d=>{
+      const data = d.data();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${data.name || '-'}</td>
+        <td>${data.email || '-'}</td>
+        <td>${new Date(data.createdAt).toLocaleString()}</td>
+      `;
+      institutesList.appendChild(tr);
+    });
+  }catch(err){ console.error(err); }
+}
+</script>
+
+</body>
+</html>
