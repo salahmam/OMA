@@ -73,45 +73,43 @@ th{background:#004aad;color:#fff;}
 
 <script type="module">
 // 🔹 Firebase إعداد
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { db, auth } from "./firebase-config.js";
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { setDoc, doc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDt2HAOKr3iko8V-u392vh2R2my14km7ag",
-  authDomain: "oma0.firebaseapp.com",
-  projectId: "oma0",
-  storageBucket: "oma0.appspot.com",
-  messagingSenderId: "774171603105",
-  appId: "1:774171603105:web:91f2a5f44c4dde684080e0"
-};
+// ----- تحميل أسماء الطلاب والأساتذة من Firestore -----
+async function fetchNames() {
+  const studentsSnapshot = await getDocs(collection(db,"students"));
+  const teachersSnapshot = await getDocs(collection(db,"teachers"));
+  return {
+    students: studentsSnapshot.docs.map(d=>d.data().name),
+    teachers: teachersSnapshot.docs.map(d=>d.data().name)
+  };
+}
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// 🔹 حماية الصفحة
-onAuthStateChanged(auth, user=>{
-  if(!user) window.location.href="login.html";
-});
-
-// ----- بيانات وهمية للاختبار -----
-let dummyStudents = ["أحمد علي","سارة محمد","محمد خالد"];
-let dummyTeachers = ["أستاذ علي","أستاذة ليلى","أستاذ كريم"];
-let usersData = [];
-
-// ----- تحديث قائمة الأسماء عند تغيير النوع -----
-const userTypeSelect = document.getElementById("userType");
-const userNameSelect = document.getElementById("userName");
-
-function updateNames() {
+let allNames = {students:[], teachers:[]};
+async function updateNames(){
   const type = userTypeSelect.value;
   userNameSelect.innerHTML = "<option value=''>اختر الاسم</option>";
-  let names = type==="student"?dummyStudents:dummyTeachers;
-  names.forEach(n => {userNameSelect.innerHTML += `<option value="${n}">${n}</option>`});
+  let names = type==="student"?allNames.students:allNames.teachers;
+  names.forEach(n=>userNameSelect.innerHTML += `<option value="${n}">${n}</option>`);
 }
+
+// ----- عناصر الصفحة -----
+const userTypeSelect = document.getElementById("userType");
+const userNameSelect = document.getElementById("userName");
+const usersTableBody = document.querySelector("#usersTable tbody");
+
+// ----- تحميل البيانات عند البداية -----
+async function init() {
+  allNames = await fetchNames();
+  updateNames();
+}
+init();
 userTypeSelect.addEventListener("change", updateNames);
-updateNames();
+
+// ----- تخزين المستخدمين مؤقتاً لعرضهم -----
+let usersData = [];
 
 // ----- إنشاء مستخدم جديد -----
 document.getElementById("userForm").addEventListener("submit", async e=>{
@@ -125,17 +123,16 @@ document.getElementById("userForm").addEventListener("submit", async e=>{
   try{
     const userCred = await createUserWithEmailAndPassword(auth,email,password);
     const uid = userCred.user.uid;
-    await setDoc(doc(db,"users",uid), {name,type,email,teacherPercent:0});
+    await setDoc(doc(db,"users",uid), {name,type,email,teacherPercent:0,createdAt:new Date().toISOString()});
     usersData.push({id:uid,type,name,email});
     renderUsers();
     e.target.reset();
     updateNames();
-    alert("تم إنشاء المستخدم بنجاح");
-  }catch(err){console.error(err); alert("حدث خطأ أثناء إنشاء المستخدم");}
+    alert("✅ تم إنشاء المستخدم بنجاح!");
+  }catch(err){console.error(err);alert("❌ حدث خطأ: "+err.message);}
 });
 
 // ----- عرض المستخدمين -----
-const usersTableBody = document.querySelector("#usersTable tbody");
 function renderUsers(){
   const filter = document.getElementById("filterType").value;
   usersTableBody.innerHTML="";
@@ -175,9 +172,8 @@ document.getElementById("savePercentBtn").addEventListener("click", async ()=>{
   const iPercent = parseFloat(document.getElementById("institutePercent").value) || 0;
   if(tPercent + iPercent !== 100){ alert("مجموع النسب يجب أن يكون 100%"); return; }
 
-  // حفظ في Firebase ضمن وثيقة settings
   await setDoc(doc(db,"settings","percentages"), {teacher:tPercent,institute:iPercent});
-  alert(`تم حفظ النسب: الأستاذ ${tPercent}% - المعهد ${iPercent}%`);
+  alert(`✅ تم حفظ النسب: الأستاذ ${tPercent}% - المعهد ${iPercent}%`);
 });
 </script>
 </body>
