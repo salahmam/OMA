@@ -119,12 +119,17 @@ th{background:var(--primary);color:#fff}
 </div>
 
 <script type="module">
+// -------------- IMPORTS (مجمّعة في الأعلى، لا تعديل لاحق هنا) --------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// safety: log early so we can see if module loads
+console.log('teachers.js module loaded');
+
+// ---------------- Firebase config + init ----------------
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -138,6 +143,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// ---------------- Elements ----------------
 const subjectsContainer = document.getElementById('subjectsContainer');
 const addSubjectBtn = document.getElementById('addSubjectBtn');
 const teacherForm = document.getElementById('teacherForm');
@@ -156,22 +162,25 @@ const closeModalBtn = document.getElementById('closeModal');
 const printTeacherBtn = document.getElementById('printTeacherBtn');
 const instituteNameHeader = document.getElementById('instituteName');
 
+// ---------------- State ----------------
 let teachersData = [];
 let studentsData = [];
 let editingTeacherId = null;
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
-let settingsData = { name: '', institutePercent: 0 };
+let settingsData = { name: '' };
 
-// ---------------- Auth guard ----------------
+// ---------------- Auth guard (require login) ----------------
 onAuthStateChanged(auth, user => {
-  if(!user) window.location.href = 'login.html';
-  else {
+  if(!user) {
+    window.location.href = 'login.html';
+  } else {
     document.body.style.visibility = 'visible';
     initPage();
   }
 });
 
+// ---------------- Init ----------------
 async function initPage(){
   await loadSettings();
   populateStageGroup();
@@ -180,6 +189,7 @@ async function initPage(){
   populateFilters();
 }
 
+// ---------------- Load settings ----------------
 async function loadSettings(){
   try{
     const sdoc = await getDoc(doc(db,'settings','info'));
@@ -194,11 +204,17 @@ async function loadSettings(){
   }catch(e){ console.warn(e); }
 }
 
+// ---------------- Populate stage/group selects ----------------
 function populateStageGroup(){
-  STAGES.forEach(s=>{ filterStage.innerHTML += `<option value="${s}">${s}</option>`; });
-  GROUPS.forEach(g=>{ filterGroup.innerHTML += `<option value="${g}">${g}</option>`; });
+  STAGES.forEach(s=>{
+    filterStage.innerHTML += `<option value="${s}">${s}</option>`;
+  });
+  GROUPS.forEach(g=>{
+    filterGroup.innerHTML += `<option value="${g}">${g}</option>`;
+  });
 }
 
+// ---------------- Load students (to compute totals) ----------------
 async function loadStudents(){
   studentsData = [];
   try{
@@ -208,6 +224,7 @@ async function loadStudents(){
   }catch(e){ console.error('loadStudents', e); }
 }
 
+// ---------------- Add / remove subject-row UI ----------------
 function createSubjectRow(data = {}) {
   const wrapper = document.createElement('div');
   wrapper.className = 'subject-row';
@@ -229,6 +246,7 @@ function createSubjectRow(data = {}) {
 }
 addSubjectBtn.addEventListener('click', ()=> createSubjectRow());
 
+// ---------------- Clear form ----------------
 clearFormBtn.addEventListener('click', ()=>{
   teacherForm.reset();
   subjectsContainer.innerHTML = '';
@@ -236,6 +254,7 @@ clearFormBtn.addEventListener('click', ()=>{
   document.getElementById('formTitle').textContent = 'أضف أستاذ جديد';
 });
 
+// ---------------- Save teacher ----------------
 teacherForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
@@ -269,6 +288,7 @@ teacherForm.addEventListener('submit', async (e)=>{
   }catch(err){ console.error(err); alert('حدث خطأ أثناء الحفظ'); }
 });
 
+// ---------------- Load teachers and compute totals ----------------
 async function loadTeachers(){
   teachersData = [];
   try{
@@ -277,7 +297,9 @@ async function loadTeachers(){
     teachersTableBody.innerHTML = '';
     for(const docSnap of snap.docs){
       const t = { id: docSnap.id, ...(docSnap.data()) };
+      // compute totals for each subject element
       for(const sub of (t.subjects||[])){
+        // sum fees from students matching subject+stage+group
         let total = 0;
         studentsData.forEach(st=>{
           if(st.stage === sub.stage && st.group === sub.group){
@@ -285,14 +307,13 @@ async function loadTeachers(){
             if(studentSub) total += parseFloat(studentSub.fee || 0);
           }
         });
-        // خصم نسبة المعهد
-        const institutePercent = parseFloat(settingsData.institutePercent || 0);
-        sub.total = total * (1 - institutePercent/100);
+        sub.total = total;
         sub.received = (sub.payments || []).reduce((a,b)=>a + (b.amount||0), 0);
-        sub.remaining = Math.max(0, sub.total - sub.received);
+        sub.remaining = Math.max(0, (sub.total||0) - sub.received);
       }
       teachersData.push(t);
 
+      // create table row
       const tr = document.createElement('tr');
       const approxTotal = t.subjects.reduce((a,b)=>a + (b.total||0), 0);
       tr.innerHTML = `
@@ -312,6 +333,7 @@ async function loadTeachers(){
   }catch(e){ console.error('loadTeachers', e); }
 }
 
+// ---------------- start edit teacher ----------------
 window.startEditTeacher = function(id){
   const t = teachersData.find(x=>x.id===id); if(!t) return;
   editingTeacherId = id;
@@ -325,6 +347,7 @@ window.startEditTeacher = function(id){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+// ---------------- delete teacher ----------------
 window.deleteTeacher = async function(id){
   if(!confirm('هل تريد حذف هذا الأستاذ؟')) return;
   try{
@@ -333,6 +356,7 @@ window.deleteTeacher = async function(id){
   }catch(e){ console.error(e); alert('خطأ عند الحذف'); }
 };
 
+// ---------------- show teacher details (modal) ----------------
 window.showTeacher = async function(id){
   const t = teachersData.find(x=>x.id===id);
   if(!t) return;
@@ -342,53 +366,212 @@ window.showTeacher = async function(id){
   const remainingAll = t.subjects.reduce((a,b)=>a + (b.remaining||0), 0);
 
   let rightInfo = `
-    <table style="width:100%;border-collapse:collapse;margin-top:8px">
-      <thead>
-        <tr><th>المادة</th><th>المرحلة</th><th>الكروب</th><th>المستحق</th><th>المستلم</th><th>المتبقي</th></tr>
-      </thead>
-      <tbody>
-        ${t.subjects.map(s=>`<tr>
-          <td>${s.subject}</td><td>${s.stage}</td><td>${s.group}</td><td>${s.total}</td><td>${s.received}</td><td>${s.remaining}</td>
-        </tr>`).join('')}
-      </tbody>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">الاسم</th><td style="border:1px solid #ddd;padding:8px">${t.name}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">الهاتف</th><td style="border:1px solid #ddd;padding:8px">${t.phone || '-'}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">العنوان</th><td style="border:1px solid #ddd;padding:8px">${t.address || '-'}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">ملاحظات</th><td style="border:1px solid #ddd;padding:8px">${t.note || '-'}</td></tr>
     </table>
-    <div style="margin-top:12px"><strong>الإجمالي:</strong> مستحق ${totalAll} - مستلم ${receivedAll} - متبقي ${remainingAll}</div>
   `;
-  modalBody.innerHTML = rightInfo;
+
+  let leftInfo = `
+    <table style="width:100%;border-collapse:collapse">
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">إجمالي مستحق</th><td style="border:1px solid #ddd;padding:8px">${totalAll}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">المستلم</th><td style="border:1px solid #ddd;padding:8px">${receivedAll}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">المتبقي</th><td style="border:1px solid #ddd;padding:8px">${remainingAll}</td></tr>
+      <tr><th style="background:#eee;border:1px solid #ddd;padding:8px;text-align:right">عدد العناصر</th><td style="border:1px solid #ddd;padding:8px">${t.subjects.length}</td></tr>
+    </table>
+  `;
+
+  let subjectsHtml = t.subjects.map((s, idx)=> {
+    const paymentsHtml = (s.payments||[]).map(p=>`<div>${p.amount} — ${p.date}</div>`).join('') || '<div>-</div>';
+    return `<div style="border:1px solid #eee;padding:8px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${s.subject}</strong> — <span style="color:#546e7a">${s.stage} — ${s.group}</span></div>
+        <div>
+          <button class="btn small addPaymentBtn" data-idx="${idx}">💰 إضافة دفعة</button>
+        </div>
+      </div>
+      <div style="margin-top:8px">إجمالي: ${s.total || 0} — مستلم: ${s.received || 0} — متبقي: ${s.remaining || 0}</div>
+      <div style="margin-top:8px"><strong>الدفعات:</strong><br>${paymentsHtml}</div>
+    </div>`;
+  }).join('');
+
+  modalBody.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="width:48%">${rightInfo}</div>
+      <div style="width:48%">${leftInfo}</div>
+    </div>
+    <hr>
+    <h4>تفاصيل العناصر</h4>
+    ${subjectsHtml}
+    <div style="margin-top:12px;text-align:right"><button id="savePaymentsBtn" class="btn">حفظ التغييرات</button></div>
+  `;
+
   modal.classList.add('open');
+
+  modalBody.querySelectorAll('.addPaymentBtn').forEach(btn=>{
+    btn.addEventListener('click', async (ev)=>{
+      const idx = parseInt(btn.dataset.idx);
+      const amountStr = prompt('أدخل قيمة الدفعة:');
+      if(!amountStr) return;
+      const amt = parseFloat(amountStr);
+      if(isNaN(amt) || amt <= 0){ alert('قيمة غير صالحة'); return; }
+      const date = new Date().toLocaleDateString();
+      if(!t.subjects[idx].payments) t.subjects[idx].payments = [];
+      t.subjects[idx].payments.push({ amount: amt, date });
+      t.subjects[idx].received = (t.subjects[idx].payments || []).reduce((a,b)=>a + (b.amount||0), 0);
+      let total = 0;
+      studentsData.forEach(st => {
+        if(st.stage === t.subjects[idx].stage && st.group === t.subjects[idx].group){
+          const stsub = (st.subjects||[]).find(ss=>ss.name === t.subjects[idx].subject);
+          if(stsub) total += parseFloat(stsub.fee || 0);
+        }
+      });
+      t.subjects[idx].total = total;
+      t.subjects[idx].remaining = Math.max(0, (t.subjects[idx].total || 0) - (t.subjects[idx].received || 0));
+      showTeacher(t.id);
+      alert('تم تسجيل الدفعة');
+    });
+  });
+
+  document.getElementById('savePaymentsBtn').addEventListener('click', async ()=>{
+    try{
+      await updateDoc(doc(db,'teachers',t.id), { subjects: t.subjects });
+      alert('تم حفظ الدفعات بنجاح');
+      await loadTeachers();
+    }catch(e){ console.error(e); alert('خطأ أثناء الحفظ'); }
+  });
 };
 
+// ---------------- close modal ----------------
 closeModalBtn.addEventListener('click', ()=> modal.classList.remove('open'));
-printTeacherBtn.addEventListener('click', ()=> window.print());
 
-// ---------------- Filters ----------------
+// ---------------- print teacher form (professional) ----------------
+printTeacherBtn.addEventListener('click', ()=>{
+  const title = modalTitle.textContent.replace('تفاصيل الأستاذ:','').trim();
+  const teacher = teachersData.find(t => t.name === title);
+  if(!teacher){ alert('لا توجد بيانات للطباعة'); return; }
+
+  teacher.subjects.forEach(s=>{
+    s.received = (s.payments || []).reduce((a,b)=>a + (b.amount||0), 0);
+    let total = 0;
+    studentsData.forEach(st =>{
+      if(st.stage === s.stage && st.group === s.group){
+        const stsub = (st.subjects||[]).find(ss=>ss.name === s.subject);
+        if(stsub) total += parseFloat(stsub.fee || 0);
+      }
+    });
+    s.total = total;
+    s.remaining = Math.max(0, s.total - s.received);
+  });
+
+  const totalAll = teacher.subjects.reduce((a,b)=>a + (b.total||0), 0);
+  const receivedAll = teacher.subjects.reduce((a,b)=>a + (b.received||0), 0);
+  const remainingAll = Math.max(0, totalAll - receivedAll);
+
+  let paymentsRows = '';
+  teacher.subjects.forEach(s=>{
+    if((s.payments||[]).length === 0){
+      paymentsRows += `<tr><td>${s.subject}</td><td>-</td><td>-</td></tr>`;
+    } else {
+      s.payments.forEach(p=>{
+        paymentsRows += `<tr><td>${s.subject}</td><td style="text-align:center">${p.amount}</td><td style="text-align:center">${p.date}</td></tr>`;
+      });
+    }
+  });
+
+  const institute = settingsData.name || '';
+
+  const html = `
+  <html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>استمارة أستاذ</title>
+  <style>
+    body{font-family:'Cairo',sans-serif; margin:20px; color:#102027;}
+    .header{text-align:center;margin-bottom:12px}
+    .header h1{color:#004aad;margin:0}
+    .top{display:flex;gap:12px;justify-content:space-between;margin-bottom:12px}
+    .box{width:48%;border:1px solid #ddd;padding:10px;border-radius:6px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid #ccc;padding:8px;text-align:center}
+    th{background:#004aad;color:#fff}
+    .footer{display:flex;justify-content:space-between;margin-top:24px}
+    .sign{width:45%;text-align:center;border-top:1px dashed #777;padding-top:8px}
+  </style>
+  </head><body>
+    <div class="header"><h1>${institute}</h1><h3>استمارة أستاذ</h3></div>
+    <div class="top">
+      <div class="box">
+        <h4 style="margin:0 0 8px 0">معلومات الأستاذ</h4>
+        <table><tr><th>الاسم</th><td>${teacher.name}</td></tr>
+        <tr><th>الهاتف</th><td>${teacher.phone||'-'}</td></tr>
+        <tr><th>العنوان</th><td>${teacher.address||'-'}</td></tr>
+        <tr><th>ملاحظات</th><td>${teacher.note||'-'}</td></tr></table>
+      </div>
+
+      <div class="box">
+        <h4 style="margin:0 0 8px 0">المعلومات المالية</h4>
+        <table>
+          <tr><th>إجمالي مستحق</th><td>${totalAll}</td></tr>
+          <tr><th>المدفوع</th><td>${receivedAll}</td></tr>
+          <tr><th>المتبقي</th><td>${remainingAll}</td></tr>
+          <tr><th>عدد العناصر</th><td>${teacher.subjects.length}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h4>الدفعات (المادة — المبلغ — التاريخ)</h4>
+    <table>
+      <thead><tr><th>المادة</th><th>المبلغ</th><th>التاريخ</th></tr></thead>
+      <tbody>${paymentsRows}</tbody>
+    </table>
+
+    <div class="footer">
+      <div class="sign">ختم المعهد</div>
+      <div class="sign">توقيع الأستاذ</div>
+    </div>
+  </body></html>
+  `;
+
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(html); w.document.close(); w.focus(); w.print();
+});
+
+// ---------------- Filters / Search ----------------
 applyFiltersBtn.addEventListener('click', ()=>{
-  let filtered = teachersData;
-  const sVal = filterStage.value;
-  const gVal = filterGroup.value;
-  if(sVal) filtered = filtered.filter(t=>t.subjects.some(s=>s.stage===sVal));
-  if(gVal) filtered = filtered.filter(t=>t.subjects.some(s=>s.group===gVal));
-  const search = searchBox.value.toLowerCase();
-  if(search) filtered = filtered.filter(t=>t.name.toLowerCase().includes(search) || t.subjects.some(s=>s.subject.toLowerCase().includes(search)));
-  teachersTableBody.innerHTML = '';
-  filtered.forEach(t=>{
+  const filter = { name: searchBox.value.trim(), stage: filterStage.value, group: filterGroup.value };
+  renderFiltered(filter);
+});
+function renderFiltered(filter){
+  const tbody = teachersTableBody;
+  tbody.innerHTML = '';
+  let list = teachersData.slice();
+  if(filter.name) list = list.filter(t => t.name.includes(filter.name) || t.subjects.some(s=>s.subject.includes(filter.name)));
+  if(filter.stage) list = list.filter(t => t.subjects.some(s=>s.stage === filter.stage));
+  if(filter.group) list = list.filter(t => t.subjects.some(s=>s.group === filter.group));
+  list.forEach(t => {
     const tr = document.createElement('tr');
     const approxTotal = t.subjects.reduce((a,b)=>a + (b.total||0), 0);
-    tr.innerHTML = `
-      <td>${t.name}</td>
-      <td>${t.phone || '-'}</td>
-      <td>${t.subjects.length}</td>
-      <td>${approxTotal}</td>
+    tr.innerHTML = `<td>${t.name}</td><td>${t.phone||'-'}</td><td>${t.subjects.length}</td><td>${approxTotal}</td>
       <td>
         <button class="btn small" onclick="showTeacher('${t.id}')">عرض</button>
         <button class="btn small ghost" onclick="startEditTeacher('${t.id}')">✏️</button>
         <button class="btn small warn" onclick="deleteTeacher('${t.id}')">🗑️</button>
-      </td>
-    `;
-    teachersTableBody.appendChild(tr);
+      </td>`;
+    tbody.appendChild(tr);
   });
-  totalCount.textContent = filtered.length;
-});
+  totalCount.textContent = list.length;
+}
+
+// ---------------- Initial load ----------------
+async function loadInitial(){
+  await loadStudents();
+  await loadTeachers();
+  populateFilters();
+}
+function populateFilters(){
+  // fill stage/group selects in subject rows defaults if needed
+}
+loadInitial();
+
 </script>
 </body>
 </html>
