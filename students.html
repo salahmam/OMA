@@ -430,39 +430,49 @@ printListBtn.addEventListener('click',()=>{
 
 /* --- Print student --- */
 printStudentBtn.addEventListener('click', ()=>{
-  const studentData = modalBody.innerHTML;
-  const institute = settingsData.name || '';
-  
-  // استخرج بيانات الطالب من modalBody
-  const parser = new DOMParser();
-  const modalDoc = parser.parseFromString(studentData, 'text/html');
+  const studentId = modalTitle.textContent.split(':')[1]?.trim();
+  if(!studentId) return;
 
-  // جمع البيانات الأساسية
-  const infoText = modalDoc.querySelector('div')?.innerText || '';
-  const subjectsDivs = modalDoc.querySelectorAll('div > div');
-  
+  const student = studentsCache.find(s => s.name === studentId);
+  if(!student) return;
+
+  const institute = settingsData.name || '';
+
+  // حساب المبلغ المدفوع والمتبقي لكل مادة
+  let totalPaid = 0;
+  student.subjects.forEach(sub => {
+    const paid = sub.payments.reduce((a,b)=>a+b.amount,0);
+    sub.paid = paid;
+    sub.remaining = Math.max(0, sub.fee - paid);
+    totalPaid += paid;
+  });
+
+  const totalFee = student.subjects.reduce((a,b)=>a+b.fee,0);
+  const totalRemaining = totalFee - totalPaid;
+
   // توليد جدول الدفعات
   let paymentsTable = `<table style="width:100%; border-collapse:collapse; margin-top:10px;">
     <thead>
       <tr style="background:#004aad; color:white;">
-        <th>المادة</th><th>إجمالي القسط</th><th>المتبقي</th><th>الدفعات</th>
+        <th>المادة</th><th>المبلغ المدفوع</th><th>تاريخ الدفعة</th>
       </tr>
     </thead>
     <tbody>`;
-  subjectsDivs.forEach(subDiv=>{
-    const txt = subDiv.innerText.split('|').map(t=>t.trim());
-    if(txt.length>=3){
-      let subjectName = txt[0];
-      let remaining = txt[1].replace('المتبقي:','').trim();
-      let total = txt[2].replace('إجمالي:','').trim();
-      const paymentsMatch = txt[2].match(/\d{1,3}(?:,\d{3})*(?:\.\d+)?/g) || [];
-      const paymentsHTML = paymentsMatch.length>0 ? paymentsMatch.join(', ') : '-';
+  student.subjects.forEach(sub=>{
+    if(sub.payments.length===0){
       paymentsTable += `<tr>
-        <td style="text-align:center;border:1px solid #ccc;">${subjectName}</td>
-        <td style="text-align:center;border:1px solid #ccc;">${total}</td>
-        <td style="text-align:center;border:1px solid #ccc;">${remaining}</td>
-        <td style="text-align:center;border:1px solid #ccc;">${paymentsHTML}</td>
+        <td style="border:1px solid #ccc; text-align:center;">${sub.name}</td>
+        <td style="border:1px solid #ccc; text-align:center;">-</td>
+        <td style="border:1px solid #ccc; text-align:center;">-</td>
       </tr>`;
+    } else {
+      sub.payments.forEach(p=>{
+        paymentsTable += `<tr>
+          <td style="border:1px solid #ccc; text-align:center;">${sub.name}</td>
+          <td style="border:1px solid #ccc; text-align:center;">${p.amount}</td>
+          <td style="border:1px solid #ccc; text-align:center;">${p.date}</td>
+        </tr>`;
+      });
     }
   });
   paymentsTable += `</tbody></table>`;
@@ -476,11 +486,10 @@ printStudentBtn.addEventListener('click', ()=>{
         body{font-family:'Cairo',sans-serif; margin:20px; color:#102027;}
         .header{text-align:center; margin-bottom:20px;}
         .header h1{color:#004aad;}
-        .section{margin-bottom:15px;}
-        .section hr{border:none; border-top:2px solid #004aad; margin:8px 0;}
         .top{display:flex; justify-content:space-between; margin-bottom:20px;}
-        .left, .right{width:48%;}
-        .left div, .right div{margin-bottom:6px;}
+        .top table{width:48%; border-collapse:collapse;}
+        .top th, .top td{border:1px solid #ccc; padding:6px;}
+        .top th{background:#004aad; color:white; text-align:center;}
         table{width:100%; border-collapse:collapse; margin-top:10px;}
         th, td{border:1px solid #ccc; padding:6px; text-align:center;}
         th{background:#004aad; color:white;}
@@ -495,17 +504,28 @@ printStudentBtn.addEventListener('click', ()=>{
       </div>
 
       <div class="top">
-        <div class="right">
-          <div>${infoText}</div>
-        </div>
-        <div class="left">
-          <div><strong>إجمالي المستحق:</strong> ${totalFeesInput.value}</div>
-          <div><strong>عدد المواد:</strong> ${subjectsContainer.children.length}</div>
-          <div><strong>ملاحظات:</strong> ${document.getElementById('note').value || '-'}</div>
-        </div>
+        <table>
+          <tr><th colspan="2">معلومات الطالب</th></tr>
+          <tr><td>الاسم</td><td>${student.name}</td></tr>
+          <tr><td>الهاتف</td><td>${student.phone}</td></tr>
+          <tr><td>العنوان</td><td>${student.address || '-'}</td></tr>
+          <tr><td>المدرسة</td><td>${student.school || '-'}</td></tr>
+          <tr><td>المرحلة</td><td>${student.stage}</td></tr>
+          <tr><td>الكروب</td><td>${student.group}</td></tr>
+        </table>
+
+        <table>
+          <tr><th colspan="2">المعلومات المالية</th></tr>
+          <tr><td>إجمالي القسط</td><td>${totalFee}</td></tr>
+          <tr><td>المبلغ المدفوع</td><td>${totalPaid}</td></tr>
+          <tr><td>المتبقي</td><td>${totalRemaining}</td></tr>
+          <tr><td>عدد المواد</td><td>${student.subjects.length}</td></tr>
+          <tr><td>ملاحظات</td><td>${student.note || '-'}</td></tr>
+        </table>
       </div>
 
-      <div class="section">
+      <div>
+        <h3>الدفعات</h3>
         ${paymentsTable}
       </div>
 
