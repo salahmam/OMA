@@ -3,131 +3,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نظام المعهد - إدارة الحصص</title>
+<title>إدارة الحصص - المعهد</title>
 <style>
-body{font-family:'Cairo',sans-serif;margin:0;padding:20px;background:#f5f9ff;color:#102027;visibility:hidden;}
-header{background:#004aad;color:#fff;padding:15px;text-align:center;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:15px;}
+body{font-family:'Cairo',sans-serif;margin:0;padding:0;background:#f5f9ff;color:#102027;}
+header{display:flex;align-items:center;gap:12px;padding:12px;background:#004aad;color:#fff;}
 header img{height:50px;}
-.wrap{max-width:1200px;margin:auto;}
+.wrap{max-width:1400px;margin:20px auto;padding:12px;}
 .card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
 input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
 label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
 .btn{background:#004aad;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
 .btn.warn{background:#ff7043;}
-table{width:100%;border-collapse:collapse;margin-top:12px;}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-th{background:#004aad;color:#fff;}
-.schedule-grid{display:flex;gap:10px;flex-wrap:wrap;}
-.day-column{flex:1;min-width:150px;}
-.day-column h3{text-align:center;background:#004aad;color:#fff;padding:6px;border-radius:6px;}
-.lesson-box{border-radius:6px;color:#fff;padding:8px;margin:6px 0;}
+.days-container{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:20px;}
+.day-column{background:#fff;padding:10px;border-radius:8px;min-height:200px;display:flex;flex-direction:column;gap:6px;}
+.day-column h3{text-align:center;margin:4px 0;font-size:16px;color:#004aad;}
+.lesson-card{padding:8px;border-radius:6px;color:#fff;display:flex;flex-direction:column;font-size:12px;position:relative;}
+.lesson-card .delete-btn{position:absolute;top:4px;right:4px;background:#ff7043;color:#fff;border:none;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:10px;}
 @media print{
   body{background:white;}
-  header, .card, .btn, .filters{display:none !important;}
-  .day-column h3{background:#004aad !important;color:#fff !important;}
+  header,.card,.btn,.filters{display:none !important;}
+  .days-container{gap:0;}
 }
 </style>
 </head>
 <body>
 <header>
   <img id="instituteLogo" src="" alt="شعار المعهد">
-  <span id="instituteName">اسم المعهد</span>
+  <h1 id="instituteName">المعهد</h1>
 </header>
 
 <div class="wrap">
+  <div class="card">
+    <strong>أضف حصة جديدة</strong>
+    <form id="classForm">
+      <label>المادة</label>
+      <select id="subjectSelect" required></select>
+      <label>الأستاذ</label>
+      <select id="teacherSelect" required></select>
+      <label>المجموعة / الكروب</label>
+      <select id="groupSelect" required></select>
+      <label>القاعة</label>
+      <select id="roomSelect" required>
+        <option value="قاعة 1">قاعة 1</option>
+        <option value="قاعة 2">قاعة 2</option>
+        <option value="قاعة 3">قاعة 3</option>
+        <option value="قاعة 4">قاعة 4</option>
+        <option value="قاعة 5">قاعة 5</option>
+        <option value="قاعة 6">قاعة 6</option>
+        <option value="قاعة 7">قاعة 7</option>
+        <option value="قاعة 8">قاعة 8</option>
+        <option value="قاعة 9">قاعة 9</option>
+        <option value="قاعة 10">قاعة 10</option>
+      </select>
+      <label>اليوم</label>
+      <select id="daySelect" required>
+        <option value="الاثنين">الاثنين</option>
+        <option value="الثلاثاء">الثلاثاء</option>
+        <option value="الأربعاء">الأربعاء</option>
+        <option value="الخميس">الخميس</option>
+        <option value="الجمعة">الجمعة</option>
+        <option value="السبت">السبت</option>
+        <option value="الأحد">الأحد</option>
+      </select>
+      <label>وقت البداية</label>
+      <input type="time" id="startTime" required>
+      <label>وقت الانتهاء</label>
+      <input type="time" id="endTime" required>
+      <button type="submit" class="btn">✅ حفظ الحصة</button>
+    </form>
+  </div>
+
   <div class="card filters">
-    <strong>فلترة الحصص للطباعة</strong>
+    <strong>فلترة الحصص قبل الطباعة</strong>
     <label>المادة</label>
     <select id="filterSubject"><option value="">الكل</option></select>
     <label>الأستاذ</label>
     <select id="filterTeacher"><option value="">الكل</option></select>
-    <label>الكروب</label>
+    <label>المجموعة</label>
     <select id="filterGroup"><option value="">الكل</option></select>
-    <label>القاعة</label>
-    <select id="filterRoom"><option value="">الكل</option>
-      <option value="قاعة 1">قاعة 1</option>
-      <option value="قاعة 2">قاعة 2</option>
-      <option value="قاعة 3">قاعة 3</option>
-      <option value="قاعة 4">قاعة 4</option>
-      <option value="قاعة 5">قاعة 5</option>
-      <option value="قاعة 6">قاعة 6</option>
-      <option value="قاعة 7">قاعة 7</option>
-      <option value="قاعة 8">قاعة 8</option>
-      <option value="قاعة 9">قاعة 9</option>
-      <option value="قاعة 10">قاعة 10</option>
-    </select>
-    <label>اليوم</label>
-    <select id="filterDay"><option value="">الكل</option>
-      <option value="السبت">السبت</option>
-      <option value="الأحد">الأحد</option>
-      <option value="الإثنين">الإثنين</option>
-      <option value="الثلاثاء">الثلاثاء</option>
-      <option value="الأربعاء">الأربعاء</option>
-      <option value="الخميس">الخميس</option>
-      <option value="الجمعة">الجمعة</option>
-    </select>
-    <button id="printBtn" class="btn" style="margin-top:8px;">🖨️ طباعة الجدول</button>
+    <button id="filterBtn" class="btn" style="margin-top:8px">تطبيق الفلتر</button>
+    <button id="printBtn" class="btn" style="margin-top:8px;background:#4caf50;">🖨️ طباعة الجدول</button>
   </div>
 
-  <div id="printArea" class="schedule-grid"></div>
+  <div class="days-container" id="daysContainer">
+    <!-- أعمدة الأيام سيتم توليدها تلقائياً -->
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
   storageBucket: "oma0-33cc0.firebasestorage.app",
   messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const classForm = document.getElementById("classForm");
+const subjectSelect = document.getElementById("subjectSelect");
+const teacherSelect = document.getElementById("teacherSelect");
+const groupSelect = document.getElementById("groupSelect");
+const roomSelect = document.getElementById("roomSelect");
+const startTime = document.getElementById("startTime");
+const endTime = document.getElementById("endTime");
+const daySelect = document.getElementById("daySelect");
 const filterSubject = document.getElementById("filterSubject");
 const filterTeacher = document.getElementById("filterTeacher");
 const filterGroup = document.getElementById("filterGroup");
-const filterRoom = document.getElementById("filterRoom");
-const filterDay = document.getElementById("filterDay");
+const filterBtn = document.getElementById("filterBtn");
 const printBtn = document.getElementById("printBtn");
-const printArea = document.getElementById("printArea");
+const daysContainer = document.getElementById("daysContainer");
+const instituteLogo = document.getElementById("instituteLogo");
+const instituteName = document.getElementById("instituteName");
 
-let subjectsList=[], teachersList=[], groupsList=[], classesData=[], settings={colors:{}};
+let teachersList=[], subjectsList=[], groupsList=[], colorsList={}, classesData=[];
 
-onAuthStateChanged(auth, async (user)=>{
+onAuthStateChanged(auth, async user=>{
   if(!user){ window.location.href="login.html"; return; }
   document.body.style.visibility="visible";
-  await loadSettings();
-  await loadSubjectsTeachersGroups();
+  await loadInstituteSettings();
+  await loadTeachersSubjectsGroups();
   await loadClasses();
 });
 
-// جلب إعدادات المعهد (الشعار، الاسم، ألوان الحصص)
-async function loadSettings(){
-  const docSnap = await getDocs(collection(db,"settings"));
-  docSnap.forEach(doc=>{
-    const data = doc.data();
-    settings.name = data.name || "اسم المعهد";
-    settings.logo = data.logo || "";
-    settings.colors = data.colors || {};
-  });
-  document.getElementById("instituteLogo").src = settings.logo;
-  document.getElementById("instituteName").textContent = settings.name;
+async function loadInstituteSettings(){
+  const settingsDoc = await getDoc(doc(db,"settings","institute"));
+  if(settingsDoc.exists()){
+    const data = settingsDoc.data();
+    instituteName.textContent = data.name || "المعهد";
+    instituteLogo.src = data.logo || "";
+    colorsList = data.colors || {};
+  }
 }
 
-// تحميل المواد، الأساتذة، الكروبات
-async function loadSubjectsTeachersGroups(){
-  subjectsList = [];
-  teachersList = [];
-  groupsList = [];
+async function loadTeachersSubjectsGroups(){
+  subjectsList=[]; teachersList=[]; groupsList=[];
   const studentsSnap = await getDocs(collection(db,"students"));
-  const subjectsSet = new Set(), groupsSet = new Set();
+  const subjectsSet=new Set(); const groupsSet=new Set();
   studentsSnap.forEach(s=>{
     s.data().subjects?.forEach(sub=>subjectsSet.add(sub.name));
     if(s.data().group) groupsSet.add(s.data().group);
@@ -138,64 +160,114 @@ async function loadSubjectsTeachersGroups(){
   const teachersSnap = await getDocs(collection(db,"teachers"));
   teachersSnap.forEach(t=>teachersList.push({id:t.id,...t.data()}));
 
-  // تعبئة قوائم الفلاتر
+  subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
   filterSubject.innerHTML="<option value=''>الكل</option>";
-  subjectsList.forEach(s=>filterSubject.innerHTML+=`<option value="${s}">${s}</option>`);
+  subjectsList.forEach(s=>{
+    subjectSelect.innerHTML+=`<option value="${s}">${s}</option>`;
+    filterSubject.innerHTML+=`<option value="${s}">${s}</option>`;
+  });
+
+  teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>";
   filterTeacher.innerHTML="<option value=''>الكل</option>";
-  teachersList.forEach(t=>filterTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`);
+  teachersList.forEach(t=>{
+    teacherSelect.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
+    filterTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`;
+  });
+
+  groupSelect.innerHTML="<option value=''>اختر الكروب</option>";
   filterGroup.innerHTML="<option value=''>الكل</option>";
-  groupsList.forEach(g=>filterGroup.innerHTML+=`<option value="${g}">${g}</option>`);
+  groupsList.forEach(g=>{
+    groupSelect.innerHTML+=`<option value="${g}">${g}</option>`;
+    filterGroup.innerHTML+=`<option value="${g}">${g}</option>`;
+  });
 }
 
-// تحميل الحصص
-async function loadClasses(){
+// حفظ الحصة
+classForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const subject = subjectSelect.value;
+  const teacherId = teacherSelect.value;
+  const group = groupSelect.value;
+  const room = roomSelect.value;
+  const day = daySelect.value;
+  const start = startTime.value;
+  const end = endTime.value;
+
+  // التحقق من تعارض الحصص
+  const conflict = classesData.find(c=>c.day===day &&
+    (c.room===room || c.teacherId===teacherId || c.group===group) &&
+    ((start>=c.startTime && start<c.endTime) || (end>c.startTime && end<=c.endTime))
+  );
+  if(conflict){ alert("⚠️ هناك تعارض في الحصة مع درس موجود!"); return; }
+
+  await addDoc(collection(db,"classes"),{
+    subject, teacherId, group, room, day,
+    startTime:start, endTime:end
+  });
+
+  classForm.reset();
+  await loadClasses();
+});
+
+// تحميل وعرض الحصص
+async function loadClasses(filter={}){
   const snapshot = await getDocs(collection(db,"classes"));
-  classesData = [];
-  snapshot.forEach(docSnap=>{
-    const cls = {id: docSnap.id, ...docSnap.data()};
-    classesData.push(cls);
-  });
-  renderSchedule();
+  classesData=[];
+  snapshot.forEach(d=>classesData.push({id:d.id,...d.data()}));
+  displayClasses(filter);
 }
 
-// عرض الجدول حسب الفلاتر
-function renderSchedule(){
-  const days = ["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
-  printArea.innerHTML = "";
-  const filtered = classesData.filter(cls=>{
-    return (!filterSubject.value || cls.subject===filterSubject.value) &&
-           (!filterTeacher.value || cls.teacherId===filterTeacher.value) &&
-           (!filterGroup.value || cls.group===filterGroup.value) &&
-           (!filterRoom.value || cls.room===filterRoom.value) &&
-           (!filterDay.value || cls.day===filterDay.value);
-  });
-
+function displayClasses(filter={}){
+  daysContainer.innerHTML="";
+  const days=["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"];
   days.forEach(day=>{
-    const col = document.createElement("div");
-    col.className="day-column";
-    col.innerHTML=`<h3>${day}</h3>`;
-    const dayClasses = filtered.filter(c=>c.day===day).sort((a,b)=>{
-      return a.startTime.localeCompare(b.startTime);
+    const dayColumn=document.createElement("div");
+    dayColumn.className="day-column";
+    dayColumn.innerHTML=`<h3>${day}</h3>`;
+    const dayLessons = classesData
+      .filter(c=>c.day===day)
+      .filter(c=> (!filter.subject||c.subject===filter.subject) &&
+                  (!filter.teacher||c.teacherId===filter.teacher) &&
+                  (!filter.group||c.group===filter.group))
+      .sort((a,b)=>a.startTime.localeCompare(b.startTime));
+    dayLessons.forEach(c=>{
+      const teacherName=(teachersList.find(t=>t.id===c.teacherId)||{}).name||"غير معروف";
+      const color=colorsList[c.subject]||"#004aad";
+      const card=document.createElement("div");
+      card.className="lesson-card";
+      card.style.background=color;
+      card.innerHTML=`
+        <strong>${c.subject}</strong>
+        <span>الأستاذ: ${teacherName}</span>
+        <span>المجموعة: ${c.group}</span>
+        <span>القاعة: ${c.room}</span>
+        <span>${c.startTime} - ${c.endTime}</span>
+        <button class="delete-btn" onclick="deleteClass('${c.id}')">🗑️</button>
+      `;
+      dayColumn.appendChild(card);
     });
-    dayClasses.forEach(c=>{
-      const teacherName = (teachersList.find(t=>t.id===c.teacherId)||{}).name || "غير معروف";
-      const color = settings.colors[c.subject] || "#004aad";
-      const box = document.createElement("div");
-      box.className="lesson-box";
-      box.style.backgroundColor=color;
-      box.innerHTML = `<strong>${c.subject}</strong>
-        <p>الأستاذ: ${teacherName}</p>
-        <p>الكروب: ${c.group}</p>
-        <p>القاعة: ${c.room}</p>
-        <p>الوقت: ${c.startTime} - ${c.endTime}</p>`;
-      col.appendChild(box);
-    });
-    printArea.appendChild(col);
+    daysContainer.appendChild(dayColumn);
   });
 }
 
-// زر الطباعة
-printBtn.addEventListener("click", ()=>{ renderSchedule(); window.print(); });
+// حذف الحصة
+window.deleteClass = async id=>{
+  if(confirm("هل تريد حذف الحصة؟")){
+    await deleteDoc(doc(db,"classes",id));
+    await loadClasses();
+  }
+}
+
+// تطبيق الفلتر
+filterBtn.addEventListener("click", ()=>displayClasses({
+  subject: filterSubject.value,
+  teacher: filterTeacher.value,
+  group: filterGroup.value
+}));
+
+// طباعة الجدول
+printBtn.addEventListener("click", ()=>window.print());
+
 </script>
 </body>
 </html>
