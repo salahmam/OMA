@@ -5,148 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تهيئة قاعدة البيانات - OMA</title>
 <style>
-body {
-  font-family: 'Cairo', sans-serif;
-  background: #f5f9ff;
-  color: #102027;
-  padding: 30px;
-  direction: rtl;
-}
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
-button {
-  background: #004aad;
-  color: #fff;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
+body { font-family: 'Cairo', sans-serif; background: #f5f9ff; color: #102027; padding: 30px; direction: rtl; }
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+button { background: #004aad; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 button:hover { background: #003a8c; }
-pre {
-  background: #eef4ff;
-  padding: 10px;
-  border-radius: 8px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-}
+pre { background: #eef4ff; padding: 10px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
 </style>
 </head>
 <body>
-
 <h2>🔧 إعداد قاعدة بيانات OMA (Firestore)</h2>
-<p>عند الضغط على الزر بالأسفل، سيتم إنشاء المجموعات الأساسية في قاعدة البيانات.</p>
-
+<p>اضغط على الزر لإنشاء المجموعات الأساسية.</p>
 <div class="card">
   <button id="setupBtn">🚀 إنشاء البيانات الأساسية</button>
   <pre id="log"></pre>
 </div>
 
 <script type="module">
-import { db } from "https://salahmam.github.io/OMA/firebase-config.js";
-import { setDoc, doc, getDocs, collection } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { db } from "./firebase-config.js";
+import { setDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const log = document.getElementById("log");
 const setupBtn = document.getElementById("setupBtn");
 
-function addLog(msg){ 
-  log.textContent += msg + "\n"; 
-  log.scrollTop = log.scrollHeight;
-}
-
-async function checkFirebaseConnection() {
-  addLog("⏳ التحقق من الاتصال بـ Firebase...");
-  try {
-    await getDocs(collection(db, "settings"));
-    addLog("✅ تم الاتصال بنجاح بـ Firestore.\n");
-    return true;
-  } catch (error) {
-    addLog("❌ فشل الاتصال بـ Firestore: " + error.message);
-    setupBtn.disabled = true;
-    setupBtn.style.background = "#d32f2f";
-    return false;
-  }
-}
+function addLog(msg){ log.textContent += msg + "\n"; }
 
 setupBtn.addEventListener("click", async ()=>{
-  const connected = await checkFirebaseConnection();
-  if (!connected) return;
-
   setupBtn.disabled = true;
   setupBtn.textContent = "⏳ جاري التنفيذ...";
-  addLog("🔹 بدء إنشاء المجموعات الأساسية...\n");
+  addLog("🔹 بدء إنشاء المجموعات الأساسية...");
 
   try {
-    // 📘 Collection: students
-    await setDoc(doc(db, "students", "example_student"), {
-      name: "أحمد علي",
-      address: "بغداد",
-      phone: "0770000000",
-      level: "المرحلة الأولى",
-      group: "A1",
-      subjects: ["رياضيات", "علوم"],
-      joinDate: "2025-11-07",
-      fees: 500000,
-      installments: [250000, 250000],
-      status: "نشط"
-    });
+    await setDoc(doc(db, "students", "example_student"), {name:"أحمد علي",address:"بغداد",phone:"0770000000",level:"المرحلة الأولى",group:"A1",subjects:["رياضيات","علوم"],joinDate:"2025-11-07",fees:500000,installments:[250000,250000],status:"نشط"});
     addLog("✅ students collection تم إنشاؤه.");
-
-    // 📗 Collection: teachers
-    await setDoc(doc(db, "teachers", "example_teacher"), {
-      name: "أستاذ كريم",
-      specialty: "رياضيات",
-      phone: "0780000000",
-      salary: 800000,
-      percent: 60,
-      joinDate: "2025-11-07",
-      address: "البصرة",
-      status: "نشط"
-    });
+    await setDoc(doc(db, "teachers", "example_teacher"), {name:"أستاذ كريم",specialty:"رياضيات",phone:"0780000000",salary:800000,percent:60,joinDate:"2025-11-07",address:"البصرة",status:"نشط"});
     addLog("✅ teachers collection تم إنشاؤه.");
-
-    // 📙 Collection: users
-    await setDoc(doc(db, "users", "admin_sample"), {
-      name: "مدير النظام",
-      email: "admin@oma.com",
-      type: "admin",
-      createdAt: new Date().toISOString()
-    });
+    await setDoc(doc(db, "users", "admin_sample"), {name:"مدير النظام",email:"admin@oma.com",type:"admin",createdAt:new Date().toISOString()});
     addLog("✅ users collection تم إنشاؤه.");
-
-    // 📒 Collection: settings
-    await setDoc(doc(db, "settings", "percentages"), {
-      teacher: 60,
-      institute: 40
-    });
+    await setDoc(doc(db, "settings", "percentages"), {teacher:60,institute:40});
     addLog("✅ settings collection تم إنشاؤه.");
 
     addLog("\n🎉 تم إنشاء جميع المجموعات بنجاح!");
     setupBtn.textContent = "✅ تم الإنشاء بنجاح";
-    setupBtn.style.background = "#00b67a";
+    setupBtn.style.background="#00b67a";
 
-    // ⏳ الانتقال بعد 3 ثوانٍ
     addLog("\n➡️ سيتم تحويلك إلى لوحة التحكم خلال 3 ثوانٍ...");
-    setTimeout(()=>{
-      window.location.href = "dashboard.html";
-    }, 3000);
-
-  } catch (e) {
+    setTimeout(()=>{window.location.href="dashboard.html";},3000);
+  } catch(e){
     addLog("❌ خطأ أثناء الإنشاء: " + e.message);
-    setupBtn.disabled = false;
-    setupBtn.textContent = "🚀 إعادة المحاولة";
+    setupBtn.disabled=false;
+    setupBtn.textContent="🚀 إعادة المحاولة";
   }
 });
-
-// التحقق من الاتصال مباشرة عند تحميل الصفحة
-checkFirebaseConnection();
 </script>
-
 </body>
 </html>
