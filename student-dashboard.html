@@ -5,42 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة الطالب - OMA</title>
 <style>
-body { font-family:'Cairo', sans-serif; background:#f5f9ff; color:#102027; margin:0; padding:20px; }
-header { background:#004aad; color:#fff; padding:16px; text-align:center; font-size:20px; font-weight:700; }
-.card { background:#fff; border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 6px 18px rgba(6,20,30,0.06); }
-h3 { margin-top:0; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th,td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
-th { background:#004aad; color:#fff; }
+body {font-family:'Cairo',sans-serif; margin:0; background:#f5f9ff; color:#102027; direction:rtl;}
+header {background:#004aad; color:#fff; padding:18px; text-align:center; font-size:20px; font-weight:700;}
+.wrap {max-width:1200px; margin:22px auto; padding:12px;}
+.card {background:#fff; border-radius:10px; padding:14px; margin-bottom:16px; box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+h3 {margin-top:0; color:#004aad;}
+table {width:100%; border-collapse:collapse; margin-top:12px;}
+th,td {padding:10px; border-bottom:1px solid #eee; text-align:center; font-size:14px;}
+th {background:#004aad; color:#fff;}
 </style>
 </head>
 <body>
-
-<header>لوحة الطالب</header>
+<header>لوحة الطالب - نظام OMA</header>
+<div class="wrap">
 
 <div class="card">
-  <h3>بيانات الطالب</h3>
-  <p><strong>الاسم:</strong> <span id="studentName"></span></p>
-  <p><strong>المجموعة:</strong> <span id="studentGroup"></span></p>
-  <p><strong>المستوى:</strong> <span id="studentLevel"></span></p>
+  <h3>معلومات الطالب</h3>
+  <p id="studentInfo">جارٍ تحميل المعلومات...</p>
 </div>
 
 <div class="card">
-  <h3>جدول الدروس</h3>
-  <table id="scheduleTable">
-    <thead>
-      <tr><th>المادة</th><th>المعلم</th></tr>
-    </thead>
+  <h3>جدول المواد والدروس</h3>
+  <table id="subjectsTable">
+    <thead><tr><th>المادة</th><th>المعلم</th><th>الوقت</th></tr></thead>
     <tbody></tbody>
   </table>
 </div>
 
 <div class="card">
-  <h3>المبالغ المستحقة</h3>
-  <table id="feesTable">
-    <thead>
-      <tr><th>الرسوم الكلية</th><th>الأقساط المدفوعة</th><th>المتبقي</th></tr>
-    </thead>
+  <h3>الدفعات المالية</h3>
+  <table id="paymentsTable">
+    <thead><tr><th>المبلغ المستحق</th><th>المدفوع</th><th>المتبقي</th></tr></thead>
     <tbody></tbody>
   </table>
 </div>
@@ -50,65 +45,78 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
   storageBucket: "oma0-33cc0.firebasestorage.app",
   messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const studentNameEl = document.getElementById("studentName");
-const studentGroupEl = document.getElementById("studentGroup");
-const studentLevelEl = document.getElementById("studentLevel");
-const scheduleTableBody = document.querySelector("#scheduleTable tbody");
-const feesTableBody = document.querySelector("#feesTable tbody");
+const studentInfoEl = document.getElementById("studentInfo");
+const subjectsTableBody = document.querySelector("#subjectsTable tbody");
+const paymentsTableBody = document.querySelector("#paymentsTable tbody");
 
-// التحقق من تسجيل الدخول وتحديد نوع المستخدم
-onAuthStateChanged(auth, async user => {
-  if(!user) return window.location.href = "login.html";
-
+// حماية الصفحة والتأكد من تسجيل الدخول
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+  
+  // جلب بيانات المستخدم
   const userDoc = await getDoc(doc(db, "users", user.uid));
-  if(!userDoc.exists()) return alert("المستخدم غير موجود");
+  if (!userDoc.exists()) {
+    studentInfoEl.textContent = "خطأ: المستخدم غير موجود.";
+    return;
+  }
 
   const userData = userDoc.data();
-  if(userData.type !== "student") return window.location.href = "dashboard.html"; // لا يسمح بالدخول إلا للطلاب
+  if (userData.type !== "student") {
+    window.location.href = "dashboard.html"; // منع الدخول إذا ليس طالب
+    return;
+  }
 
-  // جلب بيانات الطالب من مجموعة students
-  const studentSnapshot = await getDoc(doc(db, "students", user.uid));
-  if(!studentSnapshot.exists()) return alert("بيانات الطالب غير موجودة");
+  // جلب بيانات الطالب
+  const studentDoc = await getDoc(doc(db, "students", user.uid));
+  if (!studentDoc.exists()) {
+    studentInfoEl.textContent = "لم يتم العثور على بيانات الطالب.";
+    return;
+  }
 
-  const student = studentSnapshot.data();
+  const student = studentDoc.data();
+  studentInfoEl.innerHTML = `
+    الاسم: ${student.name}<br>
+    العنوان: ${student.address}<br>
+    الهاتف: ${student.phone}<br>
+    المرحلة: ${student.level}<br>
+    المجموعة: ${student.group}<br>
+    تاريخ الانضمام: ${student.joinDate}<br>
+    الرسوم: ${student.fees} IQD
+  `;
 
-  studentNameEl.textContent = student.name;
-  studentGroupEl.textContent = student.group;
-  studentLevelEl.textContent = student.level;
-
-  // جدول الدروس
-  scheduleTableBody.innerHTML = "";
+  // جدول المواد
   if(student.subjects && student.subjects.length > 0){
+    subjectsTableBody.innerHTML = "";
     student.subjects.forEach(sub => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${sub}</td><td>${student.teacher || "-"}</td>`;
-      scheduleTableBody.appendChild(tr);
+      subjectsTableBody.innerHTML += `<tr><td>${sub}</td><td>---</td><td>---</td></tr>`;
     });
   }
 
-  // المبالغ المستحقة
-  feesTableBody.innerHTML = "";
-  const total = student.fees || 0;
-  const paid = (student.installments || []).reduce((a,b)=>a+b,0);
-  const remaining = total - paid;
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${total}</td><td>${paid}</td><td>${remaining}</td>`;
-  feesTableBody.appendChild(tr);
+  // الدفعات المالية
+  if(student.installments && student.installments.length > 0){
+    let totalPaid = student.installments.reduce((a,b)=>a+b,0);
+    let remaining = student.fees - totalPaid;
+    paymentsTableBody.innerHTML = `<tr><td>${student.fees}</td><td>${totalPaid}</td><td>${remaining}</td></tr>`;
+  }
 });
 </script>
-
 </body>
 </html>
