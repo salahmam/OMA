@@ -5,107 +5,108 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>المالية والمصاريف - المعهد</title>
 <style>
-body{font-family:'Cairo',sans-serif;direction:rtl;background:#f5f9ff;color:#102027;padding:20px;}
-h2,h3{margin-top:0;}
-.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
-input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;width:100%;margin-bottom:8px;}
-button{padding:10px 16px;border:none;border-radius:8px;background:#004aad;color:#fff;cursor:pointer;font-weight:bold;}
-button:hover{background:#003a8c;}
-table{width:100%;border-collapse:collapse;margin-top:12px;}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-th{background:#004aad;color:#fff;}
-.toggleBtn{margin-bottom:10px;}
-.hidden{display:none;}
+body { font-family:'Cairo',sans-serif; background:#f5f9ff; margin:0; padding:20px; color:#102027; visibility:hidden; }
+header { display:flex; align-items:center; background:#004aad; color:#fff; padding:12px 20px; font-size:20px; font-weight:700; border-radius:10px; margin-bottom:20px; }
+header img { height:40px; margin-left:12px; }
+.card { background:#fff; border-radius:10px; padding:16px; margin-bottom:20px; box-shadow:0 6px 18px rgba(6,20,30,0.06); }
+input, select { padding:10px; border:1px solid #d6dde9; border-radius:8px; font-size:15px; width:100%; margin-bottom:10px; }
+label { display:block; margin-bottom:6px; font-size:13px; color:#37474f; }
+button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; margin-top:8px; }
+button:hover { background:#003a8c; }
+button.warn { background:#ff7043; }
+table { width:100%; border-collapse:collapse; margin-top:12px; }
+th, td { padding:10px; border-bottom:1px solid #eee; text-align:center; font-size:14px; }
+th { background:#004aad; color:#fff; }
+.filter-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.filter-row input { flex:1; }
 @media print{
   body{background:white;}
-  button,.toggleBtn{display:none;}
+  header, .card button, .filter-row {display:none !important;}
   table{page-break-inside:avoid;}
 }
 </style>
 </head>
 <body>
 
-<h2>💰 المالية والمصاريف - المعهد</h2>
+<header>
+  <span id="instituteName">اسم المعهد</span>
+  <img id="instituteLogo" src="" alt="شعار المعهد">
+</header>
 
-<!-- قسم المدفوعات -->
 <div class="card">
-  <button class="toggleBtn" data-target="paymentsSection">عرض/إخفاء المدفوعات</button>
-  <div id="paymentsSection" class="hidden">
-    <h3>مدفوعات الطلاب</h3>
-    <form id="paymentForm">
-      <label>اختر الطالب</label>
-      <select id="studentSelect" required></select>
-      <label>المبلغ المدفوع</label>
-      <input type="number" id="paymentAmount" required>
-      <label>التاريخ</label>
-      <input type="date" id="paymentDate" required>
-      <button type="submit">💾 إضافة دفعة</button>
-    </form>
-
-    <table id="paymentsTable">
-      <thead>
-        <tr>
-          <th>اسم الطالب</th>
-          <th>المادة</th>
-          <th>المبلغ المدفوع</th>
-          <th>التاريخ</th>
-          <th>الأستاذ</th>
-          <th>نسبة الأستاذ</th>
-          <th>إجمالي المدفوع للمعهد</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button onclick="printSection('paymentsSection')">🖨️ طباعة</button>
+  <strong>💰 المدفوعات</strong>
+  <div class="filter-row">
+    <input type="date" id="paymentFrom" placeholder="من تاريخ">
+    <input type="date" id="paymentTo" placeholder="إلى تاريخ">
+    <button id="filterPaymentsBtn">تطبيق الفلتر</button>
   </div>
+  <table id="paymentsTable">
+    <thead>
+      <tr>
+        <th>الطالب</th>
+        <th>المبلغ</th>
+        <th>المدفوع للأستاذ</th>
+        <th>للمعهد</th>
+        <th>التاريخ</th>
+        <th>خيارات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <th colspan="1">المجموع</th>
+        <th id="totalPayment">0</th>
+        <th id="totalTeacher">0</th>
+        <th id="totalInstitute">0</th>
+        <th colspan="2"></th>
+      </tr>
+    </tfoot>
+  </table>
 </div>
 
-<!-- قسم المصاريف -->
 <div class="card">
-  <button class="toggleBtn" data-target="expensesSection">عرض/إخفاء المصاريف</button>
-  <div id="expensesSection" class="hidden">
-    <h3>المصاريف</h3>
-    <form id="expenseForm">
-      <label>الوصف</label>
-      <input type="text" id="expenseDescription" required>
-      <label>المبلغ</label>
-      <input type="number" id="expenseAmount" required>
-      <label>التاريخ</label>
-      <input type="date" id="expenseDate" required>
-      <button type="submit">💾 إضافة مصروف</button>
-    </form>
-
-    <div style="margin-top:10px;">
-      <label>من</label>
-      <input type="date" id="filterFrom">
-      <label>إلى</label>
-      <input type="date" id="filterTo">
-      <button id="filterExpensesBtn">تطبيق الفلتر</button>
-    </div>
-
-    <table id="expensesTable">
-      <thead>
-        <tr>
-          <th>الوصف</th>
-          <th>التاريخ</th>
-          <th>المبلغ</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-      <tfoot>
-        <tr>
-          <th colspan="2">المجموع الكلي</th>
-          <th id="totalExpenses">0</th>
-        </tr>
-      </tfoot>
-    </table>
-    <button onclick="printSection('expensesSection')">🖨️ طباعة</button>
+  <strong>📉 المصاريف</strong>
+  <form id="expenseForm">
+    <label>الوصف</label>
+    <input type="text" id="expenseDesc" required>
+    <label>المبلغ</label>
+    <input type="number" id="expenseAmount" required>
+    <label>التاريخ</label>
+    <input type="date" id="expenseDate" required>
+    <button type="submit">💾 حفظ المصروف</button>
+  </form>
+  <div class="filter-row">
+    <input type="date" id="expenseFrom">
+    <input type="date" id="expenseTo">
+    <button id="filterExpensesBtn">تطبيق الفلتر</button>
   </div>
+  <table id="expensesTable">
+    <thead>
+      <tr>
+        <th>الوصف</th>
+        <th>المبلغ</th>
+        <th>التاريخ</th>
+        <th>خيارات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <th>المجموع الكلي</th>
+        <th id="totalExpenses">0</th>
+        <th colspan="2"></th>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="card">
+  <button onclick="window.print()">🖨️ طباعة التقرير</button>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -121,122 +122,143 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// التحقق من تسجيل الدخول
-onAuthStateChanged(auth, user=>{
-  if(!user) window.location.href="login.html";
-  else document.body.style.visibility="visible";
-});
+const instituteName = document.getElementById("instituteName");
+const instituteLogo = document.getElementById("instituteLogo");
 
-// =================================
-// إدارة المدفوعات
-const studentSelect = document.getElementById("studentSelect");
-const paymentForm = document.getElementById("paymentForm");
 const paymentsTableBody = document.querySelector("#paymentsTable tbody");
-
-// تحميل الطلاب
-async function loadStudents(){
-  const snap = await getDocs(collection(db,"students"));
-  studentSelect.innerHTML="<option value=''>اختر الطالب</option>";
-  snap.forEach(s=>{
-    studentSelect.innerHTML += `<option value="${s.id}">${s.data().name}</option>`;
-  });
-}
-
-// إضافة دفعة
-paymentForm.addEventListener("submit", async e=>{
-  e.preventDefault();
-  const studentId = studentSelect.value;
-  const amount = parseFloat(document.getElementById("paymentAmount").value);
-  const date = document.getElementById("paymentDate").value;
-
-  await addDoc(collection(db,"payments"),{studentId, amount, date});
-  paymentForm.reset();
-  loadPayments();
-});
-
-// تحميل المدفوعات
-async function loadPayments(){
-  const snap = await getDocs(collection(db,"payments"));
-  paymentsTableBody.innerHTML="";
-  snap.forEach(async docSnap=>{
-    const data = docSnap.data();
-    const studentDoc = await getDocs(collection(db,"students")); // يمكن تحسينه لاحقاً
-    const studentName = "طالب"; // مؤقت
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${studentName}</td>
-      <td>—</td>
-      <td>${data.amount}</td>
-      <td>${data.date}</td>
-      <td>—</td>
-      <td>—</td>
-      <td>—</td>
-    `;
-    paymentsTableBody.appendChild(row);
-  });
-}
-
-// =================================
-// إدارة المصاريف
-const expenseForm = document.getElementById("expenseForm");
 const expensesTableBody = document.querySelector("#expensesTable tbody");
 
+const totalPayment = document.getElementById("totalPayment");
+const totalTeacher = document.getElementById("totalTeacher");
+const totalInstitute = document.getElementById("totalInstitute");
+const totalExpenses = document.getElementById("totalExpenses");
+
+const paymentFrom = document.getElementById("paymentFrom");
+const paymentTo = document.getElementById("paymentTo");
+const filterPaymentsBtn = document.getElementById("filterPaymentsBtn");
+
+const expenseForm = document.getElementById("expenseForm");
+const expenseDesc = document.getElementById("expenseDesc");
+const expenseAmount = document.getElementById("expenseAmount");
+const expenseDate = document.getElementById("expenseDate");
+const expenseFrom = document.getElementById("expenseFrom");
+const expenseTo = document.getElementById("expenseTo");
+const filterExpensesBtn = document.getElementById("filterExpensesBtn");
+
+let paymentsData = [], expensesData = [], settingsData = {};
+
+onAuthStateChanged(auth, async user=>{
+  if(!user){ window.location.href="login.html"; return; }
+
+  document.body.style.visibility = "visible";
+
+  // جلب بيانات المعهد
+  const settingsSnap = await getDocs(collection(db,"settings"));
+  settingsSnap.forEach(s=>{
+    settingsData = s.data();
+    instituteName.textContent = settingsData.name || "اسم المعهد";
+    instituteLogo.src = settingsData.logo || "";
+  });
+
+  await loadPayments();
+  await loadExpenses();
+});
+
+// 💰 المدفوعات
+async function loadPayments(filter={}){
+  const snapshot = await getDocs(collection(db,"payments"));
+  paymentsTableBody.innerHTML = "";
+  paymentsData = [];
+  let totalP=0, totalT=0, totalI=0;
+
+  snapshot.forEach(docSnap=>{
+    const p = {id: docSnap.id, ...docSnap.data()};
+    const paymentDate = new Date(p.date);
+    if((!filter.from || paymentDate >= new Date(filter.from)) &&
+       (!filter.to || paymentDate <= new Date(filter.to))){
+      paymentsData.push(p);
+      const tr = document.createElement("tr");
+      const teacherShare = p.amount * (settingsData.teacherPercent || 0)/100;
+      const instituteShare = p.amount - teacherShare;
+      totalP += p.amount;
+      totalT += teacherShare;
+      totalI += instituteShare;
+      tr.innerHTML = `
+        <td>${p.studentName}</td>
+        <td>${p.amount}</td>
+        <td>${teacherShare.toFixed(2)}</td>
+        <td>${instituteShare.toFixed(2)}</td>
+        <td>${p.date}</td>
+        <td><button class="warn" onclick="deletePayment('${p.id}')">🗑️ حذف</button></td>
+      `;
+      paymentsTableBody.appendChild(tr);
+    }
+  });
+  totalPayment.textContent = totalP.toFixed(2);
+  totalTeacher.textContent = totalT.toFixed(2);
+  totalInstitute.textContent = totalI.toFixed(2);
+}
+
+window.deletePayment = async id=>{
+  if(confirm("هل تريد حذف هذه الدفعة؟")){
+    await deleteDoc(doc(db,"payments",id));
+    loadPayments();
+  }
+}
+
+filterPaymentsBtn.addEventListener("click", ()=>{
+  loadPayments({from: paymentFrom.value, to: paymentTo.value});
+});
+
+// 📉 المصاريف
 expenseForm.addEventListener("submit", async e=>{
   e.preventDefault();
-  const description = document.getElementById("expenseDescription").value;
-  const amount = parseFloat(document.getElementById("expenseAmount").value);
-  const date = document.getElementById("expenseDate").value;
-  await addDoc(collection(db,"expenses"),{description, amount, date});
+  await addDoc(collection(db,"expenses"),{
+    description: expenseDesc.value,
+    amount: parseFloat(expenseAmount.value),
+    date: expenseDate.value,
+    createdAt: new Date().toISOString()
+  });
   expenseForm.reset();
   loadExpenses();
 });
 
 async function loadExpenses(filter={}){
-  const snap = await getDocs(collection(db,"expenses"));
-  expensesTableBody.innerHTML="";
-  let total=0;
-  snap.forEach(docSnap=>{
-    const exp = docSnap.data();
-    if((!filter.from || exp.date>=filter.from)&&(!filter.to||exp.date<=filter.to)){
-      const row = document.createElement("tr");
-      row.innerHTML=`<td>${exp.description}</td><td>${exp.date}</td><td>${exp.amount}</td>`;
-      expensesTableBody.appendChild(row);
-      total += parseFloat(exp.amount||0);
+  const snapshot = await getDocs(collection(db,"expenses"));
+  expensesTableBody.innerHTML = "";
+  expensesData = [];
+  let totalExp = 0;
+
+  snapshot.forEach(docSnap=>{
+    const exp = {id: docSnap.id, ...docSnap.data()};
+    const expDate = new Date(exp.date);
+    if((!filter.from || expDate >= new Date(filter.from)) &&
+       (!filter.to || expDate <= new Date(filter.to))){
+      expensesData.push(exp);
+      const tr = document.createElement("tr");
+      totalExp += exp.amount;
+      tr.innerHTML = `
+        <td>${exp.description}</td>
+        <td>${exp.amount}</td>
+        <td>${exp.date}</td>
+        <td><button class="warn" onclick="deleteExpense('${exp.id}')">🗑️ حذف</button></td>
+      `;
+      expensesTableBody.appendChild(tr);
     }
   });
-  document.getElementById("totalExpenses").textContent = total;
+  totalExpenses.textContent = totalExp.toFixed(2);
 }
 
-document.getElementById("filterExpensesBtn").addEventListener("click", ()=>{
-  const from = document.getElementById("filterFrom").value;
-  const to = document.getElementById("filterTo").value;
-  loadExpenses({from,to});
-});
-
-// =================================
-// أزرار عرض/إخفاء الأقسام
-document.querySelectorAll(".toggleBtn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const target = document.getElementById(btn.dataset.target);
-    target.classList.toggle("hidden");
-  });
-});
-
-// =================================
-// طباعة القسم
-window.printSection = function(id){
-  const content = document.getElementById(id).innerHTML;
-  const original = document.body.innerHTML;
-  document.body.innerHTML = content;
-  window.print();
-  document.body.innerHTML = original;
+window.deleteExpense = async id=>{
+  if(confirm("هل تريد حذف هذا المصروف؟")){
+    await deleteDoc(doc(db,"expenses",id));
+    loadExpenses();
+  }
 }
 
-// تحميل البيانات الابتدائية
-loadStudents();
-loadPayments();
-loadExpenses();
+filterExpensesBtn.addEventListener("click", ()=>{
+  loadExpenses({from: expenseFrom.value, to: expenseTo.value});
+});
 </script>
-
 </body>
 </html>
