@@ -1,35 +1,38 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>إدارة الحصص - المعهد</title>
 <style>
-body { font-family:'Cairo',sans-serif; direction:rtl; margin:0; padding:20px; visibility:hidden; background:#f5f9ff; color:#102027; }
-header { text-align:center; padding:20px; font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:12px; }
-header img { height:50px; }
-.wrap { max-width:1200px; margin:20px auto; }
-.card { background:#fff; border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 6px 18px rgba(6,20,30,0.06); }
-input, select { padding:10px; border-radius:8px; border:1px solid #d6dde9; font-size:15px; width:100%; margin-bottom:8px; }
-label { display:block; margin-bottom:6px; font-size:13px; color:#37474f; }
-.btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:700; }
-.btn.warn { background:#ff7043; color:#fff; }
-table { width:100%; border-collapse:collapse; margin-top:12px; }
-th, td { padding:10px; border-bottom:1px solid #eee; text-align:center; font-size:14px; }
-th { color:#fff; }
+body{font-family:'Cairo',sans-serif; margin:0; padding:0; background:#f5f9ff; color:#102027; visibility:hidden;}
+header{display:flex; align-items:center; gap:10px; padding:12px 20px; background:#004aad; color:#fff;}
+header img{height:50px;}
+.wrap{max-width:1200px; margin:20px auto; padding:10px;}
+.card{background:#fff; border-radius:10px; padding:15px; margin-bottom:20px; box-shadow:0 6px 18px rgba(0,0,0,0.05);}
+label{display:block; margin:6px 0 2px;}
+input, select{padding:8px; width:100%; border:1px solid #ccc; border-radius:6px; margin-bottom:8px;}
+.btn{padding:8px 14px; background:#004aad; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;}
+.btn.warn{background:#ff7043;}
+table{width:100%; border-collapse:collapse; margin-top:10px;}
+th,td{border:1px solid #ddd; padding:6px; text-align:center; font-size:14px;}
+th{background:#004aad; color:#fff;}
+.timetable{display:grid; grid-template-columns:repeat(8,1fr); gap:2px;}
+.timetable .cell{border:1px solid #ccc; min-height:50px; padding:4px; font-size:13px; position:relative;}
+.timetable .lesson{position:absolute; top:2px; left:2px; right:2px; bottom:2px; padding:2px; border-radius:6px; color:#fff; font-size:12px; display:flex; flex-direction:column; justify-content:center;}
 @media print{
-  body { background:white; }
-  .filters, .actions, .btn, form { display:none !important; }
-  table { page-break-inside:avoid; }
-  header { justify-content:flex-start; }
+  body{background:white;}
+  .card, .btn{display:none !important;}
+  header{display:flex !important;}
 }
 </style>
 </head>
 <body>
 <header>
   <img id="instituteLogo" src="" alt="شعار المعهد">
-  <span id="instituteName">المعهد</span>
+  <h2 id="instituteName">اسم المعهد</h2>
 </header>
+
 <div class="wrap">
 
 <div class="card">
@@ -57,58 +60,44 @@ th { color:#fff; }
     </select>
     <label>اليوم</label>
     <select id="daySelect" required>
-      <option value="السبت">السبت</option>
-      <option value="الأحد">الأحد</option>
       <option value="الاثنين">الاثنين</option>
       <option value="الثلاثاء">الثلاثاء</option>
       <option value="الأربعاء">الأربعاء</option>
       <option value="الخميس">الخميس</option>
       <option value="الجمعة">الجمعة</option>
+      <option value="السبت">السبت</option>
+      <option value="الأحد">الأحد</option>
     </select>
-    <label>الوقت</label>
-    <input id="timeInput" type="time" required>
-    <button type="submit" class="btn" id="saveBtn">✅ حفظ الحصة</button>
+    <label>وقت البداية</label>
+    <input type="time" id="startTime" required>
+    <label>وقت النهاية</label>
+    <input type="time" id="endTime" required>
+    <button type="submit" class="btn">✅ حفظ الحصة</button>
   </form>
 </div>
 
 <div class="card filters">
-  <strong>فلترة الحصص</strong>
-  <label>المادة</label>
-  <select id="filterSubject"><option value="">الكل</option></select>
-  <label>الأستاذ</label>
-  <select id="filterTeacher"><option value="">الكل</option></select>
-  <label>المجموعة</label>
-  <select id="filterGroup"><option value="">الكل</option></select>
-  <button id="filterBtn" class="btn" style="margin-top:8px">تطبيق الفلتر</button>
-  <button id="printBtn" class="btn" style="margin-top:8px">🖨️ طباعة الجدول</button>
+  <strong>فلترة الجدول</strong>
+  <label>المادة</label><select id="filterSubject"><option value="">الكل</option></select>
+  <label>الأستاذ</label><select id="filterTeacher"><option value="">الكل</option></select>
+  <label>المجموعة</label><select id="filterGroup"><option value="">الكل</option></select>
+  <label>القاعة</label><select id="filterRoom"><option value="">الكل</option></select>
+  <button id="filterBtn" class="btn">تطبيق الفلتر</button>
+  <button id="printBtn" class="btn" style="margin-top:5px;">🖨️ طباعة الجدول</button>
 </div>
 
 <div class="card">
-  <strong>قائمة الحصص</strong>
-  <table id="classesTable">
-    <thead>
-      <tr>
-        <th>المادة</th>
-        <th>الأستاذ</th>
-        <th>المجموعة</th>
-        <th>اليوم</th>
-        <th>الوقت</th>
-        <th>القاعة</th>
-        <th>خيارات</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <strong>جدول الحصص</strong>
+  <div id="timetable" class="timetable"></div>
 </div>
 
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -122,185 +111,150 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const classForm = document.getElementById("classForm");
 const subjectSelect = document.getElementById("subjectSelect");
 const teacherSelect = document.getElementById("teacherSelect");
 const groupSelect = document.getElementById("groupSelect");
 const roomSelect = document.getElementById("roomSelect");
 const daySelect = document.getElementById("daySelect");
-const timeInput = document.getElementById("timeInput");
-const classesTableBody = document.querySelector("#classesTable tbody");
+const startTime = document.getElementById("startTime");
+const endTime = document.getElementById("endTime");
+const classForm = document.getElementById("classForm");
 
 const filterSubject = document.getElementById("filterSubject");
 const filterTeacher = document.getElementById("filterTeacher");
 const filterGroup = document.getElementById("filterGroup");
+const filterRoom = document.getElementById("filterRoom");
 const filterBtn = document.getElementById("filterBtn");
 const printBtn = document.getElementById("printBtn");
+const timetableDiv = document.getElementById("timetable");
 
-let subjectsList=[], teachersList=[], groupsList=[], classesData=[], instituteSettings={};
+let subjectsList=[], teachersList=[], groupsList=[], classesData=[], institute={};
 
-// 🔑 التحقق من تسجيل الدخول
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { window.location.href = "login.html"; return; }
-
-  try {
-    document.body.style.visibility = "visible";
-    await loadInstituteSettings();
-    await loadSubjectsTeachersGroups();
-    await loadClasses();
-  } catch(err) {
-    console.error("خطأ تحميل البيانات:", err);
-    alert("حدث خطأ أثناء تحميل الصفحة.");
-  }
+// التحقق من تسجيل الدخول
+onAuthStateChanged(auth, async user=>{
+  if(!user){ window.location.href="login.html"; return; }
+  document.body.style.visibility="visible";
+  await loadInstituteSettings();
+  await loadSubjectsTeachersGroups();
+  await loadClasses();
 });
 
-// تحميل إعدادات المعهد
+// جلب بيانات المعهد
 async function loadInstituteSettings(){
-  const docSnap = await getDoc(doc(db,"settings","institute"));
-  if(docSnap.exists()){
-    instituteSettings = docSnap.data();
-    document.getElementById("instituteName").textContent = instituteSettings.name || "المعهد";
-    document.getElementById("instituteLogo").src = instituteSettings.logo || "";
-    // تطبيق الألوان تلقائيًا
-    if(instituteSettings.colors){
-      document.body.style.background = instituteSettings.colors.background || "#f5f9ff";
-      document.body.style.color = instituteSettings.colors.text || "#102027";
-      document.querySelectorAll(".btn").forEach(b=>b.style.background = instituteSettings.colors.primary || "#004aad");
-      document.querySelectorAll("th").forEach(th=>th.style.background = instituteSettings.colors.primary || "#004aad");
-    }
-  }
+  const snap = await getDocs(collection(db,"settings"));
+  snap.forEach(doc=>{
+    institute = doc.data();
+  });
+  document.getElementById("instituteName").textContent = institute.instituteName || "اسم المعهد";
+  document.getElementById("instituteLogo").src = institute.instituteLogo || "";
 }
 
-// تحميل المواد، الأساتذة، الكروبات
+// تحميل المواد والأساتذة والمجموعات
 async function loadSubjectsTeachersGroups(){
-  subjectsList = [];
-  teachersList = [];
-  groupsList = [];
-
-  const studentsSnap = await getDocs(collection(db, "students"));
-  const subjectsSet = new Set();
-  const groupsSet = new Set();
+  subjectsList=[], teachersList=[], groupsList=[];
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const subjectsSet=new Set(), groupsSet=new Set();
   studentsSnap.forEach(s=>{
     s.data().subjects?.forEach(sub=>subjectsSet.add(sub.name));
     if(s.data().group) groupsSet.add(s.data().group);
   });
-  subjectsList = [...subjectsSet];
-  groupsList = [...groupsSet];
+  subjectsList=[...subjectsSet]; groupsList=[...groupsSet];
 
-  const teachersSnap = await getDocs(collection(db, "teachers"));
-  teachersSnap.forEach(t=>{teachersList.push({id:t.id,...t.data()});});
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  teachersSnap.forEach(t=>teachersList.push({id:t.id, name:t.data().name}));
 
-  // تعبئة القوائم
-  subjectSelect.innerHTML = "<option value=''>اختر المادة</option>";
-  filterSubject.innerHTML = "<option value=''>الكل</option>";
-  subjectsList.forEach(sub=>{
-    subjectSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
-    filterSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
-  });
-
-  teacherSelect.innerHTML = "<option value=''>اختر الأستاذ</option>";
-  filterTeacher.innerHTML = "<option value=''>الكل</option>";
-  teachersList.forEach(t=>{
-    teacherSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-    filterTeacher.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-  });
-
-  groupSelect.innerHTML = "<option value=''>اختر الكروب</option>";
-  filterGroup.innerHTML = "<option value=''>الكل</option>";
-  groupsList.forEach(g=>{
-    groupSelect.innerHTML += `<option value="${g}">${g}</option>`;
-    filterGroup.innerHTML += `<option value="${g}">${g}</option>`;
-  });
+  subjectSelect.innerHTML="<option value=''>اختر المادة</option>"; filterSubject.innerHTML="<option value=''>الكل</option>";
+  subjectsList.forEach(sub=>{ subjectSelect.innerHTML+=`<option value='${sub}'>${sub}</option>`; filterSubject.innerHTML+=`<option value='${sub}'>${sub}</option>`; });
+  teacherSelect.innerHTML="<option value=''>اختر الأستاذ</option>"; filterTeacher.innerHTML="<option value=''>الكل</option>";
+  teachersList.forEach(t=>{ teacherSelect.innerHTML+=`<option value='${t.id}'>${t.name}</option>`; filterTeacher.innerHTML+=`<option value='${t.id}'>${t.name}</option>`; });
+  groupSelect.innerHTML="<option value=''>اختر الكروب</option>"; filterGroup.innerHTML="<option value=''>الكل</option>";
+  groupsList.forEach(g=>{ groupSelect.innerHTML+=`<option value='${g}'>${g}</option>`; filterGroup.innerHTML+=`<option value='${g}'>${g}</option>`; });
+  filterRoom.innerHTML="<option value=''>الكل</option>"; for(let i=1;i<=10;i++){ filterRoom.innerHTML+=`<option value='قاعة ${i}'>قاعة ${i}</option>`; }
 }
 
-// حفظ الحصة مع منع التعارض
+// حفظ الحصة مع التحقق من التعارض
 classForm.addEventListener("submit", async e=>{
   e.preventDefault();
-  const subject = subjectSelect.value;
-  const teacherId = teacherSelect.value;
-  const group = groupSelect.value;
-  const day = daySelect.value;
-  const time = timeInput.value;
-  const room = roomSelect.value;
+  const data={
+    subject: subjectSelect.value,
+    teacherId: teacherSelect.value,
+    group: groupSelect.value,
+    day: daySelect.value,
+    room: roomSelect.value,
+    startTime: startTime.value,
+    endTime: endTime.value,
+    color: institute.primaryColor || "#004aad"
+  };
 
-  // التحقق من التعارض
-  const snapshot = await getDocs(collection(db,"classes"));
-  let conflict = false;
-  snapshot.forEach(c=>{
-    const cls = c.data();
-    if(cls.day===day && cls.time===time){
-      if(cls.room===room) conflict = true;
-      if(cls.teacherId===teacherId) conflict = true;
-      if(cls.group===group) conflict = true;
+  // تحقق التعارض
+  for(let cls of classesData){
+    if(cls.day===data.day){
+      const overlap = (data.startTime<cls.endTime && data.endTime>cls.startTime);
+      if(overlap && (cls.room===data.room || cls.teacherId===data.teacherId || cls.group===data.group)){
+        alert("⚠️ تعارض مع حصة موجودة!");
+        return;
+      }
     }
-  });
-  if(conflict){ alert("⚠️ يوجد تعارض في القاعة، الأستاذ أو الكروب بنفس اليوم والوقت."); return; }
+  }
 
-  // الطلاب المرتبطين بالكروب
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const groupStudents = [];
-  studentsSnap.forEach(s=>{
-    const st = s.data();
-    if(st.group === group) groupStudents.push({id: s.id, name: st.name});
-  });
-
-  await addDoc(collection(db,"classes"),{subject,teacherId,group,day,time,room,students:groupStudents,attendance:[]});
-  alert("تم حفظ الحصة بنجاح");
+  await addDoc(collection(db,"classes"), data);
   classForm.reset();
   loadClasses();
 });
 
-// تحميل الحصص
+// تحميل الحصص ورسم الجدول
 async function loadClasses(filter={}){
   const snapshot = await getDocs(collection(db,"classes"));
-  classesTableBody.innerHTML = "";
-  classesData = [];
-  snapshot.forEach(docSnap=>{
-    const cls = {id: docSnap.id, ...docSnap.data()};
-    if((!filter.subject || cls.subject===filter.subject) &&
-       (!filter.teacher || cls.teacherId===filter.teacher) &&
-       (!filter.group || cls.group===filter.group)){
-      classesData.push(cls);
-      const teacherName = (teachersList.find(t=>t.id===cls.teacherId)||{}).name || "غير معروف";
-      const tr = document.createElement("tr");
-      // تلوين الصف حسب اللون المأخوذ من الإعدادات
-      const bgColor = instituteSettings.colors?.row || "#eef4ff";
-      tr.style.background = bgColor;
-      tr.innerHTML = `
-        <td>${cls.subject}</td>
-        <td>${teacherName}</td>
-        <td>${cls.group}</td>
-        <td>${cls.day}</td>
-        <td>${cls.time}</td>
-        <td>${cls.room}</td>
-        <td><button class="btn warn" onclick="deleteClass('${cls.id}')">🗑️ حذف</button></td>
-      `;
-      classesTableBody.appendChild(tr);
-    }
-  });
+  classesData=[];
+  snapshot.forEach(docSnap=>classesData.push({id:docSnap.id, ...docSnap.data()}));
+
+  // رسم الجدول
+  renderTimetable(classesData.filter(c=>{
+    return (!filter.subject || c.subject===filter.subject) &&
+           (!filter.teacher || c.teacherId===filter.teacher) &&
+           (!filter.group || c.group===filter.group) &&
+           (!filter.room || c.room===filter.room);
+  }));
 }
 
-// حذف الحصة
-window.deleteClass = async id=>{
-  if(confirm("هل تريد حذف الحصة؟")){
-    await deleteDoc(doc(db,"classes",id));
-    loadClasses();
+// رسم شبكة الحصص
+function renderTimetable(data){
+  const days=["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"];
+  timetableDiv.innerHTML="";
+  // أعمدة: الوقت 08:00-20:00
+  timetableDiv.style.gridTemplateColumns=`repeat(${days.length+1},1fr)`;
+  // رأس الجدول
+  timetableDiv.innerHTML="<div class='cell'>الوقت\\اليوم</div>"+days.map(d=>`<div class='cell'>${d}</div>`).join("");
+
+  for(let h=8; h<20; h++){
+    const rowTime = h.toString().padStart(2,'0')+":00";
+    timetableDiv.innerHTML+=`<div class='cell'>${rowTime}</div>`+days.map(day=>{
+      const cellData = data.find(c=>{
+        return c.day===day && c.startTime<=rowTime && c.endTime>rowTime;
+      });
+      if(cellData){
+        const teacherName = (teachersList.find(t=>t.id===cellData.teacherId)||{}).name||"غير معروف";
+        return `<div class='cell'><div class='lesson' style='background:${cellData.color}'>
+          ${cellData.subject}<br>${teacherName}<br>${cellData.room}<br>${cellData.startTime}-${cellData.endTime}
+        </div></div>`;
+      }else return "<div class='cell'></div>";
+    }).join("");
   }
 }
 
-// تطبيق الفلتر
+// الفلترة
 filterBtn.addEventListener("click", ()=>{
   loadClasses({
     subject: filterSubject.value,
     teacher: filterTeacher.value,
-    group: filterGroup.value
+    group: filterGroup.value,
+    room: filterRoom.value
   });
 });
 
 // الطباعة
-printBtn.addEventListener("click", ()=>{
-  window.print();
-});
+printBtn.addEventListener("click", ()=>{ window.print(); });
+
 </script>
 </body>
 </html>
