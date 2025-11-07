@@ -1,0 +1,49 @@
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+// 🔹 ربط مع مشروعك الحقيقي
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🔹 إنشاء مثال لبنية Collection "students"
+async function createStudentExample() {
+  const studentRef = doc(collection(db, "students"));
+  await setDoc(studentRef, {
+    name: "أحمد محمد",
+    phone: "07700000000",
+    address: "بغداد",
+    school: "ثانوية الرافدين",
+    stage: "السادس الإعدادي - علمي",
+    group: "A",
+    totalFees: 350000,
+    note: "طالب مجتهد ومنتظم",
+    createdAt: serverTimestamp(),
+    subjects: [
+      {
+        name: "رياضيات",
+        teacherId: "T001",
+        fee: 150000,
+        remaining: 50000,
+        payments: [
+          { amount: 50000, date: "2025/11/01" },
+          { amount: 50000, date: "2025/11/07" }
+        ]
+      },
+      {
+        name: "كيمياء",
+        teacherId: "T002",
+        fee: 200000,
+        remaining: 200000,
+        payments: []
+      }
+    ]
+  });
+
+  console.log("✅ تم إنشاء مثال Collection الطلاب بنجاح");
+}
+
+createStudentExample();
+</script>
