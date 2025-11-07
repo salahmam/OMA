@@ -1,49 +1,115 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-// 🔹 ربط مع مشروعك الحقيقي
-import { firebaseConfig } from "./firebase-config.js";
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// 🔹 إنشاء مثال لبنية Collection "students"
-async function createStudentExample() {
-  const studentRef = doc(collection(db, "students"));
-  await setDoc(studentRef, {
-    name: "أحمد محمد",
-    phone: "07700000000",
-    address: "بغداد",
-    school: "ثانوية الرافدين",
-    stage: "السادس الإعدادي - علمي",
-    group: "A",
-    totalFees: 350000,
-    note: "طالب مجتهد ومنتظم",
-    createdAt: serverTimestamp(),
-    subjects: [
-      {
-        name: "رياضيات",
-        teacherId: "T001",
-        fee: 150000,
-        remaining: 50000,
-        payments: [
-          { amount: 50000, date: "2025/11/01" },
-          { amount: 50000, date: "2025/11/07" }
-        ]
-      },
-      {
-        name: "كيمياء",
-        teacherId: "T002",
-        fee: 200000,
-        remaining: 200000,
-        payments: []
-      }
-    ]
-  });
-
-  console.log("✅ تم إنشاء مثال Collection الطلاب بنجاح");
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تهيئة قاعدة البيانات - OMA</title>
+<style>
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #f5f9ff;
+  color: #102027;
+  padding: 30px;
+  direction: rtl;
 }
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+button {
+  background: #004aad;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { background: #003a8c; }
+pre {
+  background: #eef4ff;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+</style>
+</head>
+<body>
 
-createStudentExample();
+<h2>🔧 إعداد قاعدة بيانات OMA (Firestore)</h2>
+<p>عند الضغط على الزر بالأسفل، سيتم إنشاء Collections الأساسية في Firestore.</p>
+
+<div class="card">
+  <button id="setupBtn">🚀 إنشاء البيانات الأساسية</button>
+  <pre id="log"></pre>
+</div>
+
+<script type="module" src="https://salahmam.github.io/OMA/firebase-config.js"></script>
+<script type="module">
+import { db } from "./firebase-config.js";
+import { setDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+const log = document.getElementById("log");
+const setupBtn = document.getElementById("setupBtn");
+
+function addLog(msg){ log.textContent += msg + "\\n"; }
+
+setupBtn.addEventListener("click", async ()=>{
+  addLog("⏳ جاري إنشاء المجموعات الأساسية...");
+
+  try {
+    // 📘 Collection: students
+    await setDoc(doc(db, "students", "example_student"), {
+      name: "أحمد علي",
+      address: "بغداد",
+      phone: "0770000000",
+      level: "المرحلة الأولى",
+      subjects: ["رياضيات", "علوم"],
+      joinDate: "2025-11-07",
+      fees: 500000,
+      installments: [250000, 250000],
+      status: "نشط"
+    });
+    addLog("✅ students collection تم إنشاؤه.");
+
+    // 📗 Collection: teachers
+    await setDoc(doc(db, "teachers", "example_teacher"), {
+      name: "أستاذ كريم",
+      specialty: "رياضيات",
+      phone: "0780000000",
+      salary: 800000,
+      percent: 60,
+      joinDate: "2025-11-07",
+      address: "البصرة",
+      status: "نشط"
+    });
+    addLog("✅ teachers collection تم إنشاؤه.");
+
+    // 📙 Collection: users
+    await setDoc(doc(db, "users", "admin_sample"), {
+      name: "مدير النظام",
+      email: "admin@oma.com",
+      type: "admin",
+      createdAt: new Date().toISOString()
+    });
+    addLog("✅ users collection تم إنشاؤه.");
+
+    // 📒 Collection: settings
+    await setDoc(doc(db, "settings", "percentages"), {
+      teacher: 60,
+      institute: 40
+    });
+    addLog("✅ settings collection تم إنشاؤه.");
+
+    addLog("\\n🎉 تم إنشاء جميع المجموعات بنجاح!");
+  } catch (e) {
+    addLog("❌ خطأ أثناء الإنشاء: " + e.message);
+  }
+});
 </script>
+
+</body>
+</html>
