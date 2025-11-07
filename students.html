@@ -26,10 +26,9 @@ th{background:var(--primary);color:#fff}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
 .subject-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
 .subject-row > *{flex:1}
-.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;overflow:auto}
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:900px;width:96%;max-height:90vh;overflow:auto}
-.subject-card{border:1px solid #d6dde9;padding:6px;margin-bottom:6px;border-radius:6px;}
 @media print{
   body{background:white}
   header,.controls,.btn,.modal,.no-print{display:none !important}
@@ -49,12 +48,14 @@ th{background:var(--primary);color:#fff}
         <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center" class="no-print">
-        <select id="stageSelect" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
+        <select id="stageSelectTop" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
           <option value="">اختر المرحلة</option>
         </select>
         <select id="groupSelectTop" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
           <option value="">اختر الكروب</option>
         </select>
+        <select id="filterSubject"><option value="">كل المواد</option></select>
+        <select id="filterTeacher"><option value="">كل الأساتذة</option></select>
         <button id="applyFiltersBtn" class="btn">تطبيق الفلاتر</button>
         <button id="printListBtn" class="btn">🖨️ طباعة القائمة</button>
       </div>
@@ -62,30 +63,12 @@ th{background:var(--primary);color:#fff}
 
     <form id="studentForm" style="margin-top:12px">
       <div class="form-grid">
-        <div class="two">
-          <label>الاسم الكامل</label>
-          <input id="name" type="text" required />
-        </div>
-        <div class="two">
-          <label>رقم الموبايل</label>
-          <input id="phone" type="tel" required />
-        </div>
-        <div class="two">
-          <label>العنوان</label>
-          <input id="address" type="text" />
-        </div>
-        <div class="two">
-          <label>اسم المدرسة</label>
-          <input id="school" type="text" />
-        </div>
-        <div class="two">
-          <label>المرحلة الدراسية</label>
-          <select id="stageSelectForm"></select>
-        </div>
-        <div class="two">
-          <label>الكروب</label>
-          <select id="groupSelectForm"></select>
-        </div>
+        <div class="two"><label>الاسم الكامل</label><input id="name" type="text" required /></div>
+        <div class="two"><label>رقم الموبايل</label><input id="phone" type="tel" required /></div>
+        <div class="two"><label>العنوان</label><input id="address" type="text" /></div>
+        <div class="two"><label>اسم المدرسة</label><input id="school" type="text" /></div>
+        <div class="two"><label>المرحلة الدراسية</label><select id="stageSelectForm"></select></div>
+        <div class="two"><label>الكروب</label><select id="groupSelectForm"></select></div>
 
         <div style="width:100%">
           <label>المواد (اختَر مادة ثم المعلم ثم قيمة القسط)</label>
@@ -96,13 +79,10 @@ th{background:var(--primary);color:#fff}
         </div>
 
         <div class="two">
-          <label>إجمالي الأقساط (تحسب الحقول تلقائيًا أو أدخل يدوياً)</label>
-          <input id="totalFees" type="number" min="0" />
+          <label>إجمالي المستحقات (يحسب تلقائياً)</label>
+          <input id="totalFees" type="number" min="0" readonly/>
         </div>
-        <div class="two">
-          <label>ملاحظة / وصف الطالب</label>
-          <input id="note" type="text" />
-        </div>
+        <div class="two"><label>ملاحظة / وصف الطالب</label><input id="note" type="text" /></div>
 
         <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
           <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
@@ -117,7 +97,6 @@ th{background:var(--primary);color:#fff}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap">
       <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
     </div>
-
     <table class="table" id="studentsTable">
       <thead>
         <tr>
@@ -149,263 +128,287 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-const firebaseConfig = { /* إعدادات مشروعك */ };
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* --- Elements --- */
 const subjectsContainer = document.getElementById('subjectsContainer');
 const addSubjectBtn = document.getElementById('addSubjectBtn');
 const studentForm = document.getElementById('studentForm');
 const studentsTableBody = document.querySelector('#studentsTable tbody');
 const totalCount = document.getElementById('totalCount');
 const clearFormBtn = document.getElementById('clearFormBtn');
-
-const filterSubject = document.getElementById('stageSelect');
-const filterTeacher = document.getElementById('groupSelectTop');
+const filterSubject = document.getElementById('filterSubject');
+const filterTeacher = document.getElementById('filterTeacher');
+const filterGroup = document.getElementById('filterGroup');
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 const printListBtn = document.getElementById('printListBtn');
-
+const stageSelectForm = document.getElementById('stageSelectForm');
+const stageSelectTop = document.getElementById('stageSelectTop');
+const groupSelectForm = document.getElementById('groupSelectForm');
+const groupSelectTop = document.getElementById('groupSelectTop');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalTitle = document.getElementById('modalTitle');
 const closeModalBtn = document.getElementById('closeModal');
 const printStudentBtn = document.getElementById('printStudentBtn');
+const totalFeesInput = document.getElementById('totalFees');
 
-const stageSelect = document.getElementById('stageSelect');
-const stageSelectForm = document.getElementById('stageSelectForm');
-const groupSelectTop = document.getElementById('groupSelectTop');
-const groupSelectForm = document.getElementById('groupSelectForm');
-
-let teachers = [];
-let studentsCache = [];
+let teachers = [], studentsCache = [], settings = {};
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
-let instituteInfo = { name:'اسم المعهد', logo:null }; // يمكنك تحميل الاسم والشعار من collection settings
 
-/* --- Auth guard --- */
 onAuthStateChanged(auth,user=>{
-  if(!user){ window.location.href='login.html'; }
-  else{ document.body.style.visibility='visible'; initPage(); }
+  if(!user){ window.location.href='login.html'; return; }
+  document.body.style.visibility='visible';
+  initPage();
 });
 
 async function initPage(){
-  STAGES.forEach(s=>{
-    stageSelect.innerHTML+=`<option value="${s}">${s}</option>`;
-    stageSelectForm.innerHTML+=`<option value="${s}">${s}</option>`;
-  });
-  GROUPS.forEach(g=>{
-    groupSelectTop.innerHTML+=`<option value="${g}">${g}</option>`;
-    groupSelectForm.innerHTML+=`<option value="${g}">${g}</option>`;
-  });
+  STAGES.forEach(s=>{ stageSelectForm.innerHTML+=`<option value="${s}">${s}</option>`; stageSelectTop.innerHTML+=`<option value="${s}">${s}</option>`; });
+  GROUPS.forEach(g=>{ groupSelectForm.innerHTML+=`<option value="${g}">${g}</option>`; groupSelectTop.innerHTML+=`<option value="${g}">${g}</option>`; });
+
+  await loadSettings();
   await loadTeachers();
   await loadStudents();
 }
 
-/* --- Load teachers --- */
-async function loadTeachers(){
-  teachers = [];
-  try { const snap = await getDocs(collection(db,'teachers')); snap.forEach(d=>teachers.push({id:d.id,...d.data()})); }
-  catch(e){ console.error('loadTeachers',e); }
+async function loadSettings(){
+  try{
+    const snap = await getDoc(doc(db,'settings','logo'));
+    if(snap.exists()) settings = snap.data();
+  }catch(e){ console.warn(e); }
 }
 
-/* --- Create subject row --- */
+async function loadTeachers(){
+  teachers = [];
+  try{
+    const snap = await getDocs(collection(db,'teachers'));
+    snap.forEach(d=>teachers.push({ id:d.id,...d.data() }));
+  }catch(e){ console.error(e); }
+}
+
 function createSubjectRow(data={}){
-  const wrapper = document.createElement('div');
-  wrapper.className='subject-row';
-  const subjInp = document.createElement('input'); subjInp.placeholder='اسم المادة'; subjInp.value=data.name||'';
-  const teacherSel = document.createElement('select'); teacherSel.innerHTML=`<option value="">اختر الأستاذ</option>`;
-  teachers.forEach(t=>teacherSel.innerHTML+=`<option value="${t.id}" ${t.id===data.teacherId?'selected':''}>${t.name}</option>`);
-  const feeInp = document.createElement('input'); feeInp.type='number'; feeInp.placeholder='إجمالي القسط'; feeInp.min=0; feeInp.value=data.fee||'';
-  const remInp = document.createElement('input'); remInp.type='number'; remInp.placeholder='المتبقي'; remInp.min=0; remInp.value=data.remaining||'';
-  const payBtn = document.createElement('button'); payBtn.type='button'; payBtn.className='btn small'; payBtn.textContent='💰 إضافة دفعة';
-  const remSubBtn = document.createElement('button'); remSubBtn.type='button'; remSubBtn.className='btn warn small'; remSubBtn.textContent='❌';
+  const wrapper = document.createElement('div'); wrapper.className='subject-row';
+  const subjInp=document.createElement('input'); subjInp.placeholder='اسم المادة'; subjInp.value=data.name||'';
+  const teacherSel=document.createElement('select'); teacherSel.innerHTML=`<option value="">اختر الأستاذ</option>`; teachers.forEach(t=>teacherSel.innerHTML+=`<option value="${t.id}" ${t.id===data.teacherId?'selected':''}>${t.name}</option>`);
+  const feeInp=document.createElement('input'); feeInp.type='number'; feeInp.placeholder='إجمالي القسط'; feeInp.min=0; feeInp.value=data.fee||0;
+  const remInp=document.createElement('input'); remInp.type='number'; remInp.placeholder='المتبقي'; remInp.min=0; remInp.value=data.remaining||0;
+  const payBtn=document.createElement('button'); payBtn.type='button'; payBtn.className='btn small'; payBtn.textContent='💰 إضافة دفعة';
+  const remSubBtn=document.createElement('button'); remSubBtn.type='button'; remSubBtn.className='btn warn small'; remSubBtn.textContent='❌';
   wrapper.payments = data.payments||[];
-  payBtn.addEventListener('click',()=>{
-    const amt = parseFloat(prompt('أدخل مبلغ الدفعة:'));
-    if(isNaN(amt)||amt<=0) return alert('مبلغ غير صالح');
-    wrapper.payments.push({amount:amt,date:new Date().toLocaleDateString()});
-    const curRem = parseFloat(remInp.value)||0; remInp.value = Math.max(0,curRem-amt);
+
+  payBtn.addEventListener('click',()=>{ 
+    const amountStr=prompt('أدخل مبلغ الدفعة:'); if(!amountStr)return;
+    const amount=parseFloat(amountStr); if(isNaN(amount)||amount<=0){ alert('مبلغ غير صالح'); return; }
+    const date=new Date().toLocaleDateString();
+    wrapper.payments.push({amount,date}); 
+    remInp.value=Math.max(0,(parseFloat(remInp.value)||0)-amount);
+    updateTotalFees();
   });
-  remSubBtn.addEventListener('click',()=>wrapper.remove());
-  wrapper.appendChild(subjInp); wrapper.appendChild(teacherSel); wrapper.appendChild(feeInp); wrapper.appendChild(remInp); wrapper.appendChild(payBtn); wrapper.appendChild(remSubBtn);
+  remSubBtn.addEventListener('click',()=>{ wrapper.remove(); updateTotalFees(); });
+
+  [subjInp,teacherSel,feeInp,remInp,payBtn,remSubBtn].forEach(el=>wrapper.appendChild(el));
   subjectsContainer.appendChild(wrapper);
   return wrapper;
 }
 
-addSubjectBtn.addEventListener('click',()=>{ if(teachers.length===0) alert('لا توجد أساتذة'); else createSubjectRow(); });
+addSubjectBtn.addEventListener('click',()=>{ createSubjectRow(); updateTotalFees(); });
+function updateTotalFees(){
+  let total=0;
+  subjectsContainer.querySelectorAll('.subject-row').forEach(r=>{
+    const fee=parseFloat(r.querySelector('input[type=number]').value)||0;
+    total+=fee;
+  });
+  totalFeesInput.value=total;
+}
 
-/* --- Save student --- */
-studentForm.addEventListener('submit',async e=>{
+/* حفظ الطالب */
+studentForm.addEventListener('submit',async(e)=>{
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const school = document.getElementById('school').value.trim();
-  const stage = stageSelectForm.value;
-  const group = groupSelectForm.value;
-  const totalFees = parseFloat(document.getElementById('totalFees').value)||0;
-  const note = document.getElementById('note').value.trim();
-  const subjects = Array.from(subjectsContainer.querySelectorAll('.subject-row')).map(r=>{
-    const inputs = r.querySelectorAll('input,select'); return { name:inputs[0].value, teacherId:inputs[1].value, fee:parseFloat(inputs[2].value)||0, remaining:parseFloat(inputs[3].value)||0, payments:r.payments||[] };
+  const name=document.getElementById('name').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  const address=document.getElementById('address').value.trim();
+  const school=document.getElementById('school').value.trim();
+  const stage=document.getElementById('stageSelectForm').value;
+  const group=document.getElementById('groupSelectForm').value;
+  const note=document.getElementById('note').value.trim();
+  const totalFees=parseFloat(totalFeesInput.value)||0;
+
+  const subjects=Array.from(subjectsContainer.querySelectorAll('.subject-row')).map(r=>{
+    const inputs=r.querySelectorAll('input,select');
+    const name=inputs[0].value.trim();
+    const teacherId=inputs[1].value;
+    const fee=parseFloat(inputs[2].value)||0;
+    const remaining=parseFloat(inputs[3].value)||fee;
+    const payments=r.payments||[];
+    return { name, teacherId, fee, remaining, payments };
   }).filter(s=>s.name);
-  if(!name||!phone){ alert('الاسم ورقم الهاتف مطلوب'); return; }
-  if(subjects.length===0){ alert('أضف مادة واحدة على الأقل'); return; }
-  const computedTotal = subjects.reduce((a,s)=>a+(s.fee||0),0);
-  const finalTotal = totalFees>0?totalFees:computedTotal;
+
+  if(!name||!phone||subjects.length===0){ alert('الاسم، الهاتف، والمادة مطلوبة'); return; }
+
   try{
-    await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees:finalTotal,note,subjects,createdAt:new Date()});
-    alert('تم حفظ الطالب بنجاح'); studentForm.reset(); subjectsContainer.innerHTML=''; loadStudents();
+    await addDoc(collection(db,'students'),{ name, phone, address, school, stage, group, note, totalFees, subjects, createdAt:new Date() });
+    alert('تم حفظ الطالب بنجاح');
+    studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees();
+    loadStudents();
   }catch(e){ console.error(e); alert('خطأ أثناء الحفظ'); }
 });
 
-/* --- Load students --- */
+/* تحميل الطلاب */
 async function loadStudents(filter={}){
-  const snap = await getDocs(query(collection(db,'students'),orderBy('createdAt','desc')));
-  studentsCache=[]; studentsTableBody.innerHTML='';
-  snap.forEach(d=>studentsCache.push({id:d.id,...d.data()}));
-  let filtered = studentsCache;
-  if(filter.stage) filtered = filtered.filter(s=>s.stage===filter.stage);
-  if(filter.group) filtered = filtered.filter(s=>s.group===filter.group);
-  filtered.forEach(s=>{
-    const tr=document.createElement('tr');
-    const subjectsHtml=(s.subjects||[]).map(sub=>{ const paid=(sub.payments||[]).reduce((a,p)=>a+p.amount,0); const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid); const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-'; return `${sub.name} — ${teacherName} <br> إجمالي:${sub.fee} - مدفوع:${paid} - متبقي:${remaining}`; }).join('<hr style="border:none;border-top:1px dashed #ddd;margin:8px 0">');
-    tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${subjectsHtml}</td>
-      <td>
-        <button class="btn small" data-id="${s.id}" data-action="view">🔍 عرض</button>
-        <button class="btn small" data-id="${s.id}" data-action="edit">✏️ تعديل</button>
-        <button class="btn warn small" data-id="${s.id}" data-action="delete">🗑️ حذف</button>
-      </td>`;
-    studentsTableBody.appendChild(tr);
-    tr.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',handleRowAction));
-  });
-  totalCount.innerText=filtered.length;
-}
+  try{
+    const q=query(collection(db,'students'),orderBy('createdAt','desc'));
+    const snap=await getDocs(q); studentsCache=[];
+    studentsTableBody.innerHTML='';
+    const subjectSet=new Set(), teacherSet=new Set(), groupSet=new Set();
 
-/* --- Row actions --- */
-async function handleRowAction(e){
-  const id=e.currentTarget.dataset.id;
-  const action=e.currentTarget.dataset.action;
-  if(action==='view') return showStudent(id);
-  if(action==='edit') return editStudent(id);
-  if(action==='delete'){ if(confirm('هل تريد حذف الطالب؟')){ await deleteDoc(doc(db,'students',id)); loadStudents(); } }
-}
-
-/* --- Edit student --- */
-async function editStudent(id){
-  const snap=await getDoc(doc(db,'students',id));
-  if(!snap.exists()) return alert('الطالب غير موجود');
-  const s=snap.data();
-  document.getElementById('name').value=s.name;
-  document.getElementById('phone').value=s.phone;
-  document.getElementById('address').value=s.address;
-  document.getElementById('school').value=s.school;
-  stageSelectForm.value=s.stage;
-  groupSelectForm.value=s.group;
-  document.getElementById('totalFees').value=s.totalFees||0;
-  document.getElementById('note').value=s.note||'';
-  subjectsContainer.innerHTML='';
-  (s.subjects||[]).forEach(sub=>createSubjectRow(sub));
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-/* --- Show student modal --- */
-async function showStudent(studentId){
-  const docRef = doc(db,'students',studentId);
-  const snap = await getDoc(docRef);
-  if(!snap.exists()) return alert('الطالب غير موجود');
-  const student = snap.data();
-  modalTitle.textContent = `استمارة الطالب - ${student.name}`;
-  modalBody.innerHTML = `
-    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px">
-      <div style="flex:1">
-        <h3>معلومات الطالب</h3>
-        <p><strong>الاسم:</strong> ${student.name}</p>
-        <p><strong>الهاتف:</strong> ${student.phone}</p>
-        <p><strong>العنوان:</strong> ${student.address||'-'}</p>
-        <p><strong>المدرسة:</strong> ${student.school||'-'}</p>
-        <p><strong>المرحلة:</strong> ${student.stage||'-'}</p>
-        <p><strong>الكروب:</strong> ${student.group||'-'}</p>
-      </div>
-      <div style="flex:1">
-        <h3>القسم المالي</h3>
-        <p><strong>إجمالي الأقساط:</strong> ${student.totalFees||0}</p>
-        <p><strong>إجمالي المدفوع:</strong> ${student.subjects.reduce((a,s)=>a+(s.payments?.reduce((x,p)=>x+p.amount,0)||0),0)}</p>
-        <p><strong>المتبقي:</strong> ${student.subjects.reduce((a,s)=>a+((s.fee||0)-(s.payments?.reduce((x,p)=>x+p.amount,0)||0)),0)}</p>
-      </div>
-    </div>
-    <hr>
-    <h3>الدفعات حسب المواد</h3>
-    <div id="modalSubjectsContainer" style="display:flex;flex-direction:column;gap:8px"></div>
-  `;
-  const modalSubjectsContainer = modalBody.querySelector('#modalSubjectsContainer');
-  student.subjects.forEach((sub,index)=>{
-    const totalPaid = sub.payments?.reduce((a,p)=>a+(p.amount||0),0)||0;
-    const remaining = (sub.fee||0)-totalPaid;
-    const div = document.createElement('div');
-    div.className='subject-card';
-    div.innerHTML = `
-      <strong>${sub.name}</strong> — إجمالي: ${sub.fee||0} - مدفوع: ${totalPaid} - متبقي: ${remaining}
-      <button class="btn small">💰 دفعة</button>
-      <div style="font-size:12px;margin-top:4px">
-        ${sub.payments?.map(p=>`<div>الدفعة: ${p.amount} - التاريخ: ${p.date}</div>`).join('')||'<em>لا توجد دفعات</em>'}
-      </div>
-    `;
-    const payBtn = div.querySelector('button');
-    payBtn.addEventListener('click',async ()=>{
-      const amt = parseFloat(prompt(`أدخل مبلغ الدفعة لمادة: ${sub.name}`));
-      if(isNaN(amt)||amt<=0) return alert('مبلغ غير صالح');
-      sub.payments = sub.payments||[];
-      sub.payments.push({amount:amt,date:new Date().toLocaleDateString()});
-      await updateDoc(doc(db,'students',studentId),{subjects:student.subjects});
-      showStudent(studentId);
+    snap.forEach(d=>{
+      const s={id:d.id,...d.data()}; studentsCache.push(s);
+      (s.subjects||[]).forEach(sub=>{ if(sub.name) subjectSet.add(sub.name); if(sub.teacherId) teacherSet.add(sub.teacherId); });
+      if(s.group) groupSet.add(s.group);
     });
-    modalSubjectsContainer.appendChild(div);
-  });
+
+    populateFilterSelects(subjectSet,teacherSet,groupSet);
+
+    let filtered=studentsCache;
+    if(filter.subject) filtered=filtered.filter(st=> (st.subjects||[]).some(sub=>sub.name===filter.subject));
+    if(filter.teacher) filtered=filtered.filter(st=> (st.subjects||[]).some(sub=>sub.teacherId===filter.teacher));
+    if(filter.stage) filtered=filtered.filter(st=> st.stage===filter.stage);
+    if(filter.group) filtered=filtered.filter(st=> st.group===filter.group);
+
+    filtered.forEach(s=>{
+      const tr=document.createElement('tr');
+      const subjectsHtml=(s.subjects||[]).map(sub=>{
+        const paid=(sub.payments||[]).reduce((a,p)=>a+(p.amount||0),0);
+        const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid);
+        const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-';
+        return `${sub.name} — ${teacherName} <br> إجمالي:${sub.fee} - مدفوع:${paid} - متبقي:${remaining}`;
+      }).join('<hr style="border:none;border-top:1px dashed #ddd;margin:8px 0">');
+
+      tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage||'-'}</td><td>${s.group||'-'}</td><td>${subjectsHtml}</td>
+        <td>
+          <button class="btn small" data-id="${s.id}" data-action="view">عرض</button>
+          <button class="btn warn small" data-id="${s.id}" data-action="delete">حذف</button>
+        </td>`;
+      tr.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',handleRowAction));
+      studentsTableBody.appendChild(tr);
+    });
+    totalCount.textContent=filtered.length;
+  }catch(e){ console.error(e); }
+}
+
+function populateFilterSelects(subjectSet,teacherSet,groupSet){
+  filterSubject.innerHTML='<option value="">كل المواد</option>';
+  subjectSet.forEach(s=>filterSubject.innerHTML+=`<option value="${s}">${s}</option>`);
+  filterTeacher.innerHTML='<option value="">كل الأساتذة</option>';
+  teacherSet.forEach(id=>{ const t=teachers.find(t=>t.id===id); if(t) filterTeacher.innerHTML+=`<option value="${id}">${t.name}</option>`; });
+  filterGroup.innerHTML='<option value="">كل الكروبات</option>';
+  groupSet.forEach(g=>filterGroup.innerHTML+=`<option value="${g}">${g}</option>`);
+}
+
+function handleRowAction(e){
+  const btn=e.currentTarget; const id=btn.dataset.id; const action=btn.dataset.action;
+  if(action==='view') showStudent(id);
+  if(action==='delete') deleteStudent(id);
+}
+
+/* --- عرض الطالب --- */
+async function showStudent(id){
+  const student=studentsCache.find(s=>s.id===id); if(!student)return alert('الطالب غير موجود');
+  modalTitle.textContent=`استمارة الطالب - ${student.name}`;
+  modalBody.innerHTML=`
+    <div class="card print-page" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div><strong>استمارة الطالب</strong></div>
+        <div>${settings.logo?'<img src="'+settings.logo+'" style="height:50px">':''}</div>
+      </div>
+      <h4>معلومات الطالب</h4>
+      <p><strong>الاسم:</strong> ${student.name}</p>
+      <p><strong>الهاتف:</strong> ${student.phone}</p>
+      <p><strong>العنوان:</strong> ${student.address||'-'}</p>
+      <p><strong>المدرسة:</strong> ${student.school||'-'}</p>
+      <p><strong>المرحلة:</strong> ${student.stage||'-'}</p>
+      <p><strong>الكروب:</strong> ${student.group||'-'}</p>
+      <p><strong>ملاحظات:</strong> ${student.note||'-'}</p>
+    </div>
+    <div class="card print-page">
+      <h4>الدفعات مع التاريخ</h4>
+      ${(student.subjects||[]).map((sub,idx)=>{
+        const paid=(sub.payments||[]).reduce((a,p)=>a+(p.amount||0),0);
+        const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid);
+        const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-';
+        return `<div style="margin-bottom:12px;padding:6px;border-bottom:1px solid #eee">
+          <strong>${sub.name}</strong> — ${teacherName} <br>
+          إجمالي: ${sub.fee} | مدفوع: ${paid} | متبقي: ${remaining} <br>
+          <button class="btn small" data-subject="${idx}" data-id="${student.id}" data-action="addPayment">💰 إضافة دفعة</button>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
   modal.classList.add('open');
+  modalBody.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',handleModalAction));
+}
+
+/* --- إضافة دفعة من المودال --- */
+async function handleModalAction(e){
+  const btn=e.currentTarget;
+  const studentId=btn.dataset.id;
+  const subjectIdx=parseInt(btn.dataset.subject);
+  const action=btn.dataset.action;
+
+  if(action==='addPayment'){
+    const amountStr=prompt('أدخل مبلغ الدفعة:'); if(!amountStr) return;
+    const amount=parseFloat(amountStr); if(isNaN(amount)||amount<=0){ alert('مبلغ غير صالح'); return; }
+
+    const studentRef=doc(db,'students',studentId);
+    const studentDoc=await getDoc(studentRef); if(!studentDoc.exists()) return alert('الطالب غير موجود');
+
+    const studentData=studentDoc.data();
+    if(!studentData.subjects || !studentData.subjects[subjectIdx]) return;
+    if(!studentData.subjects[subjectIdx].payments) studentData.subjects[subjectIdx].payments=[];
+    studentData.subjects[subjectIdx].payments.push({ amount, date:new Date().toLocaleDateString() });
+    const totalPaid=studentData.subjects[subjectIdx].payments.reduce((a,p)=>a+(p.amount||0),0);
+    studentData.subjects[subjectIdx].remaining=Math.max(0,(studentData.subjects[subjectIdx].fee||0)-totalPaid);
+
+    await updateDoc(studentRef,{ subjects: studentData.subjects });
+    alert('تم إضافة الدفعة');
+    await loadStudents();
+    showStudent(studentId);
+  }
 }
 
 closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
 
-/* --- Print student --- */
 printStudentBtn.addEventListener('click',()=>{
-  const content = modalBody.innerHTML;
-  const printWin = window.open('','_blank','width=900,height=700');
-  printWin.document.write(`
-    <html dir="rtl"><head>
-    <title>استمارة الطالب</title>
-    <style>
-      body{font-family:'Cairo',sans-serif;padding:20px;color:#102027;}
-      h3{border-bottom:1px solid #ddd;padding-bottom:4px;}
-      .subject-card{border:1px solid #d6dde9;padding:6px;margin-bottom:6px;border-radius:6px;}
-    </style></head><body>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div><h2>${instituteInfo.name||'اسم المعهد'}</h2></div>
-      <div>${instituteInfo.logo?`<img src="${instituteInfo.logo}" style="height:60px">`:''}</div>
-    </div>
-    ${content}
-    </body></html>
-  `);
-  printWin.document.close(); printWin.focus(); printWin.print(); printWin.close();
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>استمارة الطالب</title></head><body>${modalBody.innerHTML}</body></html>`);
+  w.print(); w.close();
 });
 
-/* --- Filters --- */
-applyFiltersBtn.addEventListener('click',()=>loadStudents({stage:stageSelect.value,group:groupSelectTop.value}));
+async function deleteStudent(id){
+  if(!confirm('هل تريد حذف الطالب نهائياً؟')) return;
+  try{ await deleteDoc(doc(db,'students',id)); alert('تم الحذف'); await loadStudents(); }catch(e){ console.error(e); alert('خطأ أثناء الحذف'); }
+}
+
+/* --- تطبيق الفلاتر --- */
+applyFiltersBtn.addEventListener('click',()=>{ loadStudents({ stage: stageSelectTop.value, group: groupSelectTop.value, subject: filterSubject.value, teacher: filterTeacher.value }); });
 printListBtn.addEventListener('click',()=>{
-  let html='<table style="width:100%;border-collapse:collapse"><tr><th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد</th></tr>';
-  studentsCache.forEach(s=>{
-    const subjectsHtml=(s.subjects||[]).map(sub=>`${sub.name} إجمالي:${sub.fee} - متبقي:${sub.remaining||0}`).join(', ');
-    html+=`<tr><td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${subjectsHtml}</td></tr>`;
-  });
-  html+='</table>';
-  const printWin = window.open('','_blank');
-  printWin.document.write(`<h2>${instituteInfo.name||'اسم المعهد'}</h2>${html}`);
-  printWin.document.close(); printWin.focus(); printWin.print(); printWin.close();
+  const html=document.querySelector('#studentsTable').outerHTML;
+  const w=window.open('','_blank'); w.document.write(`<html><head><title>قائمة الطلاب</title></head><body>${html}</body></html>`); w.print(); w.close();
 });
 
-/* --- Clear form --- */
-clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; });
+clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees(); });
 
 </script>
 </body>
