@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة إعدادات Firebase - OMA</title>
+<title>تهيئة الطلاب - OMA</title>
 <style>
 body { font-family:'Cairo',sans-serif; padding:30px; background:#f5f9ff; color:#102027; }
 button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; }
@@ -12,8 +12,8 @@ pre { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; whit
 </style>
 </head>
 <body>
-<h2>🚀 تهيئة إعدادات Firebase - OMA</h2>
-<p>اضغط على الزر لإنشاء جميع الحقول الأساسية تلقائيًا.</p>
+<h2>🚀 تهيئة Collection الطلاب - OMA</h2>
+<p>اضغط على الزر لإنشاء جميع الحقول الأساسية لكل طالب جديد تلقائيًا.</p>
 <button id="initBtn">ابدأ التهيئة</button>
 <pre id="log"></pre>
 
@@ -22,7 +22,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// إعداد Firebase لمشروع oma0
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -38,57 +38,43 @@ const db = getFirestore(app);
 
 const log = document.getElementById("log");
 const initBtn = document.getElementById("initBtn");
-
 function addLog(msg){ log.textContent += msg + "\n"; }
+
+// دالة إنشاء هيكل طالب جديد
+async function createStudent(studentId){
+  const studentRef = doc(db, "students", studentId);
+  if((await getDoc(studentRef)).exists()){
+    addLog(`⚠️ الطالب ${studentId} موجود مسبقًا`);
+    return;
+  }
+  await setDoc(studentRef, {
+    name: "",
+    phone: "",
+    address: "",
+    school: "",
+    stage: "",
+    group: "",
+    enrollmentDate: new Date().toISOString(),
+    subjects: [], // مصفوفة المواد لكل طالب
+    totalFee: 0,
+    remainingFee: 0,
+    payments: [], // لتسجيل الدفعات لاحقًا
+    notes: ""
+  });
+  addLog(`✅ تم إنشاء هيكل الطالب ${studentId}`);
+}
 
 initBtn.addEventListener("click", async()=>{
   initBtn.disabled = true;
   initBtn.textContent = "⏳ جاري التهيئة...";
 
   try {
-    // 1️⃣ معلومات المعهد
-    const instituteDoc = doc(db,"settings","institute");
-    if(!(await getDoc(instituteDoc)).exists()){
-      await setDoc(instituteDoc,{name:"اسم المعهد",logo:"",address:"",phone:"",email:""});
-      addLog("✅ تم إنشاء document 'institute'");
-    }
+    // مثال: إنشاء 3 طلاب تجريبيين
+    await createStudent("student_001");
+    await createStudent("student_002");
+    await createStudent("student_003");
 
-    // 2️⃣ وسائل التواصل
-    const socialDoc = doc(db,"settings","social");
-    if(!(await getDoc(socialDoc)).exists()){
-      await setDoc(socialDoc,{facebook:"",instagram:"",tiktok:"",telegram:""});
-      addLog("✅ تم إنشاء document 'social'");
-    }
-
-    // 3️⃣ الألوان
-    const colorsDoc = doc(db,"settings","colors");
-    if(!(await getDoc(colorsDoc)).exists()){
-      await setDoc(colorsDoc,{primary:"#004aad",accent:"#ffcc33"});
-      addLog("✅ تم إنشاء document 'colors'");
-    }
-
-    // 4️⃣ نسب الأستاذ والمعهد
-    const percentagesDoc = doc(db,"settings","percentages");
-    if(!(await getDoc(percentagesDoc)).exists()){
-      await setDoc(percentagesDoc,{teacher:60,institute:40});
-      addLog("✅ تم إنشاء document 'percentages'");
-    }
-
-    // 5️⃣ الفروع
-    const branchesDoc = doc(db,"settings","branches");
-    if(!(await getDoc(branchesDoc)).exists()){
-      await setDoc(branchesDoc,{list:[]});
-      addLog("✅ تم إنشاء document 'branches'");
-    }
-
-    // 6️⃣ مستخدم تجريبي (Admin)
-    const usersDoc = doc(db,"users","admin");
-    if(!(await getDoc(usersDoc)).exists()){
-      await setDoc(usersDoc,{name:"مدير النظام",type:"admin",email:"admin@oma.com",createdAt:new Date().toISOString()});
-      addLog("✅ تم إنشاء مستخدم تجريبي 'admin'");
-    }
-
-    addLog("\n🎉 تم تهيئة جميع الحقول بنجاح!");
+    addLog("\n🎉 تم تهيئة جميع الحقول الأساسية للطلاب بنجاح!");
     initBtn.textContent = "✅ تم الانتهاء";
   } catch(e){
     addLog("❌ خطأ أثناء التهيئة: "+e.message);
