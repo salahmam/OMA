@@ -48,86 +48,86 @@ pre {
   <pre id="log"></pre>
 </div>
 
-<!-- ملاحظة: نستورد firebase-config.js باستخدام مسار مطلق لضمان التحميل على GitHub Pages -->
 <script type="module">
-/* ------------- استيراد الإعدادات والوظائف المطلوبة ------------- */
-/* firebase-config.js يجب أن يكون في: https://salahmam.github.io/OMA/firebase-config.js
-   ومحتواه يجب أن يصدر (export) المتغيّر `db` (see note أدناه) */
-import { db } from "https://salahmam.github.io/OMA/firebase-config.js";
-import { setDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+async function main() {
+  const log = document.getElementById("log");
+  const setupBtn = document.getElementById("setupBtn");
+  const addLog = (msg) => (log.textContent += msg + "\n");
 
-const log = document.getElementById("log");
-const setupBtn = document.getElementById("setupBtn");
-
-function addLog(msg){ log.textContent += msg + "\n"; }
-
-setupBtn.addEventListener("click", async ()=>{
-  setupBtn.disabled = true;
-  setupBtn.textContent = "⏳ جاري التنفيذ...";
-  addLog("🔹 بدء إنشاء المجموعات الأساسية...");
+  addLog("📦 تحميل إعدادات Firebase...");
 
   try {
-    // 📘 Collection: students
-    await setDoc(doc(db, "students", "example_student"), {
-      name: "أحمد علي",
-      address: "بغداد",
-      phone: "0770000000",
-      level: "المرحلة الأولى",
-      group: "A1",
-      subjects: [
-        { name: "رياضيات", teacherId: "", fee: 0, remaining: 0, payments: [] },
-        { name: "علوم", teacherId: "", fee: 0, remaining: 0, payments: [] }
-      ],
-      joinDate: "2025-11-07",
-      totalFees: 500000,
-      note: "",
-      createdAt: new Date()
+    const firebaseModule = await import("https://salahmam.github.io/OMA/firebase-config.js");
+    const { db } = firebaseModule;
+    const { setDoc, doc } = await import("https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js");
+
+    addLog("✅ تم تحميل Firebase بنجاح.");
+
+    setupBtn.addEventListener("click", async () => {
+      setupBtn.disabled = true;
+      setupBtn.textContent = "⏳ جاري التنفيذ...";
+      addLog("🔹 بدء إنشاء المجموعات الأساسية...");
+
+      try {
+        // Collection: students
+        await setDoc(doc(db, "students", "example_student"), {
+          name: "أحمد علي",
+          address: "بغداد",
+          phone: "0770000000",
+          level: "المرحلة الأولى",
+          group: "A1",
+          subjects: ["رياضيات", "علوم"],
+          joinDate: "2025-11-07",
+          fees: 500000,
+          installments: [250000, 250000],
+          status: "نشط"
+        });
+        addLog("✅ students collection تم إنشاؤه.");
+
+        // Collection: teachers
+        await setDoc(doc(db, "teachers", "example_teacher"), {
+          name: "أستاذ كريم",
+          specialty: "رياضيات",
+          phone: "0780000000",
+          salary: 800000,
+          percent: 60,
+          joinDate: "2025-11-07",
+          address: "البصرة",
+          status: "نشط"
+        });
+        addLog("✅ teachers collection تم إنشاؤه.");
+
+        // Collection: users
+        await setDoc(doc(db, "users", "admin_sample"), {
+          name: "مدير النظام",
+          email: "admin@oma.com",
+          type: "admin",
+          createdAt: new Date().toISOString()
+        });
+        addLog("✅ users collection تم إنشاؤه.");
+
+        // Collection: settings
+        await setDoc(doc(db, "settings", "percentages"), {
+          teacher: 60,
+          institute: 40
+        });
+        addLog("✅ settings collection تم إنشاؤه.");
+
+        addLog("\n🎉 تم إنشاء جميع المجموعات بنجاح!");
+        setupBtn.textContent = "✅ تم الإنشاء بنجاح";
+        setupBtn.style.background = "#00b67a";
+
+      } catch (error) {
+        addLog("❌ خطأ أثناء الإنشاء:\n" + (error.message || error));
+        setupBtn.disabled = false;
+        setupBtn.textContent = "🚀 إعادة المحاولة";
+      }
     });
-    addLog("✅ students collection تم إنشاؤه.");
-
-    // 📗 Collection: teachers
-    await setDoc(doc(db, "teachers", "example_teacher"), {
-      name: "أستاذ كريم",
-      phone: "0780000000",
-      address: "البصرة",
-      subjects: ["رياضيات"],
-      teacherPercent: 60,
-      createdAt: new Date()
-    });
-    addLog("✅ teachers collection تم إنشاؤه.");
-
-    // 📙 Collection: users
-    await setDoc(doc(db, "users", "admin_sample"), {
-      name: "مدير النظام",
-      email: "admin@oma.com",
-      type: "admin",
-      createdAt: new Date()
-    });
-    addLog("✅ users collection تم إنشاؤه.");
-
-    // 📒 Collection: settings (document: percentages)
-    await setDoc(doc(db, "settings", "percentages"), {
-      teacher: 60,
-      institute: 40
-    });
-    addLog("✅ settings collection تم إنشاؤه.");
-
-    addLog("\n🎉 تم إنشاء جميع المجموعات بنجاح!");
-    setupBtn.textContent = "✅ تم الإنشاء بنجاح";
-    setupBtn.style.background = "#00b67a";
-
-    // ⏳ الانتقال بعد 3 ثوانٍ
-    addLog("\n➡️ سيتم تحويلك إلى لوحة التحكم خلال 3 ثوانٍ...");
-    setTimeout(()=>{
-      window.location.href = "dashboard.html";
-    }, 3000);
-
-  } catch (e) {
-    addLog("❌ خطأ أثناء الإنشاء: " + (e.message || e));
-    setupBtn.disabled = false;
-    setupBtn.textContent = "🚀 إعادة المحاولة";
+  } catch (err) {
+    log.textContent = "❌ لم يتم تحميل firebase-config.js:\n" + err.message;
   }
-});
+}
+main();
 </script>
 
 </body>
