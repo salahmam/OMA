@@ -25,14 +25,14 @@ footer { position:fixed; bottom:10px; width:100%; text-align:center; color:#888;
     <button id="loginBtn">دخول</button>
   </div>
 
-  <footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
+<footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 إعداد Firebase
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -52,52 +52,47 @@ const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
 const errorMsg = document.getElementById("errorMsg");
 
-// ✅ تحقق إذا المستخدم مسجل دخول مسبقاً
+// تحقق تسجيل دخول مسبق
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) return;
-    const userData = userDoc.data();
-    redirectUser(userData.type);
+    const userDoc = await getDoc(doc(db,"users",user.uid));
+    if(userDoc.exists()) redirectUser(userDoc.data());
   }
 });
 
-// 🎯 تسجيل الدخول
+// تسجيل الدخول
 loginBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) {
-    errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
-    return;
-  }
+  if(!email || !password){ errorMsg.textContent="الرجاء إدخال البريد وكلمة المرور."; return; }
 
-  errorMsg.textContent = "";
   loginBtn.disabled = true;
   loginBtn.textContent = "جاري التحقق...";
+  errorMsg.textContent="";
 
-  try {
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
+  try{
+    const userCred = await signInWithEmailAndPassword(auth,email,password);
     const uid = userCred.user.uid;
-    const userDoc = await getDoc(doc(db, "users", uid));
-    if (!userDoc.exists()) throw new Error("المستخدم غير موجود في قاعدة البيانات.");
-    const userData = userDoc.data();
-    redirectUser(userData.type);
-  } catch (error) {
+    const userDoc = await getDoc(doc(db,"users",uid));
+    if(!userDoc.exists()) throw new Error("المستخدم غير موجود في النظام.");
+    redirectUser(userDoc.data());
+  }catch(err){
     loginBtn.disabled = false;
     loginBtn.textContent = "دخول";
-    errorMsg.style.color = "red";
-    if (error.code === "auth/user-not-found") errorMsg.textContent = "المستخدم غير موجود.";
-    else if (error.code === "auth/wrong-password") errorMsg.textContent = "كلمة المرور غير صحيحة.";
-    else errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
-    console.error(error);
+    if(err.code==="auth/user-not-found") errorMsg.textContent="المستخدم غير موجود.";
+    else if(err.code==="auth/wrong-password") errorMsg.textContent="كلمة المرور غير صحيحة.";
+    else errorMsg.textContent="حدث خطأ أثناء تسجيل الدخول.";
+    console.error(err);
   }
 });
 
-// 🔹 توجيه المستخدم حسب النوع
-function redirectUser(type) {
-  if (type === "student") window.location.href = "student-dashboard.html";
-  else if (type === "teacher") window.location.href = "teacher-dashboard.html";
-  else window.location.href = "dashboard.html"; // admin
+// توجيه المستخدم حسب النوع
+function redirectUser(userData){
+  if(userData.type==="superAdmin") window.location.href="manage-institutes.html";
+  else if(userData.type==="instituteAdmin") window.location.href="dashboard.html";
+  else if(userData.type==="teacher") window.location.href="teacher-dashboard.html";
+  else if(userData.type==="student") window.location.href="student-dashboard.html";
+  else alert("نوع المستخدم غير معروف!");
 }
 </script>
 </body>
