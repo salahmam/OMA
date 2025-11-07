@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الطالب - OMA</title>
+<style>
+body { font-family:'Cairo', sans-serif; background:#f5f9ff; color:#102027; margin:0; padding:20px; }
+header { background:#004aad; color:#fff; padding:16px; text-align:center; font-size:20px; font-weight:700; }
+.card { background:#fff; border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 6px 18px rgba(6,20,30,0.06); }
+h3 { margin-top:0; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+th { background:#004aad; color:#fff; }
+</style>
+</head>
+<body>
+
+<header>لوحة الطالب</header>
+
+<div class="card">
+  <h3>بيانات الطالب</h3>
+  <p><strong>الاسم:</strong> <span id="studentName"></span></p>
+  <p><strong>المجموعة:</strong> <span id="studentGroup"></span></p>
+  <p><strong>المستوى:</strong> <span id="studentLevel"></span></p>
+</div>
+
+<div class="card">
+  <h3>جدول الدروس</h3>
+  <table id="scheduleTable">
+    <thead>
+      <tr><th>المادة</th><th>المعلم</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>المبالغ المستحقة</h3>
+  <table id="feesTable">
+    <thead>
+      <tr><th>الرسوم الكلية</th><th>الأقساط المدفوعة</th><th>المتبقي</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const studentNameEl = document.getElementById("studentName");
+const studentGroupEl = document.getElementById("studentGroup");
+const studentLevelEl = document.getElementById("studentLevel");
+const scheduleTableBody = document.querySelector("#scheduleTable tbody");
+const feesTableBody = document.querySelector("#feesTable tbody");
+
+// التحقق من تسجيل الدخول وتحديد نوع المستخدم
+onAuthStateChanged(auth, async user => {
+  if(!user) return window.location.href = "login.html";
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  if(!userDoc.exists()) return alert("المستخدم غير موجود");
+
+  const userData = userDoc.data();
+  if(userData.type !== "student") return window.location.href = "dashboard.html"; // لا يسمح بالدخول إلا للطلاب
+
+  // جلب بيانات الطالب من مجموعة students
+  const studentSnapshot = await getDoc(doc(db, "students", user.uid));
+  if(!studentSnapshot.exists()) return alert("بيانات الطالب غير موجودة");
+
+  const student = studentSnapshot.data();
+
+  studentNameEl.textContent = student.name;
+  studentGroupEl.textContent = student.group;
+  studentLevelEl.textContent = student.level;
+
+  // جدول الدروس
+  scheduleTableBody.innerHTML = "";
+  if(student.subjects && student.subjects.length > 0){
+    student.subjects.forEach(sub => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${sub}</td><td>${student.teacher || "-"}</td>`;
+      scheduleTableBody.appendChild(tr);
+    });
+  }
+
+  // المبالغ المستحقة
+  feesTableBody.innerHTML = "";
+  const total = student.fees || 0;
+  const paid = (student.installments || []).reduce((a,b)=>a+b,0);
+  const remaining = total - paid;
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${total}</td><td>${paid}</td><td>${remaining}</td>`;
+  feesTableBody.appendChild(tr);
+});
+</script>
+
+</body>
+</html>
