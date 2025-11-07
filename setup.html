@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة مشروع OMA0 الشامل</title>
+<title>تهيئة مشروع OMA - المالية والمصاريف</title>
 <style>
 body { font-family:'Cairo',sans-serif; padding:20px; background:#f5f9ff; color:#102027; }
 h2,h3 { margin-top:0; }
@@ -12,14 +12,14 @@ button { background:#004aad; color:#fff; cursor:pointer; border:none; }
 button:hover { background:#003a8c; }
 fieldset { border:1px solid #ddd; padding:10px; margin-bottom:15px; border-radius:8px; }
 legend { font-weight:bold; }
-#log { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; white-space:pre-wrap; height:300px; }
+#log { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; white-space:pre-wrap; height:250px; }
 .addBtn { background:#ff9800; margin-left:4px; }
 </style>
 </head>
 <body>
 
-<h2>🚀 تهيئة مشروع OMA0 الشامل</h2>
-<p>املأ البيانات الأساسية واضغط "ابدأ التهيئة" لإنشاء جميع المستندات المرتبطة بكل صفحات المشروع.</p>
+<h2>🚀 تهيئة مشروع OMA - المالية والمصاريف</h2>
+<p>املأ البيانات الأساسية واضغط "ابدأ التهيئة" لإنشاء المستندات تلقائيًا، بما في ذلك دفعات تجريبية.</p>
 
 <fieldset>
 <legend>معلومات المعهد</legend>
@@ -46,7 +46,6 @@ legend { font-weight:bold; }
   <div>
     <input type="text" placeholder="اسم الطالب" class="studentInput">
     <input type="text" placeholder="المواد مفصولة بفواصل" class="subjectsInput">
-    <input type="text" placeholder="المجموعة / الكروب" class="groupInput">
     <button type="button" class="addBtn" onclick="addStudentInput(this)">+</button>
   </div>
 </div>
@@ -68,7 +67,7 @@ legend { font-weight:bold; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, getDoc, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -87,7 +86,7 @@ const initBtn = document.getElementById("initBtn");
 
 function addLog(msg){ log.textContent += msg + "\n"; }
 
-// --------- دوال إضافة مدخلات ديناميكية ----------
+// ---------- إضافة مدخلات ديناميكية ----------
 window.addTeacherInput = function(btn){
   const div = document.createElement("div");
   div.innerHTML = `<input type="text" placeholder="اسم المدرس" class="teacherInput"> <button type="button" class="addBtn" onclick="addTeacherInput(this)">+</button>`;
@@ -95,7 +94,7 @@ window.addTeacherInput = function(btn){
 };
 window.addStudentInput = function(btn){
   const div = document.createElement("div");
-  div.innerHTML = `<input type="text" placeholder="اسم الطالب" class="studentInput"> <input type="text" placeholder="المواد مفصولة بفواصل" class="subjectsInput"> <input type="text" placeholder="المجموعة / الكروب" class="groupInput"> <button type="button" class="addBtn" onclick="addStudentInput(this)">+</button>`;
+  div.innerHTML = `<input type="text" placeholder="اسم الطالب" class="studentInput"> <input type="text" placeholder="المواد مفصولة بفواصل" class="subjectsInput"> <button type="button" class="addBtn" onclick="addStudentInput(this)">+</button>`;
   btn.parentNode.after(div);
 };
 window.addExpenseInput = function(btn){
@@ -104,7 +103,7 @@ window.addExpenseInput = function(btn){
   btn.parentNode.after(div);
 };
 
-// --------- إنشاء الإعدادات الأساسية ---------
+// ---------- إنشاء المستندات ----------
 async function createSettings(info){
   const colorsRef = doc(db,"settings","colors");
   const infoRef = doc(db,"settings","info");
@@ -128,86 +127,33 @@ async function createSettings(info){
   }
 }
 
-// --------- إنشاء المدرسين ---------
 async function createTeachers(teachers){
   const col = collection(db,"teachers");
-  const teacherDocs=[];
   for(const t of teachers){
-    if(t.trim()==="") continue;
-    const docRef = doc(col);
-    await setDoc(docRef,{name:t});
+    if(t.trim() === "") continue;
+    await addDoc(col,{name:t});
     addLog(`✅ تم إنشاء مدرس: ${t}`);
-    teacherDocs.push({id:docRef.id, name:t});
   }
-  return teacherDocs;
 }
 
-// --------- إنشاء الطلاب ---------
 async function createStudents(students){
   const col = collection(db,"students");
-  const studentDocs=[];
   for(const s of students){
-    if(s.name.trim()==="") continue;
-    const docRef = doc(col);
-    await setDoc(docRef,{
+    if(s.name.trim() === "") continue;
+    await addDoc(col,{
       name: s.name,
-      group: s.group || "غير محدد",
-      subjects: s.subjects.map(sub=>({name:sub.trim()}))
+      subjects: s.subjects.map(sub => ({ name: sub.trim() }))
     });
     addLog(`✅ تم إنشاء طالب: ${s.name}`);
-    studentDocs.push({id:docRef.id, ...s});
   }
-  return studentDocs;
 }
 
-// --------- إنشاء الحصص الأسبوعية ---------
-async function createClasses(students, teachers){
-  const col = collection(db,"classes");
-  const days = ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"];
-  const rooms = ["قاعة 1","قاعة 2","قاعة 3","قاعة 4"];
-  const classDocs=[];
-
-  let teacherIndex=0, roomIndex=0;
-  for(const day of days){
-    for(const student of students){
-      for(const subject of student.subjects){
-        const teacher = teachers[teacherIndex % teachers.length];
-        const docRef = await addDoc(col,{
-          subject: subject.name,
-          teacherId: teacher.id,
-          group: student.group,
-          room: rooms[roomIndex % rooms.length],
-          day: day,
-          startTime: "08:00",
-          endTime: "09:00"
-        });
-        classDocs.push({id:docRef.id});
-        teacherIndex++;
-        roomIndex++;
-      }
-    }
-  }
-  addLog(`✅ تم إنشاء الحصص الأسبوعية`);
-  return classDocs;
-}
-
-// --------- إنشاء الحضور الفارغ ---------
-async function createAttendance(classes){
-  const col = collection(db,"attendance");
-  for(const c of classes){
-    await setDoc(doc(col, c.id), { classId:c.id, students: [], updatedAt:new Date().toISOString() });
-  }
-  addLog(`✅ تم إنشاء سجلات الحضور لكل الحصص`);
-}
-
-// --------- إنشاء المصاريف ---------
 async function createExpenses(expenses){
   const col = collection(db,"expenses");
   const today = new Date().toISOString().split('T')[0];
   for(const e of expenses){
-    if(e.name.trim()==="") continue;
-    const docRef = doc(col);
-    await setDoc(docRef,{
+    if(e.name.trim() === "") continue;
+    await addDoc(col,{
       description: e.name,
       amount: Number(e.amount || 0),
       date: today,
@@ -218,10 +164,30 @@ async function createExpenses(expenses){
   }
 }
 
-// --------- حدث زر التهيئة ---------
+// ---------- إنشاء دفعات تجريبية ----------
+async function createSamplePayments(students, teachers){
+  const paymentsCol = collection(db,"payments");
+  for(const s of students){
+    if(!s.name.trim()) continue;
+    for(const sub of s.subjects){
+      if(!sub.name.trim()) continue;
+      const teacherName = teachers[Math.floor(Math.random() * teachers.length)] || "مدرس افتراضي";
+      await addDoc(paymentsCol,{
+        studentName: s.name,
+        subject: sub.name,
+        teacherName,
+        amount: Math.floor(Math.random()*500 + 100), // مبلغ عشوائي بين 100 و600
+        date: new Date().toISOString().slice(0,10)
+      });
+      addLog(`✅ دفعة للطالب ${s.name} في مادة ${sub.name} مع ${teacherName}`);
+    }
+  }
+}
+
+// ---------- حدث زر التهيئة ----------
 initBtn.addEventListener("click", async()=>{
-  initBtn.disabled=true;
-  initBtn.textContent="⏳ جاري التهيئة...";
+  initBtn.disabled = true;
+  initBtn.textContent = "⏳ جاري التهيئة...";
 
   try{
     const info = {
@@ -235,8 +201,7 @@ initBtn.addEventListener("click", async()=>{
     const teachers = Array.from(document.querySelectorAll(".teacherInput")).map(i=>i.value);
     const students = Array.from(document.querySelectorAll(".studentInput")).map((i,j)=>({
       name:i.value,
-      group:document.querySelectorAll(".groupInput")[j].value,
-      subjects:document.querySelectorAll(".subjectsInput")[j].value.split(",")
+      subjects:(document.querySelectorAll(".subjectsInput")[j].value.split(",").map(s=>({name:s.trim()})))
     }));
     const expenses = Array.from(document.querySelectorAll(".expenseInput")).map((i,j)=>({
       name:i.value,
@@ -244,18 +209,17 @@ initBtn.addEventListener("click", async()=>{
     }));
 
     await createSettings(info);
-    const teacherDocs = await createTeachers(teachers);
-    const studentDocs = await createStudents(students);
-    const classDocs = await createClasses(studentDocs, teacherDocs);
-    await createAttendance(classDocs);
+    await createTeachers(teachers);
+    await createStudents(students);
     await createExpenses(expenses);
+    await createSamplePayments(students, teachers);
 
-    addLog("\n🎉 تم تهيئة المشروع بالكامل مع الحصص، الحضور، المدرسين، الطلاب والمصاريف!");
-    initBtn.textContent="تم الانتهاء";
+    addLog("\n🎉 تم تهيئة جميع المستندات الأساسية والدفعات بنجاح!");
+    initBtn.textContent = "تم الانتهاء";
   }catch(e){
     addLog("❌ خطأ أثناء التهيئة: "+e.message);
-    initBtn.disabled=false;
-    initBtn.textContent="أعد المحاولة";
+    initBtn.disabled = false;
+    initBtn.textContent = "أعد المحاولة";
   }
 });
 </script>
