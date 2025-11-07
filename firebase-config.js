@@ -1,11 +1,9 @@
 <script type="module">
-  // استيراد Firebase من CDN
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-  // تكوين مشروع Firebase الموحد
   const firebaseConfig = {
     apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
     authDomain: "oma0-33cc0.firebaseapp.com",
@@ -16,15 +14,11 @@
     measurementId: "G-5CKWYQT9XZ"
   };
 
-  // تهيئة Firebase
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const analytics = getAnalytics(app);
 
-  // تصدير المتغيرات لاستخدامها في باقي الصفحات
-  window.firebaseApp = app;
-  window.firebaseAuth = auth;
-  window.firebaseDB = db;
-  window.firebaseAnalytics = analytics;
+  // ✅ تصدير المتغيرات لاستخدامها في الصفحات الأخرى
+  export { app, auth, db, analytics };
 </script>
