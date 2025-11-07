@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة مشروع OMA - المالية والمصاريف</title>
+<title>تهيئة مشروع OMA — المالية والمصاريف</title>
 <style>
 body { font-family:'Cairo',sans-serif; padding:20px; background:#f5f9ff; color:#102027; }
 h2,h3 { margin-top:0; }
@@ -18,8 +18,8 @@ legend { font-weight:bold; }
 </head>
 <body>
 
-<h2>🚀 تهيئة مشروع OMA - المالية والمصاريف</h2>
-<p>املأ البيانات الأساسية واضغط "ابدأ التهيئة" لإنشاء المستندات تلقائيًا، بما في ذلك دفعات تجريبية.</p>
+<h2>🚀 تهيئة مشروع OMA — المالية والمصاريف</h2>
+<p>املأ البيانات الأساسية واضغط "ابدأ التهيئة" لإنشاء المستندات والدفعات التجريبية.</p>
 
 <fieldset>
 <legend>معلومات المعهد</legend>
@@ -67,13 +67,13 @@ legend { font-weight:bold; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, getDoc, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
-  storageBucket: "oma0-33cc0.firebasestorage.app",
+  storageBucket: "oma0-33cc0.appspot.com",
   messagingSenderId: "899300774863",
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
@@ -86,7 +86,7 @@ const initBtn = document.getElementById("initBtn");
 
 function addLog(msg){ log.textContent += msg + "\n"; }
 
-// ---------- إضافة مدخلات ديناميكية ----------
+// --- مدخلات ديناميكية ---
 window.addTeacherInput = function(btn){
   const div = document.createElement("div");
   div.innerHTML = `<input type="text" placeholder="اسم المدرس" class="teacherInput"> <button type="button" class="addBtn" onclick="addTeacherInput(this)">+</button>`;
@@ -103,7 +103,7 @@ window.addExpenseInput = function(btn){
   btn.parentNode.after(div);
 };
 
-// ---------- إنشاء المستندات ----------
+// --- إنشاء المستندات الأساسية ---
 async function createSettings(info){
   const colorsRef = doc(db,"settings","colors");
   const infoRef = doc(db,"settings","info");
@@ -127,32 +127,36 @@ async function createSettings(info){
   }
 }
 
+// --- إنشاء المدرسين ---
 async function createTeachers(teachers){
   const col = collection(db,"teachers");
   for(const t of teachers){
-    if(t.trim() === "") continue;
-    await addDoc(col,{name:t});
+    if(t.trim()==="") continue;
+    await addDoc(col,{name:t, subjects:[], createdAt: new Date()});
     addLog(`✅ تم إنشاء مدرس: ${t}`);
   }
 }
 
+// --- إنشاء الطلاب ---
 async function createStudents(students){
   const col = collection(db,"students");
   for(const s of students){
-    if(s.name.trim() === "") continue;
+    if(!s.name.trim()) continue;
     await addDoc(col,{
       name: s.name,
-      subjects: s.subjects.map(sub => ({ name: sub.trim() }))
+      subjects: s.subjects.map(sub => ({ name: sub.trim(), fee: Math.floor(Math.random()*500+100), payments: [] })),
+      createdAt: new Date()
     });
     addLog(`✅ تم إنشاء طالب: ${s.name}`);
   }
 }
 
+// --- إنشاء المصاريف ---
 async function createExpenses(expenses){
   const col = collection(db,"expenses");
   const today = new Date().toISOString().split('T')[0];
   for(const e of expenses){
-    if(e.name.trim() === "") continue;
+    if(e.name.trim()==="") continue;
     await addDoc(col,{
       description: e.name,
       amount: Number(e.amount || 0),
@@ -164,27 +168,38 @@ async function createExpenses(expenses){
   }
 }
 
-// ---------- إنشاء دفعات تجريبية ----------
+// --- إنشاء دفعات مع احتساب النسب ---
 async function createSamplePayments(students, teachers){
+  const percentagesRef = doc(db,"settings","percentages");
+  const percSnap = await getDoc(percentagesRef);
+  const perc = percSnap.exists() ? percSnap.data() : { teacher:60, institute:40 };
+
   const paymentsCol = collection(db,"payments");
   for(const s of students){
     if(!s.name.trim()) continue;
     for(const sub of s.subjects){
       if(!sub.name.trim()) continue;
-      const teacherName = teachers[Math.floor(Math.random() * teachers.length)] || "مدرس افتراضي";
+      const teacherName = teachers[Math.floor(Math.random()*teachers.length)] || "مدرس افتراضي";
+      const amount = sub.fee || Math.floor(Math.random()*500+100);
+      const teacherShare = amount * (perc.teacher/100);
+      const instituteShare = amount * (perc.institute/100);
+
       await addDoc(paymentsCol,{
         studentName: s.name,
         subject: sub.name,
         teacherName,
-        amount: Math.floor(Math.random()*500 + 100), // مبلغ عشوائي بين 100 و600
+        amount,
+        teacherShare,
+        instituteShare,
         date: new Date().toISOString().slice(0,10)
       });
-      addLog(`✅ دفعة للطالب ${s.name} في مادة ${sub.name} مع ${teacherName}`);
+
+      addLog(`✅ دفعة للطالب ${s.name} في مادة ${sub.name} مع ${teacherName} — المجموع: ${amount} (المدرس: ${teacherShare}, المعهد: ${instituteShare})`);
     }
   }
 }
 
-// ---------- حدث زر التهيئة ----------
+// --- زر التهيئة ---
 initBtn.addEventListener("click", async()=>{
   initBtn.disabled = true;
   initBtn.textContent = "⏳ جاري التهيئة...";
@@ -201,7 +216,7 @@ initBtn.addEventListener("click", async()=>{
     const teachers = Array.from(document.querySelectorAll(".teacherInput")).map(i=>i.value);
     const students = Array.from(document.querySelectorAll(".studentInput")).map((i,j)=>({
       name:i.value,
-      subjects:(document.querySelectorAll(".subjectsInput")[j].value.split(",").map(s=>({name:s.trim()})))
+      subjects:(document.querySelectorAll(".subjectsInput")[j].value.split(",").map(s=>s.trim()))
     }));
     const expenses = Array.from(document.querySelectorAll(".expenseInput")).map((i,j)=>({
       name:i.value,
