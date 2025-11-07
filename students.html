@@ -429,9 +429,44 @@ printListBtn.addEventListener('click',()=>{
 });
 
 /* --- Print student --- */
-printStudentBtn.addEventListener('click',()=>{
-  const studentHTML = modalBody.innerHTML;
+printStudentBtn.addEventListener('click', ()=>{
+  const studentData = modalBody.innerHTML;
   const institute = settingsData.name || '';
+  
+  // استخرج بيانات الطالب من modalBody
+  const parser = new DOMParser();
+  const modalDoc = parser.parseFromString(studentData, 'text/html');
+
+  // جمع البيانات الأساسية
+  const infoText = modalDoc.querySelector('div')?.innerText || '';
+  const subjectsDivs = modalDoc.querySelectorAll('div > div');
+  
+  // توليد جدول الدفعات
+  let paymentsTable = `<table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead>
+      <tr style="background:#004aad; color:white;">
+        <th>المادة</th><th>إجمالي القسط</th><th>المتبقي</th><th>الدفعات</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  subjectsDivs.forEach(subDiv=>{
+    const txt = subDiv.innerText.split('|').map(t=>t.trim());
+    if(txt.length>=3){
+      let subjectName = txt[0];
+      let remaining = txt[1].replace('المتبقي:','').trim();
+      let total = txt[2].replace('إجمالي:','').trim();
+      const paymentsMatch = txt[2].match(/\d{1,3}(?:,\d{3})*(?:\.\d+)?/g) || [];
+      const paymentsHTML = paymentsMatch.length>0 ? paymentsMatch.join(', ') : '-';
+      paymentsTable += `<tr>
+        <td style="text-align:center;border:1px solid #ccc;">${subjectName}</td>
+        <td style="text-align:center;border:1px solid #ccc;">${total}</td>
+        <td style="text-align:center;border:1px solid #ccc;">${remaining}</td>
+        <td style="text-align:center;border:1px solid #ccc;">${paymentsHTML}</td>
+      </tr>`;
+    }
+  });
+  paymentsTable += `</tbody></table>`;
+
   const printHTML = `
     <html lang="ar" dir="rtl">
     <head>
@@ -439,13 +474,18 @@ printStudentBtn.addEventListener('click',()=>{
       <title>استمارة الطالب</title>
       <style>
         body{font-family:'Cairo',sans-serif; margin:20px; color:#102027;}
-        h1,h2,h3{margin:0;padding:0;}
         .header{text-align:center; margin-bottom:20px;}
         .header h1{color:#004aad;}
         .section{margin-bottom:15px;}
-        .section hr{border:none; border-top:1px solid #004aad; margin:8px 0;}
-        .subject-row{display:flex;justify-content:space-between; margin-bottom:6px; border-bottom:1px dashed #ccc; padding-bottom:4px;}
-        .subject-row div{flex:1; text-align:center;}
+        .section hr{border:none; border-top:2px solid #004aad; margin:8px 0;}
+        .top{display:flex; justify-content:space-between; margin-bottom:20px;}
+        .left, .right{width:48%;}
+        .left div, .right div{margin-bottom:6px;}
+        table{width:100%; border-collapse:collapse; margin-top:10px;}
+        th, td{border:1px solid #ccc; padding:6px; text-align:center;}
+        th{background:#004aad; color:white;}
+        .footer{margin-top:40px; display:flex; justify-content:space-between; font-weight:bold;}
+        .footer div{width:45%; text-align:center;}
       </style>
     </head>
     <body>
@@ -453,10 +493,30 @@ printStudentBtn.addEventListener('click',()=>{
         <h1>${institute}</h1>
         <h2>استمارة الطالب</h2>
       </div>
-      ${studentHTML}
+
+      <div class="top">
+        <div class="right">
+          <div>${infoText}</div>
+        </div>
+        <div class="left">
+          <div><strong>إجمالي المستحق:</strong> ${totalFeesInput.value}</div>
+          <div><strong>عدد المواد:</strong> ${subjectsContainer.children.length}</div>
+          <div><strong>ملاحظات:</strong> ${document.getElementById('note').value || '-'}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        ${paymentsTable}
+      </div>
+
+      <div class="footer">
+        <div>ختم المعهد</div>
+        <div>توقيع الطالب</div>
+      </div>
     </body>
     </html>
   `;
+
   const w = window.open('','_blank','width=900,height=700');
   w.document.write(printHTML);
   w.document.close();
