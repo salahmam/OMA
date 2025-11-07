@@ -171,16 +171,13 @@
 
 </div>
 
-<!-- -------------- سكربت -------------- -->
 <script type="module">
-/* ====== Firebase + Firestore (modular) ====== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, where, orderBy
+  getFirestore, collection, getDocs, addDoc, deleteDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-/* ---------- إعداد Firebase (استبدلها إذا تريد) ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -194,7 +191,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ---------- عناصر DOM ---------- */
+/* ---------- DOM Elements ---------- */
 const instituteNameEl = document.getElementById('instituteName');
 const instituteLogoEl = document.getElementById('instituteLogo');
 
@@ -232,432 +229,252 @@ const clearExpFilter = document.getElementById('clearExpFilter');
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const printReportBtn = document.getElementById('printReportBtn');
 
-/* ---------- حالة التطبيق ---------- */
-let settings = {
-  name: '', logo: '', colors: {}, teacherPercent: 60
-};
-let payments = []; // loaded payments
+/* ---------- State ---------- */
+let settings = { name:'', logo:'', teacherPercent:60 };
+let payments = [];
 let expenses = [];
-let teachers = []; // for filter names
-let subjects = []; // distinct subjects
+let teachers = [];
+let subjects = new Set();
 
-/* ---------- رسوم Chart.js ---------- */
-let lineChart = null;
-let pieChart = null;
+let lineChart=null, pieChart=null;
 
-/* ---------- وظائف مساعدة ---------- */
-function formatCurrency(x){ return Number(x||0).toLocaleString('en-US', {maximumFractionDigits:2}); }
-function parseDateInput(v){ return v ? new Date(v + 'T00:00:00') : null; }
+function formatCurrency(x){ return Number(x||0).toLocaleString('en-US',{maximumFractionDigits:2}); }
+function parseDateInput(v){ return v ? new Date(v+'T00:00:00') : null; }
+function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
-/* ---------- حماية - تأمين الدخول ---------- */
-onAuthStateChanged(auth, async user=>{
-  if(!user){
-    // غير مسجل -> أعد التوجيه لصفحة الدخول (توقع وجود login.html)
-    window.location.href = 'login.html';
-    return;
-  }
-  document.body.style.visibility = 'visible';
+/* ---------- Auth ---------- */
+onAuthStateChanged(auth,user=>{
+  if(!user) { window.location.href='login.html'; return; }
+  document.body.style.visibility='visible';
+  initialLoadAll();
+});
 
-  // جلب الإعدادات وبيانات المدرسين والبيانات
+/* ---------- Load Functions ---------- */
+async function loadSettings(){
+  try{
+    const snap = await getDocs(collection(db,'settings'));
+    snap.forEach(d=>{
+      const data = d.data();
+      if(data.name) settings.name = data.name;
+      if(data.logo) settings.logo = data.logo;
+      if(data.teacherPercent) settings.teacherPercent = data.teacherPercent;
+    });
+    instituteNameEl.textContent = settings.name || 'المعهد';
+    instituteLogoEl.src = settings.logo || '';
+  }catch(e){ console.warn(e); }
+}
+
+async function loadTeachersAndSubjects(){
+  teachers=[]; subjects=new Set();
+  try{
+    const tSnap = await getDocs(collection(db,'teachers'));
+    tSnap.forEach(d=>teachers.push({id:d.id,...d.data()}));
+    const pSnap = await getDocs(collection(db,'payments'));
+    pSnap.forEach(d=>{ if(d.data().subject) subjects.add(d.data().subject); });
+  }catch(e){ console.warn(e); }
+  renderFilters();
+}
+
+async function loadPayments(){
+  payments=[];
+  try{
+    const snap = await getDocs(collection(db,'payments'));
+    snap.forEach(d=>payments.push({id:d.id,...d.data()}));
+  }catch(e){ console.error(e); }
+  renderPaymentsTable();
+}
+
+async function loadExpenses(){
+  expenses=[];
+  try{
+    const snap = await getDocs(collection(db,'expenses'));
+    snap.forEach(d=>expenses.push({id:d.id,...d.data()}));
+  }catch(e){ console.error(e); }
+  renderExpensesTable();
+}
+
+function renderFilters(){
+  payTeacher.innerHTML='<option value="">كل الأساتذة</option>';
+  teachers.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.textContent=t.name||t.id; payTeacher.appendChild(opt); });
+  paySubject.innerHTML='<option value="">كل المواد</option>';
+  Array.from(subjects).sort().forEach(s=>{ const opt=document.createElement('option'); opt.value=s; opt.textContent=s; paySubject.appendChild(opt); });
+}
+
+/* ---------- Table Render ---------- */
+function renderPaymentsTable(filter=getPayFilterValues()){
+  let list = payments.slice();
+  if(filter.from){ const from=parseDateInput(filter.from); list=list.filter(p=>new Date(p.date)>=from);}
+  if(filter.to){ const to=parseDateInput(filter.to); to.setHours(23,59,59,999); list=list.filter(p=>new Date(p.date)<=to);}
+  if(filter.teacherId) list=list.filter(p=>p.teacherId===filter.teacherId);
+  if(filter.subject) list=list.filter(p=>p.subject===filter.subject);
+  if(filter.student?.trim()){ const q=filter.student.trim().toLowerCase(); list=list.filter(p=>(p.studentName||'').toLowerCase().includes(q)); }
+
+  paymentsTableBody.innerHTML='';
+  let total=0, totalTeacher=0, totalInstitute=0;
+  const teacherPct=settings.teacherPercent||0;
+  list.forEach(p=>{
+    const teacherShare=(p.amount||0)*teacherPct/100;
+    const instituteShare=(p.amount||0)-teacherShare;
+    total+=p.amount||0; totalTeacher+=teacherShare; totalInstitute+=instituteShare;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${escapeHtml(p.studentName||'-')}</td>
+      <td>${escapeHtml(p.subject||'-')}</td>
+      <td>${escapeHtml(p.teacherName||p.teacherId||'-')}</td>
+      <td>${formatCurrency(p.amount||0)}</td>
+      <td>${formatCurrency(teacherShare)}</td>
+      <td>${formatCurrency(instituteShare)}</td>
+      <td>${escapeHtml(p.date||'-')}</td>
+      <td class="no-print"><button class="warn" data-id="${p.id}">🗑️</button></td>
+    `;
+    paymentsTableBody.appendChild(tr);
+    tr.querySelector('button')?.addEventListener('click',async e=>{
+      if(!confirm('هل تريد حذف هذه الدفعة؟')) return;
+      await deleteDoc(doc(db,'payments',e.currentTarget.dataset.id)); await loadPayments();
+    });
+  });
+  paymentsTotalFooter.textContent=formatCurrency(total);
+  paymentsTeacherFooter.textContent=formatCurrency(totalTeacher);
+  paymentsInstituteFooter.textContent=formatCurrency(totalInstitute);
+  sumPaymentsEl.textContent=formatCurrency(total);
+  sumTeachersEl.textContent=formatCurrency(totalTeacher);
+  sumInstituteEl.textContent=formatCurrency(totalInstitute);
+  updateSummaryAndCharts();
+}
+
+function renderExpensesTable(filter=getExpFilterValues()){
+  let list=expenses.slice();
+  if(filter.from){ const from=parseDateInput(filter.from); list=list.filter(e=>new Date(e.date)>=from);}
+  if(filter.to){ const to=parseDateInput(filter.to); to.setHours(23,59,59,999); list=list.filter(e=>new Date(e.date)<=to);}
+  expensesTableBody.innerHTML='';
+  let total=0;
+  list.forEach(e=>{
+    total+=e.amount||0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${escapeHtml(e.description||'-')}</td>
+      <td>${formatCurrency(e.amount||0)}</td>
+      <td>${escapeHtml(e.date||'-')}</td>
+      <td class="no-print"><button class="warn" data-id="${e.id}">🗑️</button></td>
+    `;
+        expensesTableBody.appendChild(tr);
+    tr.querySelector('button')?.addEventListener('click', async e=>{
+      if(!confirm('هل تريد حذف هذا المصروف؟')) return;
+      await deleteDoc(doc(db,'expenses',e.currentTarget.dataset.id));
+      await loadExpenses();
+    });
+  });
+  expensesTotalFooter.textContent=formatCurrency(total);
+  sumExpensesEl.textContent=formatCurrency(total);
+  updateSummaryAndCharts();
+}
+
+/* ---------- Form Actions ---------- */
+expenseForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  try{
+    await addDoc(collection(db,'expenses'),{
+      description: expDesc.value,
+      amount: Number(expAmount.value),
+      date: expDate.value
+    });
+    expDesc.value=''; expAmount.value=''; expDate.value='';
+    await loadExpenses();
+  }catch(err){ console.error(err); alert('خطأ في حفظ المصروف'); }
+});
+document.getElementById('clearExpense').addEventListener('click',()=>{
+  expDesc.value=''; expAmount.value=''; expDate.value='';
+});
+
+/* ---------- Filters ---------- */
+function getPayFilterValues(){
+  return {
+    from: payFrom.value,
+    to: payTo.value,
+    teacherId: payTeacher.value,
+    subject: paySubject.value,
+    student: payStudent.value
+  };
+}
+applyPayFilter.addEventListener('click',()=>renderPaymentsTable(getPayFilterValues()));
+clearPayFilter.addEventListener('click',()=>{
+  payFrom.value=''; payTo.value=''; payTeacher.value=''; paySubject.value=''; payStudent.value='';
+  renderPaymentsTable();
+});
+
+function getExpFilterValues(){
+  return { from: expFrom.value, to: expTo.value };
+}
+applyExpFilter.addEventListener('click',()=>renderExpensesTable(getExpFilterValues()));
+clearExpFilter.addEventListener('click',()=>{
+  expFrom.value=''; expTo.value='';
+  renderExpensesTable();
+});
+
+/* ---------- Charts ---------- */
+function updateSummaryAndCharts(){
+  const totalIncome = Number(sumPaymentsEl.textContent.replace(/,/g,'')) || 0;
+  const totalExpense = Number(sumExpensesEl.textContent.replace(/,/g,'')) || 0;
+  netProfitEl.textContent = formatCurrency(totalIncome - totalExpense);
+
+  // Line chart: income over time (daily)
+  const dailyTotals = {};
+  payments.forEach(p=>{
+    const d = p.date || ''; if(!d) return;
+    if(!dailyTotals[d]) dailyTotals[d]=0;
+    dailyTotals[d]+=p.amount||0;
+  });
+  const lineLabels = Object.keys(dailyTotals).sort();
+  const lineData = lineLabels.map(d=>dailyTotals[d]);
+
+  if(lineChart) lineChart.destroy();
+  const ctxLine=document.getElementById('lineChart').getContext('2d');
+  lineChart = new Chart(ctxLine,{
+    type:'line',
+    data:{ labels: lineLabels, datasets:[{label:'الدخل اليومي',data:lineData, borderColor:'#004aad', backgroundColor:'rgba(0,74,173,0.2)', fill:true}]},
+    options:{ responsive:true, plugins:{legend:{display:false}} }
+  });
+
+  // Pie chart: income vs expenses
+  if(pieChart) pieChart.destroy();
+  const ctxPie=document.getElementById('pieChart').getContext('2d');
+  pieChart=new Chart(ctxPie,{
+    type:'pie',
+    data:{labels:['إجمالي الدخل','إجمالي المصاريف'], datasets:[{data:[totalIncome,totalExpense],backgroundColor:['#004aad','#ff7043']}]},
+    options:{responsive:true}
+  });
+}
+
+/* ---------- Export Excel ---------- */
+exportExcelBtn.addEventListener('click',()=>{
+  const wb = XLSX.utils.book_new();
+  const payData=[['الطالب','المادة','المعلم','المبلغ','نصيب الأستاذ','نصيب المعهد','التاريخ']];
+  payments.forEach(p=>{
+    const teacherShare=(p.amount||0)*(settings.teacherPercent||0)/100;
+    const instituteShare=(p.amount||0)-teacherShare;
+    payData.push([p.studentName,p.subject,p.teacherName||p.teacherId,p.amount,teacherShare,instituteShare,p.date]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(payData);
+  XLSX.utils.book_append_sheet(wb,ws1,'المدفوعات');
+
+  const expData=[['الوصف','المبلغ','التاريخ']];
+  expenses.forEach(e=>{ expData.push([e.description,e.amount,e.date]); });
+  const ws2=XLSX.utils.aoa_to_sheet(expData);
+  XLSX.utils.book_append_sheet(wb,ws2,'المصاريف');
+
+  XLSX.writeFile(wb,'Financial_Report.xlsx');
+});
+
+/* ---------- Print ---------- */
+printReportBtn.addEventListener('click',()=>window.print());
+
+/* ---------- Initial Load ---------- */
+async function initialLoadAll(){
   await loadSettings();
   await loadTeachersAndSubjects();
   await loadPayments();
   await loadExpenses();
-  renderFilters();
-  updateSummaryAndCharts();
-});
-
-/* ---------- تحميل الإعدادات من Firestore ---------- */
-async function loadSettings(){
-  try{
-    // نقوم بمحاولة جلب وثيقة settings/info أو settings (أو أي وثيقة إعدادات متوافرة)
-    const snap = await getDocs(collection(db,'settings'));
-    snap.forEach(d=>{
-      const data = d.data();
-      // نستخدم أول doc فيها كـ settings عامة (مشروع بسيط)
-      if(data.name) settings.name = data.name;
-      if(data.logo) settings.logo = data.logo;
-      if(data.colors) settings.colors = data.colors;
-      if(data.teacherPercent) settings.teacherPercent = data.teacherPercent;
-      if(data.percentages && typeof data.percentages.teacher !== 'undefined'){
-        settings.teacherPercent = data.percentages.teacher;
-      }
-    });
-    // تطبيق الواجهة
-    instituteNameEl.textContent = settings.name || 'المعهد';
-    instituteLogoEl.src = settings.logo || '';
-    if(settings.colors){
-      document.documentElement.style.setProperty('--primary', settings.colors.primary || getComputedStyle(document.documentElement).getPropertyValue('--primary'));
-      document.documentElement.style.setProperty('--accent', settings.colors.accent || getComputedStyle(document.documentElement).getPropertyValue('--accent'));
-      document.documentElement.style.setProperty('--bg', settings.colors.bg || getComputedStyle(document.documentElement).getPropertyValue('--bg'));
-      document.documentElement.style.setProperty('--card', settings.colors.card || getComputedStyle(document.documentElement).getPropertyValue('--card'));
-    }
-  }catch(e){ console.warn('loadSettings', e); }
 }
-
-/* ---------- تحميل المدرسين و المواضيع المتوفرة (للفلتر) ---------- */
-async function loadTeachersAndSubjects(){
-  teachers = [];
-  subjects = new Set();
-  try{
-    // teachers collection
-    const tSnap = await getDocs(collection(db,'teachers'));
-    tSnap.forEach(d=>{ teachers.push({ id: d.id, ...(d.data()) }); });
-
-    // subjects from payments and from students collection (if exists)
-    const pSnap = await getDocs(collection(db,'payments'));
-    pSnap.forEach(d=>{
-      const p = d.data();
-      if(p.subject) subjects.add(p.subject);
-    });
-
-    // also check students collection for subjects arrays
-    try{
-      const sSnap = await getDocs(collection(db,'students'));
-      sSnap.forEach(d=>{
-        (d.data().subjects || []).forEach(sub => {
-          if(sub.name) subjects.add(sub.name);
-        });
-      });
-    }catch(_){}
-  }catch(e){ console.warn('loadTeachersAndSubjects', e); }
-}
-
-/* ---------- تحميل الدفعات ---------- */
-async function loadPayments(filter = {}){
-  payments = [];
-  try{
-    const snap = await getDocs(collection(db,'payments'));
-    snap.forEach(d=>{
-      const p = { id: d.id, ...(d.data()) };
-      // ensure date normalized
-      payments.push(p);
-    });
-  }catch(e){ console.error('loadPayments', e); }
-
-  renderPaymentsTable(filter);
-  updateSummaryAndCharts();
-}
-
-/* ---------- تحميل المصاريف ---------- */
-async function loadExpenses(filter = {}){
-  expenses = [];
-  try{
-    const snap = await getDocs(collection(db,'expenses'));
-    snap.forEach(d=> expenses.push({ id: d.id, ...(d.data()) }));
-  }catch(e){ console.error('loadExpenses', e); }
-
-  renderExpensesTable(filter);
-  updateSummaryAndCharts();
-}
-
-/* ---------- عرض الدفعات في الجدول مع تطبيق الفلاتر ---------- */
-function renderPaymentsTable(filter = {}){
-  // فلترة محلية بسيطة
-  let list = payments.slice();
-
-  // apply filters
-  if(filter.from){ const from = parseDateInput(filter.from); list = list.filter(p => new Date(p.date) >= from); }
-  if(filter.to){ const to = parseDateInput(filter.to); to.setHours(23,59,59,999); list = list.filter(p => new Date(p.date) <= to); }
-  if(filter.teacherId){ list = list.filter(p => p.teacherId === filter.teacherId); }
-  if(filter.subject){ list = list.filter(p => p.subject === filter.subject); }
-  if(filter.student && filter.student.trim()) { const q = filter.student.trim().toLowerCase(); list = list.filter(p => (p.studentName||'').toLowerCase().includes(q)); }
-
-  paymentsTableBody.innerHTML = '';
-  let total = 0, totalTeacher = 0, totalInstitute = 0;
-  const teacherPct = Number(settings.teacherPercent || 0);
-
-  list.forEach(p=>{
-    const teacherShare = (p.amount || 0) * teacherPct / 100;
-    const instituteShare = (p.amount || 0) - teacherShare;
-    total += Number(p.amount || 0);
-    totalTeacher += teacherShare;
-    totalInstitute += instituteShare;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(p.studentName || '-')}</td>
-      <td>${escapeHtml(p.subject || '-')}</td>
-      <td>${escapeHtml((p.teacherName) || (p.teacherId || '-'))}</td>
-      <td>${formatCurrency(p.amount || 0)}</td>
-      <td>${formatCurrency(teacherShare)}</td>
-      <td>${formatCurrency(instituteShare)}</td>
-      <td>${escapeHtml(p.date || '-')}</td>
-      <td class="no-print"><button class="warn" data-id="${p.id}">🗑️</button></td>
-    `;
-    paymentsTableBody.appendChild(tr);
-    tr.querySelector('button')?.addEventListener('click', async (e)=>{
-      const id = e.currentTarget.dataset.id;
-      if(!confirm('هل تريد حذف هذه الدفعة؟')) return;
-      try{ await deleteDoc(doc(db,'payments',id)); await loadPayments(getPayFilterValues()); }catch(err){ alert('خطأ عند الحذف') }
-    });
-  });
-
-  paymentsTotalFooter.textContent = formatCurrency(total);
-  paymentsTeacherFooter.textContent = formatCurrency(totalTeacher);
-  paymentsInstituteFooter.textContent = formatCurrency(totalInstitute);
-
-  sumPaymentsEl.textContent = formatCurrency(total);
-  sumTeachersEl.textContent = formatCurrency(totalTeacher);
-  sumInstituteEl.textContent = formatCurrency(totalInstitute);
-}
-
-/* ---------- عرض المصاريف في الجدول ---------- */
-function renderExpensesTable(filter = {}){
-  let list = expenses.slice();
-  if(filter.from){ const from = parseDateInput(filter.from); list = list.filter(e => new Date(e.date) >= from); }
-  if(filter.to){ const to = parseDateInput(filter.to); to.setHours(23,59,59,999); list = list.filter(e => new Date(e.date) <= to); }
-
-  expensesTableBody.innerHTML = '';
-  let total = 0;
-  list.forEach(e=>{
-    total += Number(e.amount || 0);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(e.description || '-')}</td>
-      <td>${formatCurrency(e.amount || 0)}</td>
-      <td>${escapeHtml(e.date || '-')}</td>
-      <td class="no-print"><button class="warn" data-id="${e.id}">🗑️</button></td>
-    `;
-    expensesTableBody.appendChild(tr);
-    tr.querySelector('button')?.addEventListener('click', async (ev)=>{
-      const id = ev.currentTarget.dataset.id;
-      if(!confirm('هل تريد حذف هذا المصروف؟')) return;
-      try{ await deleteDoc(doc(db,'expenses',id)); await loadExpenses(getExpFilterValues()); }catch(err){ alert('خطأ عند الحذف') }
-    });
-  });
-
-  expensesTotalFooter.textContent = formatCurrency(total);
-  sumExpensesEl.textContent = formatCurrency(total);
-
-  // بعد تحديث المصاريف -> تحديث الملخّص والرسوم
-  updateSummaryAndCharts();
-}
-
-/* ---------- جمع القيم للعرض النهائي و تحديث الرسوم ---------- */
-function updateSummaryAndCharts(){
-  // حساب الأرقام الحالية (استنادًا لعرض الجدول الكلي بدون فلتر أو قابل للتعديل)
-  const paymentsTotal = Number((paymentsTableBody && paymentsTotalFooter.textContent) ? paymentsTotalFooter.textContent.replace(/,/g,'') : 0) || 0;
-  const teachersTotal = Number((paymentsTeacherFooter && paymentsTeacherFooter.textContent) ? paymentsTeacherFooter.textContent.replace(/,/g,'') : 0) || 0;
-  const instituteTotal = Number((paymentsInstituteFooter && paymentsInstituteFooter.textContent) ? paymentsInstituteFooter.textContent.replace(/,/g,'') : 0) || 0;
-  const expensesTotal = Number((expensesTotalFooter && expensesTotalFooter.textContent) ? expensesTotalFooter.textContent.replace(/,/g,'') : 0) || 0;
-
-  sumPaymentsEl.textContent = formatCurrency(paymentsTotal);
-  sumTeachersEl.textContent = formatCurrency(teachersTotal);
-  sumInstituteEl.textContent = formatCurrency(instituteTotal);
-  sumExpensesEl.textContent = formatCurrency(expensesTotal);
-  const profit = (instituteTotal - expensesTotal);
-  netProfitEl.textContent = formatCurrency(profit);
-
-  // بيانات الرسوم البيانية: مبنية من جميع الدفعات والمصاريف
-  buildCharts();
-}
-
-/* ---------- بناء الرسوم البيانية (Chart.js) ---------- */
-function buildCharts(){
-  // line chart: مجموع المدفوعات يوميًا (من payments array)
-  const grouped = {};
-  payments.forEach(p=>{
-    const d = new Date(p.date);
-    const key = d.toISOString().slice(0,10);
-    grouped[key] = (grouped[key] || 0) + Number(p.amount || 0);
-  });
-  const labels = Object.keys(grouped).sort();
-  const data = labels.map(l => grouped[l]);
-
-  // update/create line chart
-  const lineCtx = document.getElementById('lineChart').getContext('2d');
-  if(lineChart) lineChart.destroy();
-  lineChart = new Chart(lineCtx, {
-    type: 'line',
-    data: { labels, datasets: [{ label: 'إيرادات يومية', data, fill:false, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary') || '#004aad' }]},
-    options: { responsive:true, plugins:{legend:{display:false}}, scales:{x:{title:{display:false}}, y:{beginAtZero:true}} }
-  });
-
-  // pie chart: payments total vs expenses total
-  const totalPayments = payments.reduce((a,b)=>a + Number(b.amount||0),0);
-  const totalExpenses = expenses.reduce((a,b)=>a + Number(b.amount||0),0);
-  const teacherPortion = totalPayments * (settings.teacherPercent || 0)/100;
-  const institutePortion = totalPayments - teacherPortion;
-  const pieCtx = document.getElementById('pieChart').getContext('2d');
-  if(pieChart) pieChart.destroy();
-  pieChart = new Chart(pieCtx, {
-    type:'doughnut',
-    data:{ labels:['نصيب الأساتذة','نصيب المعهد','المصاريف'], datasets:[{ data:[teacherPortion,institutePortion,totalExpenses] }]},
-    options:{ responsive:true, plugins:{legend:{position:'bottom'}} }
-  });
-}
-
-/* ---------- تنزيل Excel باستخدام SheetJS ---------- */
-exportExcelBtn.addEventListener('click', ()=>{
-  // بناء جداول
-  const paymentsSheet = payments.map(p => ({
-    ID: p.id,
-    Student: p.studentName || '',
-    Subject: p.subject || '',
-    Teacher: p.teacherName || p.teacherId || '',
-    Amount: p.amount || 0,
-    Date: p.date || ''
-  }));
-  const expensesSheet = expenses.map(e=>({ ID: e.id, Description: e.description || '', Amount: e.amount || 0, Date: e.date || '' }));
-
-  const wb = XLSX.utils.book_new();
-  const ws1 = XLSX.utils.json_to_sheet(paymentsSheet);
-  const ws2 = XLSX.utils.json_to_sheet(expensesSheet);
-  XLSX.utils.book_append_sheet(wb, ws1, 'Payments');
-  XLSX.utils.book_append_sheet(wb, ws2, 'Expenses');
-  const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-  const blob = new Blob([wbout], {type:'application/octet-stream'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (settings.name || 'report') + '_finance.xlsx';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-/* ---------- طباعة احترافية للتقرير ---------- */
-printReportBtn.addEventListener('click', ()=>{
-  // نجمع HTML لطباعة: اسم المعهد، شعار، ملخّص، جدول دفعات ومصاريف بناءً على الفلاتر الحالية
-  const payFilter = getPayFilterValues();
-  const expFilter = getExpFilterValues();
-  const payRows = Array.from(document.querySelectorAll('#paymentsTable tbody tr')).map(tr => {
-    const cells = Array.from(tr.querySelectorAll('td')).slice(0,7).map(td => td.innerText);
-    return `<tr>${cells.map(c=>`<td style="border:1px solid #333;padding:6px">${escapeHtml(c)}</td>`).join('')}</tr>`;
-  }).join('');
-  const expRows = Array.from(document.querySelectorAll('#expensesTable tbody tr')).map(tr => {
-    const cells = Array.from(tr.querySelectorAll('td')).slice(0,3).map(td => td.innerText);
-    return `<tr>${cells.map(c=>`<td style="border:1px solid #333;padding:6px">${escapeHtml(c)}</td>`).join('')}</tr>`;
-  }).join('');
-
-  const html = `
-  <html lang="ar" dir="rtl">
-  <head><meta charset="utf-8"><title>تقرير مالي</title>
-    <style>
-      body{font-family:'Cairo',sans-serif;direction:rtl;color:#102027}
-      .header{display:flex;gap:12px;align-items:center}
-      .header img{height:60px}
-      table{width:100%;border-collapse:collapse;margin-top:12px}
-      th,td{border:1px solid #333;padding:8px;text-align:center}
-      th{background:${getComputedStyle(document.documentElement).getPropertyValue('--primary') || '#004aad'};color:#fff}
-      .footer{display:flex;justify-content:space-between;margin-top:20px}
-      .sign{width:40%;text-align:center;border-top:1px dashed #444;padding-top:8px}
-    </style>
-  </head><body>
-    <div class="header">
-      ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-      <div>
-        <h2>${escapeHtml(settings.name || '')}</h2>
-        <div>تقرير مالي</div>
-        <div>التاريخ: ${new Date().toLocaleDateString()}</div>
-      </div>
-    </div>
-
-    <h3>الدفعات</h3>
-    <table><thead><tr><th>الطالب</th><th>المادة</th><th>الأستاذ</th><th>المبلغ</th><th>نصيب الأستاذ</th><th>نصيب المعهد</th><th>التاريخ</th></tr></thead>
-    <tbody>${payRows}</tbody></table>
-
-    <h3>المصاريف</h3>
-    <table><thead><tr><th>الوصف</th><th>المبلغ</th><th>التاريخ</th></tr></thead><tbody>${expRows}</tbody></table>
-
-    <div class="footer">
-      <div class="sign">ختم المعهد</div>
-      <div class="sign">توقيع المدير</div>
-    </div>
-  </body></html>
-  `;
-  const w = window.open('', '_blank', 'width=900,height=700');
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  w.print();
-});
-
-/* ---------- مساعدة: حماية الـ HTML ---------- */
-function escapeHtml(s){
-  return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-}
-
-/* ---------- أحداث الفلاتر ---------- */
-applyPayFilter.addEventListener('click', ()=> {
-  renderPaymentsTable(getPayFilterValues());
-  updateSummaryAndCharts();
-});
-clearPayFilter.addEventListener('click', ()=> {
-  payFrom.value = ''; payTo.value = ''; payTeacher.value = ''; paySubject.value = ''; payStudent.value = '';
-  renderPaymentsTable({});
-  updateSummaryAndCharts();
-});
-applyExpFilter.addEventListener('click', ()=> {
-  renderExpensesTable(getExpFilterValues());
-});
-clearExpFilter.addEventListener('click', ()=> {
-  expFrom.value=''; expTo.value=''; renderExpensesTable({});
-});
-
-/* ---------- الحصول على قيم الفلاتر الحالية ---------- */
-function getPayFilterValues(){
-  return {
-    from: payFrom.value || null,
-    to: payTo.value || null,
-    teacherId: payTeacher.value || null,
-    subject: paySubject.value || null,
-    student: payStudent.value || null
-  };
-}
-function getExpFilterValues(){
-  return { from: expFrom.value || null, to: expTo.value || null };
-}
-
-/* ---------- إضافة مصروف جديد ---------- */
-expenseForm.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  try{
-    await addDoc(collection(db,'expenses'), {
-      description: expDesc.value,
-      amount: Number(expAmount.value),
-      date: expDate.value,
-      createdAt: new Date().toISOString()
-    });
-    expenseForm.reset();
-    await loadExpenses(getExpFilterValues());
-    alert('تم حفظ المصروف');
-  }catch(err){ console.error(err); alert('خطأ أثناء الحفظ'); }
-});
-
-/* ---------- ملء قوائم الفلاتر (الأساتذة والمواد) ---------- */
-function renderFilters(){
-  // teachers dropdown
-  payTeacher.innerHTML = '<option value="">كل الأساتذة</option>';
-  teachers.forEach(t => {
-    const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.name || t.id;
-    payTeacher.appendChild(opt);
-  });
-
-  // subjects
-  paySubject.innerHTML = '<option value="">كل المواد</option>';
-  Array.from(subjects).sort().forEach(s=>{
-    const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
-    paySubject.appendChild(opt);
-  });
-}
-
-/* ---------- initial data read: get all payments & expenses once ---------- */
-async function initialLoadAll(){
-  await loadPayments();
-  await loadExpenses();
-  await loadTeachersAndSubjects();
-  renderFilters();
-  updateSummaryAndCharts();
-}
-initialLoadAll();
-
-/* ---------- أدوات إضافية ---------- */
-// small debounce for search
-let searchTimer = null;
-payStudent.addEventListener('input', ()=> {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(()=>{ renderPaymentsTable(getPayFilterValues()); updateSummaryAndCharts(); }, 450);
-});
 
 </script>
 </body>
