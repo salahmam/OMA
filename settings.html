@@ -3,15 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إعدادات المعهد - Firestore</title>
+<title>إعدادات المعهد - Firebase</title>
 <style>
+:root{--primary:#004aad;--accent:#ffcc33;}
 body { font-family: 'Cairo', sans-serif; background: #f5f9ff; color: #102027; padding: 20px; direction: rtl; }
 .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 input, select, button { padding: 10px; margin-bottom: 10px; border-radius: 8px; font-size: 15px; width: 100%; }
-button { background: #004aad; color: #fff; border: none; font-weight: bold; cursor: pointer; }
+button { background: var(--primary); color: #fff; border: none; font-weight: bold; cursor: pointer; }
 button:hover { background: #003a8c; }
 label { font-size: 14px; display:block; margin-bottom:5px; }
 .social-icons img { height:28px; margin-left:5px; cursor:pointer; }
+ul { padding:0; list-style:none; }
+ul li { margin-bottom:5px; }
+ul li button { display:inline-block; padding:2px 6px; font-size:12px; margin-left:5px; }
+.small { font-size:12px; padding:4px 6px; }
+.table-container{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;margin-top:12px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th{background:var(--primary);color:#fff;}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.filters select, .filters input{flex:1;}
 </style>
 </head>
 <body>
@@ -20,16 +31,11 @@ label { font-size: 14px; display:block; margin-bottom:5px; }
 
 <div class="card">
   <strong>معلومات المعهد</strong>
-  <label>اسم المعهد</label>
-  <input type="text" id="instituteName">
-  <label>الشعار (رابط الصورة)</label>
-  <input type="text" id="instituteLogo">
-  <label>العنوان</label>
-  <input type="text" id="instituteAddress">
-  <label>رقم الهاتف</label>
-  <input type="text" id="institutePhone">
-  <label>البريد الإلكتروني</label>
-  <input type="email" id="instituteEmail">
+  <label>اسم المعهد</label><input type="text" id="instituteName">
+  <label>الشعار (رابط الصورة)</label><input type="text" id="instituteLogo">
+  <label>العنوان</label><input type="text" id="instituteAddress">
+  <label>رقم الهاتف</label><input type="text" id="institutePhone">
+  <label>البريد الإلكتروني</label><input type="email" id="instituteEmail">
   <button id="saveInstituteBtn">💾 حفظ معلومات المعهد</button>
 </div>
 
@@ -63,13 +69,45 @@ label { font-size: 14px; display:block; margin-bottom:5px; }
   <ul id="branchesList"></ul>
 </div>
 
+<div class="card">
+  <strong>إنشاء مستخدم جديد</strong>
+  <form id="userForm">
+    <label>نوع المستخدم</label>
+    <select id="userType">
+      <option value="student">طالب</option>
+      <option value="teacher">أستاذ</option>
+    </select>
+    <label>الاسم</label>
+    <select id="userName"><option value="">اختر الاسم</option></select>
+    <label>البريد الإلكتروني</label>
+    <input type="email" id="userEmail" required>
+    <label>كلمة المرور</label>
+    <input type="password" id="userPassword" required>
+    <button type="submit">✅ إنشاء المستخدم</button>
+  </form>
+</div>
+
+<div class="card">
+  <strong>قائمة المستخدمين</strong>
+  <div class="filters">
+    <input type="text" id="searchUser" placeholder="بحث...">
+    <select id="filterType"><option value="">فلترة حسب النوع</option><option value="student">طالب</option><option value="teacher">أستاذ</option></select>
+  </div>
+  <div class="table-container">
+    <table id="usersTable">
+      <thead><tr><th>الاسم</th><th>النوع</th><th>البريد</th><th>خيارات</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// إعداد Firebase
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -84,7 +122,7 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// التحقق من تسجيل الدخول
+// تحقق تسجيل الدخول
 onAuthStateChanged(auth,user=>{
   if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html";}
 });
@@ -95,18 +133,33 @@ const instituteLogo = document.getElementById("instituteLogo");
 const instituteAddress = document.getElementById("instituteAddress");
 const institutePhone = document.getElementById("institutePhone");
 const instituteEmail = document.getElementById("instituteEmail");
+
 const facebookLink = document.getElementById("facebookLink");
 const instagramLink = document.getElementById("instagramLink");
 const tiktokLink = document.getElementById("tiktokLink");
 const telegramLink = document.getElementById("telegramLink");
+
 const primaryColor = document.getElementById("primaryColor");
 const accentColor = document.getElementById("accentColor");
+
 const teacherPercent = document.getElementById("teacherPercent");
 const institutePercent = document.getElementById("institutePercent");
+
 const newBranch = document.getElementById("newBranch");
 const branchesList = document.getElementById("branchesList");
 
-// --- حفظ معلومات المعهد ---
+const userTypeSelect = document.getElementById("userType");
+const userNameSelect = document.getElementById("userName");
+const userForm = document.getElementById("userForm");
+
+const usersTableBody = document.querySelector("#usersTable tbody");
+const filterType = document.getElementById("filterType");
+const searchUser = document.getElementById("searchUser");
+
+let usersData = [];
+let allNames = {students:[], teachers:[]};
+
+// --- دوال الحفظ ---
 document.getElementById("saveInstituteBtn").addEventListener("click", async()=>{
   await setDoc(doc(db,"settings","institute"),{
     name: instituteName.value,
@@ -118,7 +171,6 @@ document.getElementById("saveInstituteBtn").addEventListener("click", async()=>{
   alert("✅ تم حفظ معلومات المعهد");
 });
 
-// --- حفظ وسائل التواصل ---
 document.getElementById("saveSocialBtn").addEventListener("click", async()=>{
   await setDoc(doc(db,"settings","social"),{
     facebook: facebookLink.value,
@@ -129,16 +181,16 @@ document.getElementById("saveSocialBtn").addEventListener("click", async()=>{
   alert("✅ تم حفظ وسائل التواصل");
 });
 
-// --- حفظ الألوان ---
 document.getElementById("saveColorsBtn").addEventListener("click", async()=>{
   await setDoc(doc(db,"settings","colors"),{
     primary: primaryColor.value,
     accent: accentColor.value
   });
+  document.documentElement.style.setProperty("--primary",primaryColor.value);
+  document.documentElement.style.setProperty("--accent",accentColor.value);
   alert("✅ تم حفظ الألوان");
 });
 
-// --- حفظ النسب ---
 document.getElementById("savePercentBtn").addEventListener("click", async()=>{
   const t = parseFloat(teacherPercent.value) || 0;
   const i = parseFloat(institutePercent.value) || 0;
@@ -151,14 +203,12 @@ document.getElementById("savePercentBtn").addEventListener("click", async()=>{
 async function loadBranches(){
   branchesList.innerHTML="";
   const docSnap = await getDoc(doc(db,"settings","branches"));
-  if(docSnap.exists()){
-    const data = docSnap.data();
-    if(data.list) data.list.forEach(b=>{
+  if(docSnap.exists() && docSnap.data().list){
+    docSnap.data().list.forEach(b=>{
       const li = document.createElement("li");
       li.textContent = b;
       const btn = document.createElement("button");
       btn.textContent="🗑️";
-      btn.style.marginLeft="10px";
       btn.onclick = async()=>{
         await updateDoc(doc(db,"settings","branches"),{list:arrayRemove(b)});
         loadBranches();
@@ -178,10 +228,96 @@ document.getElementById("addBranchBtn").addEventListener("click", async()=>{
   loadBranches();
 });
 
+// --- إنشاء مستخدم جديد ---
+async function fetchNames(){
+  const studentsSnapshot = await getDocs(collection(db,"students"));
+  const teachersSnapshot = await getDocs(collection(db,"teachers"));
+  allNames.students = studentsSnapshot.docs.map(d=>d.data().name);
+  allNames.teachers = teachersSnapshot.docs.map(d=>d.data().name);
+  updateNames();
+}
+function updateNames(){
+  const type = userTypeSelect.value;
+  userNameSelect.innerHTML="<option value=''>اختر الاسم</option>";
+  let names = type==="student"?allNames.students:allNames.teachers;
+  names.forEach(n=> userNameSelect.innerHTML+=`<option value="${n}">${n}</option>`);
+}
+userTypeSelect.addEventListener("change", updateNames);
+
+userForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const type = userTypeSelect.value;
+  const name = userNameSelect.value;
+  const email = document.getElementById("userEmail").value.trim();
+  const password = document.getElementById("userPassword").value.trim();
+  if(!type || !name || !email || !password){alert("اكمل جميع الحقول"); return;}
+  try{
+    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    const uid = userCred.user.uid;
+    await setDoc(doc(db,"users",uid), {name,type,email,createdAt:new Date().toISOString()});
+    usersData.push({id:uid,type,name,email});
+    renderUsers();
+    userForm.reset();
+    updateNames();
+    alert("✅ تم إنشاء المستخدم بنجاح!");
+  }catch(err){console.error(err); alert("❌ حدث خطأ: "+err.message);}
+});
+
+// --- عرض وتعديل وحذف المستخدمين ---
+function renderUsers(){
+  const filter = filterType.value;
+  const search = searchUser.value.toLowerCase();
+  usersTableBody.innerHTML="";
+  usersData.filter(u=>(!filter||u.type===filter) && (!search||u.name.toLowerCase().includes(search)||u.email.toLowerCase().includes(search)))
+  .forEach(u=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
+    <td>
+      <button class="small" onclick="editUser('${u.id}')">✏️ تعديل</button>
+      <button class="small" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+    </td>`;
+    usersTableBody.appendChild(tr);
+  });
+}
+
+window.editUser = function(id){
+  const user = usersData.find(u=>u.id===id);
+  if(!user) return;
+  userTypeSelect.value = user.type;
+  updateNames();
+  userNameSelect.value = user.name;
+  document.getElementById("userEmail").value = user.email;
+  userForm.onsubmit = async function(e){
+    e.preventDefault();
+    const newEmail = document.getElementById("userEmail").value.trim();
+    const newPassword = document.getElementById("userPassword").value.trim();
+    const userRef = doc(db,"users",id);
+    await updateDoc(userRef,{email:newEmail});
+    // تحديث كلمة المرور
+    try{ await auth.currentUser.updatePassword(newPassword); }catch(err){console.warn("لا يمكن تحديث كلمة المرور حالياً"); }
+    usersData = usersData.filter(u=>u.id!==id);
+    usersData.push({id:id,type:user.type,name:user.name,email:newEmail});
+    renderUsers();
+    userForm.reset();
+    alert("✅ تم تحديث المستخدم");
+    userForm.onsubmit = defaultUserFormSubmit;
+  };
+};
+
+window.deleteUser = async function(id){
+  if(confirm("هل تريد حذف المستخدم؟")){
+    await doc(db,"users",id);
+    usersData = usersData.filter(u=>u.id!==id);
+    renderUsers();
+  }
+};
+
+const defaultUserFormSubmit = userForm.onsubmit;
+
 // --- تحميل البيانات عند البداية ---
 async function loadSettings(){
   const inst = await getDoc(doc(db,"settings","institute"));
-  if(inst.exists()){ Object.assign({name:instituteName.value,logo:instituteLogo.value,address:instituteAddress.value,phone:institutePhone.value,email:instituteEmail.value},inst.data()); instituteName.value=inst.data().name; instituteLogo.value=inst.data().logo; instituteAddress.value=inst.data().address; institutePhone.value=inst.data().phone; instituteEmail.value=inst.data().email; }
+  if(inst.exists()){ instituteName.value=inst.data().name; instituteLogo.value=inst.data().logo; instituteAddress.value=inst.data().address; institutePhone.value=inst.data().phone; instituteEmail.value=inst.data().email; }
   const social = await getDoc(doc(db,"settings","social"));
   if(social.exists()){ facebookLink.value=social.data().facebook; instagramLink.value=social.data().instagram; tiktokLink.value=social.data().tiktok; telegramLink.value=social.data().telegram; }
   const colors = await getDoc(doc(db,"settings","colors"));
@@ -189,7 +325,16 @@ async function loadSettings(){
   const perc = await getDoc(doc(db,"settings","percentages"));
   if(perc.exists()){ teacherPercent.value=perc.data().teacher; institutePercent.value=perc.data().institute; }
   loadBranches();
+  fetchNames();
+  // تحميل المستخدمين
+  const usersSnap = await getDocs(collection(db,"users"));
+  usersData = usersSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderUsers();
 }
+
+filterType.addEventListener("change", renderUsers);
+searchUser.addEventListener("input", renderUsers);
+
 loadSettings();
 </script>
 
