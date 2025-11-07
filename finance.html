@@ -5,54 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>المالية والمصاريف - المعهد</title>
 <style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; color:#102027; margin:0; padding:20px; }
-header { background-color:#004aad; color:#fff; padding:16px; text-align:center; font-size:20px; font-weight:700; }
-.wrap { max-width:1200px; margin:auto; }
-.card { background:#fff; border-radius:10px; padding:14px; margin-bottom:16px; box-shadow:0 6px 18px rgba(6,20,30,0.06); }
-button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; margin-bottom:8px; }
-button:hover { background:#003a8c; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th,td { padding:10px; border-bottom:1px solid #eee; text-align:center; font-size:14px; }
-th { background:#004aad; color:#fff; }
-.hidden { display:none; }
-@media print {
-  body { background:white; }
-  .btn, .toggleBtn, header { display:none; }
-  table { page-break-inside:avoid; }
+body{font-family:'Cairo',sans-serif;direction:rtl;background:#f5f9ff;color:#102027;padding:20px;}
+h2,h3{margin-top:0;}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:20px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
+input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;width:100%;margin-bottom:8px;}
+button{padding:10px 16px;border:none;border-radius:8px;background:#004aad;color:#fff;cursor:pointer;font-weight:bold;}
+button:hover{background:#003a8c;}
+table{width:100%;border-collapse:collapse;margin-top:12px;}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
+th{background:#004aad;color:#fff;}
+.toggleBtn{margin-bottom:10px;}
+.hidden{display:none;}
+@media print{
+  body{background:white;}
+  button,.toggleBtn{display:none;}
+  table{page-break-inside:avoid;}
 }
 </style>
 </head>
 <body>
 
-<header id="instituteHeader">المالية والمصاريف - المعهد</header>
-<div class="wrap">
+<h2>💰 المالية والمصاريف - المعهد</h2>
 
-<!-- مدفوعات الطلاب -->
+<!-- قسم المدفوعات -->
 <div class="card">
-  <button class="toggleBtn" data-target="studentsSection">عرض/إخفاء مدفوعات الطلاب</button>
-  <div id="studentsSection" class="hidden">
+  <button class="toggleBtn" data-target="paymentsSection">عرض/إخفاء المدفوعات</button>
+  <div id="paymentsSection" class="hidden">
     <h3>مدفوعات الطلاب</h3>
-    <table id="studentsTable">
+    <form id="paymentForm">
+      <label>اختر الطالب</label>
+      <select id="studentSelect" required></select>
+      <label>المبلغ المدفوع</label>
+      <input type="number" id="paymentAmount" required>
+      <label>التاريخ</label>
+      <input type="date" id="paymentDate" required>
+      <button type="submit">💾 إضافة دفعة</button>
+    </form>
+
+    <table id="paymentsTable">
       <thead>
         <tr>
-          <th>الطالب</th>
-          <th>المواد</th>
-          <th>المجموع</th>
-          <th>المدفوع</th>
-          <th>المتبقي</th>
+          <th>اسم الطالب</th>
+          <th>المادة</th>
+          <th>المبلغ المدفوع</th>
+          <th>التاريخ</th>
+          <th>الأستاذ</th>
+          <th>نسبة الأستاذ</th>
+          <th>إجمالي المدفوع للمعهد</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
-    <button onclick="printSection('studentsSection')">🖨️ طباعة</button>
+    <button onclick="printSection('paymentsSection')">🖨️ طباعة</button>
   </div>
 </div>
 
-<!-- المصاريف -->
+<!-- قسم المصاريف -->
 <div class="card">
   <button class="toggleBtn" data-target="expensesSection">عرض/إخفاء المصاريف</button>
   <div id="expensesSection" class="hidden">
     <h3>المصاريف</h3>
+    <form id="expenseForm">
+      <label>الوصف</label>
+      <input type="text" id="expenseDescription" required>
+      <label>المبلغ</label>
+      <input type="number" id="expenseAmount" required>
+      <label>التاريخ</label>
+      <input type="date" id="expenseDate" required>
+      <button type="submit">💾 إضافة مصروف</button>
+    </form>
+
+    <div style="margin-top:10px;">
+      <label>من</label>
+      <input type="date" id="filterFrom">
+      <label>إلى</label>
+      <input type="date" id="filterTo">
+      <button id="filterExpensesBtn">تطبيق الفلتر</button>
+    </div>
+
     <table id="expensesTable">
       <thead>
         <tr>
@@ -62,37 +92,20 @@ th { background:#004aad; color:#fff; }
         </tr>
       </thead>
       <tbody></tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2">المجموع الكلي</th>
+          <th id="totalExpenses">0</th>
+        </tr>
+      </tfoot>
     </table>
     <button onclick="printSection('expensesSection')">🖨️ طباعة</button>
   </div>
 </div>
 
-<!-- مدفوعات الأساتذة -->
-<div class="card">
-  <button class="toggleBtn" data-target="teachersSection">عرض/إخفاء مدفوعات الأساتذة</button>
-  <div id="teachersSection" class="hidden">
-    <h3>مدفوعات الأساتذة</h3>
-    <table id="teachersTable">
-      <thead>
-        <tr>
-          <th>الأستاذ</th>
-          <th>المجموع</th>
-          <th>النسبة</th>
-          <th>المدفوع</th>
-          <th>المتبقي</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button onclick="printSection('teachersSection')">🖨️ طباعة</button>
-  </div>
-</div>
-
-</div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -104,33 +117,104 @@ const firebaseConfig = {
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const instituteHeader = document.getElementById("instituteHeader");
-
 // التحقق من تسجيل الدخول
-onAuthStateChanged(auth, async user => {
-  if(!user) {
-    window.location.href="login.html";
-    return;
-  }
-  // بعد تسجيل الدخول، جلب اسم المعهد والشعار والألوان
-  const settingsDoc = await getDoc(doc(db,"settings","institute"));
-  if(settingsDoc.exists()) {
-    const data = settingsDoc.data();
-    instituteHeader.textContent = data.name || "المالية والمصاريف - المعهد";
-    document.body.style.background = data.bgColor || "#f5f9ff";
-  }
-  // تحميل جميع الجداول
-  await loadStudentsPayments();
-  await loadExpenses();
-  await loadTeachersPayments();
+onAuthStateChanged(auth, user=>{
+  if(!user) window.location.href="login.html";
+  else document.body.style.visibility="visible";
 });
 
-// إظهار/إخفاء الأقسام
+// =================================
+// إدارة المدفوعات
+const studentSelect = document.getElementById("studentSelect");
+const paymentForm = document.getElementById("paymentForm");
+const paymentsTableBody = document.querySelector("#paymentsTable tbody");
+
+// تحميل الطلاب
+async function loadStudents(){
+  const snap = await getDocs(collection(db,"students"));
+  studentSelect.innerHTML="<option value=''>اختر الطالب</option>";
+  snap.forEach(s=>{
+    studentSelect.innerHTML += `<option value="${s.id}">${s.data().name}</option>`;
+  });
+}
+
+// إضافة دفعة
+paymentForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const studentId = studentSelect.value;
+  const amount = parseFloat(document.getElementById("paymentAmount").value);
+  const date = document.getElementById("paymentDate").value;
+
+  await addDoc(collection(db,"payments"),{studentId, amount, date});
+  paymentForm.reset();
+  loadPayments();
+});
+
+// تحميل المدفوعات
+async function loadPayments(){
+  const snap = await getDocs(collection(db,"payments"));
+  paymentsTableBody.innerHTML="";
+  snap.forEach(async docSnap=>{
+    const data = docSnap.data();
+    const studentDoc = await getDocs(collection(db,"students")); // يمكن تحسينه لاحقاً
+    const studentName = "طالب"; // مؤقت
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${studentName}</td>
+      <td>—</td>
+      <td>${data.amount}</td>
+      <td>${data.date}</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    `;
+    paymentsTableBody.appendChild(row);
+  });
+}
+
+// =================================
+// إدارة المصاريف
+const expenseForm = document.getElementById("expenseForm");
+const expensesTableBody = document.querySelector("#expensesTable tbody");
+
+expenseForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const description = document.getElementById("expenseDescription").value;
+  const amount = parseFloat(document.getElementById("expenseAmount").value);
+  const date = document.getElementById("expenseDate").value;
+  await addDoc(collection(db,"expenses"),{description, amount, date});
+  expenseForm.reset();
+  loadExpenses();
+});
+
+async function loadExpenses(filter={}){
+  const snap = await getDocs(collection(db,"expenses"));
+  expensesTableBody.innerHTML="";
+  let total=0;
+  snap.forEach(docSnap=>{
+    const exp = docSnap.data();
+    if((!filter.from || exp.date>=filter.from)&&(!filter.to||exp.date<=filter.to)){
+      const row = document.createElement("tr");
+      row.innerHTML=`<td>${exp.description}</td><td>${exp.date}</td><td>${exp.amount}</td>`;
+      expensesTableBody.appendChild(row);
+      total += parseFloat(exp.amount||0);
+    }
+  });
+  document.getElementById("totalExpenses").textContent = total;
+}
+
+document.getElementById("filterExpensesBtn").addEventListener("click", ()=>{
+  const from = document.getElementById("filterFrom").value;
+  const to = document.getElementById("filterTo").value;
+  loadExpenses({from,to});
+});
+
+// =================================
+// أزرار عرض/إخفاء الأقسام
 document.querySelectorAll(".toggleBtn").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     const target = document.getElementById(btn.dataset.target);
@@ -138,68 +222,20 @@ document.querySelectorAll(".toggleBtn").forEach(btn=>{
   });
 });
 
-// تحميل مدفوعات الطلاب
-async function loadStudentsPayments(){
-  const snapshot = await getDocs(collection(db,"students"));
-  const tbody = document.querySelector("#studentsTable tbody");
-  tbody.innerHTML="";
-  snapshot.forEach(docSnap=>{
-    const st = docSnap.data();
-    const row = document.createElement("tr");
-    const total = st.totalFee || 0;
-    const paid = st.totalPaid || 0;
-    const remaining = total - paid;
-    row.innerHTML = `<td>${st.name}</td>
-                     <td>${(st.subjects||[]).map(s=>s.name).join(", ")}</td>
-                     <td>${total}</td>
-                     <td>${paid}</td>
-                     <td>${remaining}</td>`;
-    tbody.appendChild(row);
-  });
-}
-
-// تحميل المصاريف
-async function loadExpenses(){
-  const snapshot = await getDocs(collection(db,"expenses"));
-  const tbody = document.querySelector("#expensesTable tbody");
-  tbody.innerHTML="";
-  snapshot.forEach(docSnap=>{
-    const exp = docSnap.data();
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${exp.description}</td><td>${exp.date}</td><td>${exp.amount}</td>`;
-    tbody.appendChild(row);
-  });
-}
-
-// تحميل مدفوعات الأساتذة
-async function loadTeachersPayments(){
-  const snapshot = await getDocs(collection(db,"teachers"));
-  const tbody = document.querySelector("#teachersTable tbody");
-  tbody.innerHTML="";
-  const settingsDoc = await getDoc(doc(db,"settings","institute"));
-  let percent = 0;
-  if(settingsDoc.exists()) percent = settingsDoc.data().teacherPercent || 0;
-
-  snapshot.forEach(docSnap=>{
-    const t = docSnap.data();
-    const totalIncome = t.totalIncome || 0;
-    const paid = t.totalPaid || 0;
-    const remaining = totalIncome*percent/100 - paid;
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${t.name}</td><td>${totalIncome}</td><td>${percent}%</td><td>${paid}</td><td>${remaining}</td>`;
-    tbody.appendChild(row);
-  });
-}
-
-// طباعة أي قسم
-function printSection(id){
-  const section = document.getElementById(id);
+// =================================
+// طباعة القسم
+window.printSection = function(id){
+  const content = document.getElementById(id).innerHTML;
   const original = document.body.innerHTML;
-  document.body.innerHTML = section.innerHTML;
+  document.body.innerHTML = content;
   window.print();
   document.body.innerHTML = original;
-  window.location.reload();
 }
+
+// تحميل البيانات الابتدائية
+loadStudents();
+loadPayments();
+loadExpenses();
 </script>
 
 </body>
