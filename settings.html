@@ -25,6 +25,7 @@ th{background:var(--primary);color:#fff;}
 .social-icons{display:flex;gap:10px;margin-top:8px;}
 .social-icons a img{height:28px;}
 .color-input{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.small{padding:4px 8px;font-size:12px;}
 </style>
 </head>
 <body>
@@ -138,13 +139,13 @@ th{background:var(--primary);color:#fff;}
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// ----- إعداد Firebase -----// ----- إعداد Firebase -----
+// ----- إعداد Firebase -----
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -154,68 +155,113 @@ const firebaseConfig = {
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
-
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-
-
-// ----- كل دوال JS من الرسائل السابقة -----
-const header = document.getElementById("header");
-const instituteLogoImg = document.getElementById("instituteLogo");
-const instituteNameSpan = document.getElementById("instituteName");
-const nameInput = document.getElementById("instituteNameInput");
-const logoInput = document.getElementById("instituteLogoInput");
-const addressInput = document.getElementById("instituteAddress");
-const phoneInput = document.getElementById("institutePhone");
-const emailInput = document.getElementById("instituteEmail");
-const saveInstituteBtn = document.getElementById("saveInstituteInfoBtn");
-const socialInputs = {
-  facebook: document.getElementById("facebookLink"),
-  instagram: document.getElementById("instagramLink"),
-  tiktok: document.getElementById("tiktokLink"),
-  telegram: document.getElementById("telegramLink")
-};
-const socialDisplay = document.getElementById("socialDisplay");
-const saveSocialBtn = document.getElementById("saveSocialBtn");
-const primaryColorInput = document.getElementById("primaryColor");
-const accentColorInput = document.getElementById("accentColor");
-const saveColorsBtn = document.getElementById("saveColorsBtn");
-const teacherPercentInput = document.getElementById("teacherPercent");
-const institutePercentInput = document.getElementById("institutePercent");
-const savePercentBtn = document.getElementById("savePercentBtn");
-const newBranchInput = document.getElementById("newBranch");
-const addBranchBtn = document.getElementById("addBranchBtn");
-const branchesTableBody = document.querySelector("#branchesTable tbody");
-const userForm = document.getElementById("userForm");
-const userTypeSelect = document.getElementById("userType");
-const userNameSelect = document.getElementById("userName");
-const userSearchNameInput = document.getElementById("searchUserName");
-const userEmailInput = document.getElementById("userEmail");
-const userPasswordInput = document.getElementById("userPassword");
-const usersTableBody = document.querySelector("#usersTable tbody");
-const searchUserInput = document.getElementById("searchUser");
-const filterTypeSelect = document.getElementById("filterType");
-let branchesData = [], usersData = [], allNames = { students: [], teachers: [] };
-
 // ----- تسجيل الدخول -----
-onAuthStateChanged(auth, user => {
-  if (!user) { alert("⚠️ يجب تسجيل الدخول"); window.location.href = "login.html"; }
-  else { initPage(); }
+onAuthStateChanged(auth, user=>{
+  if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html"; }
 });
 
-// ----- العودة للوحة التحكم -----
-header.addEventListener("click", () => { window.location.href = "dashboard.html"; });
+// ----- عناصر الصفحة -----
+const header = document.getElementById("header");
+const instituteNameSpan = document.getElementById("instituteName");
+const instituteLogoImg = document.getElementById("instituteLogo");
+const userTypeSelect = document.getElementById("userType");
+const userNameSelect = document.getElementById("userName");
+const searchUserNameInput = document.getElementById("searchUserName");
+const usersTableBody = document.querySelector("#usersTable tbody");
 
-// ----- تهيئة الصفحة -----
-async function initPage() {
-  await loadInstituteData(); await loadColors(); await loadPercentages();
-  await fetchNames(); await loadBranches(); await loadUsers();
-  renderSocialIcons(); updateUserNames(); renderUsers();
+// ----- تخزين بيانات مؤقتة -----
+let usersData = [];
+let allNames = {students:[], teachers:[]};
+let branchesData = [];
+
+// ----- دوال تحميل البيانات من Firestore -----
+async function fetchNames(){
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  allNames.students = studentsSnap.docs.map(d=>d.data().name);
+  allNames.teachers = teachersSnap.docs.map(d=>d.data().name);
+  updateNamesSelect();
 }
 
-// كل الدوال الأخرى كما أرسلتها سابقاً تعمل هنا مباشرة...
+function updateNamesSelect(){
+  const type = userTypeSelect.value;
+  userNameSelect.innerHTML = "<option value=''>اختر الاسم</option>";
+  let names = type==="student"?allNames.students:allNames.teachers;
+  names.forEach(n=>userNameSelect.innerHTML += `<option value="${n}">${n}</option>`);
+}
+
+// ----- إنشاء مستخدم جديد -----
+document.getElementById("userForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const type = userTypeSelect.value;
+  const name = userNameSelect.value;
+  const email = document.getElementById("userEmail").value.trim();
+  const password = document.getElementById("userPassword").value.trim();
+  if(!type || !name || !email || !password){alert("اكمل جميع الحقول"); return;}
+  try{
+    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    const uid = userCred.user.uid;
+    await setDoc(doc(db,"users",uid), {name,type,email,createdAt:new Date().toISOString()});
+    usersData.push({id:uid,name,type,email});
+    renderUsers();
+    e.target.reset();
+    updateNamesSelect();
+    alert("✅ تم إنشاء المستخدم بنجاح!");
+  }catch(err){console.error(err); alert("❌ "+err.message);}
+});
+
+// ----- عرض المستخدمين -----
+function renderUsers(){
+  const filter = document.getElementById("filterType").value.toLowerCase();
+  const searchText = document.getElementById("searchUser").value.toLowerCase();
+  usersTableBody.innerHTML="";
+  usersData.filter(u=>(!filter||u.type===filter) && (!searchText||u.name.toLowerCase().includes(searchText)))
+    .forEach(u=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
+      <td>
+        <button class="btn small" onclick="editUser('${u.id}')">✏️ تعديل</button>
+        <button class="btn warn small" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+      </td>`;
+      usersTableBody.appendChild(tr);
+    });
+}
+
+// ----- حذف مستخدم -----
+window.deleteUser = function(id){
+  if(confirm("هل تريد حذف المستخدم؟")){
+    usersData = usersData.filter(u=>u.id!==id);
+    renderUsers();
+  }
+}
+
+// ----- تعديل مستخدم -----
+window.editUser = function(id){
+  const user = usersData.find(u=>u.id===id);
+  if(!user) return;
+  userTypeSelect.value = user.type;
+  updateNamesSelect();
+  userNameSelect.value = user.name;
+  document.getElementById("userEmail").value = user.email;
+  usersData = usersData.filter(u=>u.id!==id);
+}
+
+// ----- تفعيل البحث داخل قائمة الاسماء -----
+searchUserNameInput.addEventListener("input", ()=>{
+  const filter = searchUserNameInput.value.toLowerCase();
+  Array.from(userNameSelect.options).forEach(opt=>{
+    opt.style.display = opt.value.toLowerCase().includes(filter)?"block":"none";
+  });
+});
+
+// ----- تحميل البيانات عند البداية -----
+fetchNames();
+
 </script>
 
 </body>
