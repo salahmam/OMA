@@ -158,7 +158,7 @@ let studentsData = [];
 let editingTeacherId = null;
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
-let settingsData = { name:'المعهد', instituteFeePercent:10 }; // 10% كنسبة افتراضية
+let settingsData = { name:'المعهد', instituteFeePercent:10 };
 
 onAuthStateChanged(auth, user=>{
   if(!user){ window.location.href='login.html'; }
@@ -172,6 +172,7 @@ async function initPage(){
   await loadTeachers();
 }
 
+// --- Load settings ---
 async function loadSettings(){
   try{
     const sdoc = await getDoc(doc(db,'settings','info'));
@@ -180,20 +181,23 @@ async function loadSettings(){
   }catch(e){ console.warn(e); }
 }
 
+// --- Populate stage/group selects ---
 function populateStageGroup(){
   STAGES.forEach(s=>filterStage.innerHTML += `<option value="${s}">${s}</option>`);
   GROUPS.forEach(g=>filterGroup.innerHTML += `<option value="${g}">${g}</option>`);
 }
 
+// --- Load students ---
 async function loadStudents(){
   studentsData=[];
   try{
     const q=query(collection(db,'students'), orderBy('createdAt','desc'));
     const snap = await getDocs(q);
     snap.forEach(d=>studentsData.push({id:d.id,...d.data()}));
-  }catch(e){ console.error('loadStudents', e); }
+  }catch(e){ console.error(e); }
 }
 
+// --- Subject row ---
 function createSubjectRow(data={}){
   const wrapper=document.createElement('div');
   wrapper.className='subject-row';
@@ -214,6 +218,7 @@ function createSubjectRow(data={}){
 }
 addSubjectBtn.addEventListener('click',()=>createSubjectRow());
 
+// --- Clear form ---
 clearFormBtn.addEventListener('click',()=>{
   teacherForm.reset();
   subjectsContainer.innerHTML='';
@@ -221,7 +226,7 @@ clearFormBtn.addEventListener('click',()=>{
   document.getElementById('formTitle').textContent='أضف أستاذ جديد';
 });
 
-// حفظ / تعديل الأستاذ مع حساب نسبة المعهد
+// --- Save / Edit teacher with institute fee ---
 teacherForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
@@ -249,7 +254,7 @@ teacherForm.addEventListener('submit', async (e)=>{
   }catch(e){ console.error(e); alert('حدث خطأ'); }
 });
 
-// تحميل الأساتذة وحساب المستحق بعد خصم نسبة المعهد
+// --- Load teachers & compute totals including institute fee ---
 async function loadTeachers(){
   teachersData=[];
   teachersTableBody.innerHTML='';
@@ -292,9 +297,102 @@ async function loadTeachers(){
   }catch(e){ console.error(e); }
 }
 
-// باقي الدوال مثل startEditTeacher, showTeacher, deleteTeacher, printTeacherBtn
-// تبقى كما هي مع التأكد من أن كل حسابات totals تشمل خصم نسبة المعهد
+// --- Start edit ---
+window.startEditTeacher = function(id){
+  const t=teachersData.find(x=>x.id===id); if(!t) return;
+  editingTeacherId=id;
+  document.getElementById('formTitle').textContent='تعديل بيانات الأستاذ';
+  document.getElementById('name').value=t.name||'';
+  document.getElementById('phone').value=t.phone||'';
+  document.getElementById('address').value=t.address||'';
+  document.getElementById('note').value=t.note||'';
+  subjectsContainer.innerHTML='';
+  (t.subjects||[]).forEach(s=>createSubjectRow({subject:s.subject,stage:s.stage,group:s.group}));
+};
 
+// --- Delete teacher ---
+window.deleteTeacher = async function(id){
+  if(!confirm('هل تريد حذف هذا الأستاذ؟')) return;
+  try{ await deleteDoc(doc(db,'teachers',id)); await loadTeachers(); }
+  catch(e){ console.error(e); alert('خطأ عند الحذف'); }
+};
+
+// --- Show teacher modal & add payments ---
+window.showTeacher = async function(id){
+  const t = teachersData.find(x=>x.id===id); if(!t) return;
+  modalTitle.textContent=`تفاصيل الأستاذ: ${t.name}`;
+  let html=`<div>`;
+
+  t.subjects.forEach((s,idx)=>{
+    const paymentsHtml=(s.payments||[]).map(p=>`<div>${p.amount} — ${p.date}</div>`).join('')||'<div>-</div>';
+    html+=`<div style="border:1px solid #eee;padding:8px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${s.subject}</strong> — <span>${s.stage} — ${s.group}</span></div>
+        <button class="btn small addPaymentBtn" data-idx="${idx}">💰 إضافة دفعة</button>
+      </div>
+      <div>إجمالي: ${s.total} — مستلم: ${s.received} — متبقي: ${s.remaining}</div>
+      <div><strong>الدفعات:</strong>${paymentsHtml}</div>
+    </div>`;
+  });
+  html+=`<div><button id="savePaymentsBtn" class="btn">حفظ التغييرات</button></div></div>`;
+  modalBody.innerHTML=html;
+  modal.classList.add('open');
+
+  modalBody.querySelectorAll('.addPaymentBtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=parseInt(btn.dataset.idx);
+      const amt=parseFloat(prompt('أدخل قيمة الدفعة:'));
+      if(isNaN(amt)||amt<=0){ alert('قيمة غير صالحة'); return; }
+      const date=new Date().toLocaleDateString();
+      if(!t.subjects[idx].payments) t.subjects[idx].payments=[];
+      t.subjects[idx].payments.push({amount:amt,date});
+      t.subjects[idx].received=t.subjects[idx].payments.reduce((a,b)=>a+(b.amount||0),0);
+      t.subjects[idx].remaining=Math.max(0,t.subjects[idx].total-t.subjects[idx].received);
+      showTeacher(id);
+    });
+  });
+
+  document.getElementById('savePaymentsBtn').addEventListener('click', async ()=>{
+    try{ await updateDoc(doc(db,'teachers',t.id),{subjects:t.subjects}); alert('تم الحفظ'); modal.classList.remove('open'); await loadTeachers(); } 
+    catch(e){ console.error(e); alert('خطأ عند الحفظ'); }
+  });
+};
+
+closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
+printTeacherBtn.addEventListener('click',()=>{ window.print(); });
+
+// --- Filters ---
+applyFiltersBtn.addEventListener('click',()=>{
+  const stage=filterStage.value;
+  const group=filterGroup.value;
+  const search=searchBox.value.toLowerCase();
+  teachersTableBody.innerHTML='';
+  teachersData.filter(t=>{
+    const matchesName=t.name.toLowerCase().includes(search);
+    const matchesSubjects=t.subjects.some(s=>{
+      const matchStage=stage? s.stage===stage:true;
+      const matchGroup=group? s.group===group:true;
+      const matchName=search? s.subject.toLowerCase().includes(search):true;
+      return matchStage && matchGroup && matchName;
+    });
+    return matchesName || matchesSubjects;
+  }).forEach(t=>{
+    const tr=document.createElement('tr');
+    const approxTotal=t.subjects.reduce((a,b)=>a+(b.total||0),0);
+    tr.innerHTML=`
+      <td>${t.name}</td>
+      <td>${t.phone||'-'}</td>
+      <td>${t.subjects.length}</td>
+      <td>${approxTotal}</td>
+      <td>
+        <button class="btn small" onclick="showTeacher('${t.id}')">عرض</button>
+        <button class="btn small ghost" onclick="startEditTeacher('${t.id}')">✏️</button>
+        <button class="btn small warn" onclick="deleteTeacher('${t.id}')">🗑️</button>
+      </td>
+    `;
+    teachersTableBody.appendChild(tr);
+  });
+});
 </script>
 </body>
 </html>
