@@ -3,15 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>نظام إدارة الطلاب</title>
+<title>نظام OMA - إدارة الطلاب</title>
 <style>
 :root{
   --primary:#004aad; --accent:#ffcc33; --bg:#f5f9ff; --card:#fff;
 }
 *{box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
-header{background:var(--primary);color:#fff;padding:16px;text-align:center;font-weight:700;display:flex;align-items:center;gap:12px;justify-content:center;}
-header img{max-height:50px;object-fit:contain;}
+body{font-family:'Cairo',sans-serif;margin:0;background:linear-gradient(180deg,var(--bg),#fff);color:#102027;direction:rtl;visibility:hidden;}
+header{background:linear-gradient(90deg,var(--primary),#007bff);color:#fff;padding:16px;text-align:center;font-weight:700;}
 .wrap{max-width:1200px;margin:20px auto;padding:12px;}
 .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:14px;}
 .form-grid{display:flex;flex-wrap:wrap;gap:10px}
@@ -27,11 +26,10 @@ th{background:var(--primary);color:#fff}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
 .subject-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
 .subject-row > *{flex:1}
-.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999}
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999;overflow:auto}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:900px;width:96%;max-height:90vh;overflow:auto}
-.search-box{margin-bottom:12px}
-.search-box input{padding:8px;width:100%;border-radius:8px;border:1px solid #d6dde9;font-size:14px;}
+.subject-card{border:1px solid #d6dde9;padding:6px;margin-bottom:6px;border-radius:6px;}
 @media print{
   body{background:white}
   header,.controls,.btn,.modal,.no-print{display:none !important}
@@ -40,16 +38,8 @@ th{background:var(--primary);color:#fff}
 </style>
 </head>
 <body>
-<header>
-  <img id="instituteLogo" src="" alt="Logo" />
-  <span id="instituteName">اسم المعهد</span>
-</header>
+<header>نظام OMA — إدارة الطلاب</header>
 <div class="wrap">
-
-  <!-- البحث -->
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم أو الهاتف" />
-  </div>
 
   <!-- إضافة طالب -->
   <div class="card">
@@ -58,7 +48,7 @@ th{background:var(--primary);color:#fff}
         <strong>أضف طالب جديد</strong>
         <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" class="no-print">
+      <div style="display:flex;gap:8px;align-items:center" class="no-print">
         <select id="stageSelect" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
           <option value="">اختر المرحلة</option>
         </select>
@@ -98,7 +88,7 @@ th{background:var(--primary);color:#fff}
         </div>
 
         <div style="width:100%">
-          <label>المواد (اختر مادة ثم المعلم ثم قيمة القسط)</label>
+          <label>المواد (اختَر مادة ثم المعلم ثم قيمة القسط)</label>
           <div id="subjectsContainer"></div>
           <div style="margin-top:8px">
             <button id="addSubjectBtn" type="button" class="btn ghost small">➕ إضافة مادة</button>
@@ -106,8 +96,8 @@ th{background:var(--primary);color:#fff}
         </div>
 
         <div class="two">
-          <label>إجمالي الأقساط (محسوب تلقائياً من المواد)</label>
-          <input id="totalFees" type="number" min="0" readonly />
+          <label>إجمالي الأقساط (تحسب الحقول تلقائيًا أو أدخل يدوياً)</label>
+          <input id="totalFees" type="number" min="0" />
         </div>
         <div class="two">
           <label>ملاحظة / وصف الطالب</label>
@@ -131,7 +121,7 @@ th{background:var(--primary);color:#fff}
     <table class="table" id="studentsTable">
       <thead>
         <tr>
-          <th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد / المتبقي</th><th>الإجمالي / المتبقي</th><th>الخيارات</th>
+          <th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد / المتبقي</th><th>الخيارات</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -157,35 +147,25 @@ th{background:var(--primary);color:#fff}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* Firebase config */
-const firebaseConfig = {
-  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
-  authDomain: "oma0-33cc0.firebaseapp.com",
-  projectId: "oma0-33cc0",
-  storageBucket: "oma0-33cc0.firebasestorage.app",
-  messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
-  measurementId: "G-5CKWYQT9XZ"
-};
-
+const firebaseConfig = { /* إعدادات مشروعك */ };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* Elements */
+/* --- Elements --- */
 const subjectsContainer = document.getElementById('subjectsContainer');
 const addSubjectBtn = document.getElementById('addSubjectBtn');
 const studentForm = document.getElementById('studentForm');
 const studentsTableBody = document.querySelector('#studentsTable tbody');
 const totalCount = document.getElementById('totalCount');
 const clearFormBtn = document.getElementById('clearFormBtn');
+
 const filterSubject = document.getElementById('stageSelect');
-const filterGroup = document.getElementById('groupSelectTop');
+const filterTeacher = document.getElementById('groupSelectTop');
 const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 const printListBtn = document.getElementById('printListBtn');
-const searchInput = document.getElementById('searchInput');
 
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
@@ -193,147 +173,240 @@ const modalTitle = document.getElementById('modalTitle');
 const closeModalBtn = document.getElementById('closeModal');
 const printStudentBtn = document.getElementById('printStudentBtn');
 
+const stageSelect = document.getElementById('stageSelect');
 const stageSelectForm = document.getElementById('stageSelectForm');
+const groupSelectTop = document.getElementById('groupSelectTop');
 const groupSelectForm = document.getElementById('groupSelectForm');
-const instituteLogo = document.getElementById('instituteLogo');
-const instituteName = document.getElementById('instituteName');
 
-/* State */
-let teachers = [], studentsCache = [];
+let teachers = [];
+let studentsCache = [];
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
+let instituteInfo = { name:'اسم المعهد', logo:null }; // يمكنك تحميل الاسم والشعار من collection settings
 
-/* Auth guard */
-onAuthStateChanged(auth, user=>{
-  if(!user){ window.location.href='login.html'; } else { document.body.style.visibility='visible'; initPage(); }
+/* --- Auth guard --- */
+onAuthStateChanged(auth,user=>{
+  if(!user){ window.location.href='login.html'; }
+  else{ document.body.style.visibility='visible'; initPage(); }
 });
 
 async function initPage(){
-  STAGES.forEach(s=>{ stageSelectForm.innerHTML+=`<option value="${s}">${s}</option>`; filterSubject.innerHTML+=`<option value="${s}">${s}</option>`; });
-  GROUPS.forEach(g=>{ groupSelectForm.innerHTML+=`<option value="${g}">${g}</option>`; filterGroup.innerHTML+=`<option value="${g}">${g}</option>`; });
-
-  await loadSettings();
+  STAGES.forEach(s=>{
+    stageSelect.innerHTML+=`<option value="${s}">${s}</option>`;
+    stageSelectForm.innerHTML+=`<option value="${s}">${s}</option>`;
+  });
+  GROUPS.forEach(g=>{
+    groupSelectTop.innerHTML+=`<option value="${g}">${g}</option>`;
+    groupSelectForm.innerHTML+=`<option value="${g}">${g}</option>`;
+  });
   await loadTeachers();
   await loadStudents();
 }
 
-/* Load institute settings (colors, logo, name) */
-async function loadSettings(){
-  try{
-    const snap = await getDoc(doc(db,'settings','institute'));
-    if(snap.exists()){
-      const data = snap.data();
-      if(data.primary) document.documentElement.style.setProperty('--primary',data.primary);
-      if(data.accent) document.documentElement.style.setProperty('--accent',data.accent);
-      if(data.bg) document.documentElement.style.setProperty('--bg',data.bg);
-      if(data.card) document.documentElement.style.setProperty('--card',data.card);
-      if(data.logo) instituteLogo.src=data.logo;
-      if(data.name) instituteName.textContent=data.name;
-    }
-  }catch(e){ console.warn('loadSettings',e); }
-}
-
-/* Load teachers */
+/* --- Load teachers --- */
 async function loadTeachers(){
   teachers = [];
-  const snap = await getDocs(collection(db,'teachers'));
-  snap.forEach(d=>teachers.push({id:d.id,...d.data()}));
+  try { const snap = await getDocs(collection(db,'teachers')); snap.forEach(d=>teachers.push({id:d.id,...d.data()})); }
+  catch(e){ console.error('loadTeachers',e); }
 }
 
-/* Create subject row */
+/* --- Create subject row --- */
 function createSubjectRow(data={}){
-  const wrapper = document.createElement('div'); wrapper.className='subject-row';
-  const subjInp=document.createElement('input'); subjInp.placeholder='اسم المادة'; subjInp.value=data.name||'';
-  const teacherSel=document.createElement('select'); teacherSel.innerHTML=`<option value="">اختر الأستاذ</option>`; teachers.forEach(t=>teacherSel.innerHTML+=`<option value="${t.id}" ${t.id===data.teacherId?'selected':''}>${t.name}</option>`);
-  const feeInp=document.createElement('input'); feeInp.type='number'; feeInp.placeholder='إجمالي القسط'; feeInp.min=0; feeInp.value=data.fee||0;
-  const remInp=document.createElement('input'); remInp.type='number'; remInp.placeholder='المتبقي'; remInp.min=0; remInp.value=data.remaining||0;
-  const payBtn=document.createElement('button'); payBtn.type='button'; payBtn.className='btn small'; payBtn.textContent='💰 دفعة';
-  const remSubBtn=document.createElement('button'); remSubBtn.type='button'; remSubBtn.className='btn warn small'; remSubBtn.textContent='❌';
-  wrapper.payments = Array.isArray(data.payments)?[...data.payments]:[];
-
-  function recalc(){
-    const paid=(wrapper.payments||[]).reduce((a,p)=>a+(p.amount||0),0);
-    remInp.value=Math.max(0,(parseFloat(feeInp.value)||0)-paid);
-    updateTotalFees();
-  }
-
-  feeInp.addEventListener('input',recalc);
-  payBtn.addEventListener('click',()=>{ const amt=parseFloat(prompt('أدخل مبلغ الدفعة:')); if(isNaN(amt)||amt<=0) return alert('مبلغ غير صالح'); const date=new Date().toLocaleDateString(); wrapper.payments.push({amount:amt,date}); recalc(); alert('تم تسجيل دفعة'); });
-  remSubBtn.addEventListener('click',()=>{ wrapper.remove(); updateTotalFees(); });
-
+  const wrapper = document.createElement('div');
+  wrapper.className='subject-row';
+  const subjInp = document.createElement('input'); subjInp.placeholder='اسم المادة'; subjInp.value=data.name||'';
+  const teacherSel = document.createElement('select'); teacherSel.innerHTML=`<option value="">اختر الأستاذ</option>`;
+  teachers.forEach(t=>teacherSel.innerHTML+=`<option value="${t.id}" ${t.id===data.teacherId?'selected':''}>${t.name}</option>`);
+  const feeInp = document.createElement('input'); feeInp.type='number'; feeInp.placeholder='إجمالي القسط'; feeInp.min=0; feeInp.value=data.fee||'';
+  const remInp = document.createElement('input'); remInp.type='number'; remInp.placeholder='المتبقي'; remInp.min=0; remInp.value=data.remaining||'';
+  const payBtn = document.createElement('button'); payBtn.type='button'; payBtn.className='btn small'; payBtn.textContent='💰 إضافة دفعة';
+  const remSubBtn = document.createElement('button'); remSubBtn.type='button'; remSubBtn.className='btn warn small'; remSubBtn.textContent='❌';
+  wrapper.payments = data.payments||[];
+  payBtn.addEventListener('click',()=>{
+    const amt = parseFloat(prompt('أدخل مبلغ الدفعة:'));
+    if(isNaN(amt)||amt<=0) return alert('مبلغ غير صالح');
+    wrapper.payments.push({amount:amt,date:new Date().toLocaleDateString()});
+    const curRem = parseFloat(remInp.value)||0; remInp.value = Math.max(0,curRem-amt);
+  });
+  remSubBtn.addEventListener('click',()=>wrapper.remove());
   wrapper.appendChild(subjInp); wrapper.appendChild(teacherSel); wrapper.appendChild(feeInp); wrapper.appendChild(remInp); wrapper.appendChild(payBtn); wrapper.appendChild(remSubBtn);
-  subjectsContainer.appendChild(wrapper); updateTotalFees();
+  subjectsContainer.appendChild(wrapper);
   return wrapper;
 }
 
-/* Update total fees */
-function updateTotalFees(){
-  const total = Array.from(subjectsContainer.querySelectorAll('.subject-row')).reduce((sum,row)=>sum+(parseFloat(row.querySelectorAll('input')[2].value)||0),0);
-  document.getElementById('totalFees').value=total;
-}
+addSubjectBtn.addEventListener('click',()=>{ if(teachers.length===0) alert('لا توجد أساتذة'); else createSubjectRow(); });
 
-addSubjectBtn.addEventListener('click',()=>{ if(teachers.length===0){ alert('لا يوجد أساتذة'); return; } createSubjectRow(); });
-
+/* --- Save student --- */
 studentForm.addEventListener('submit',async e=>{
   e.preventDefault();
-  const name=document.getElementById('name').value.trim();
-  const phone=document.getElementById('phone').value.trim();
-  const address=document.getElementById('address').value.trim();
-  const school=document.getElementById('school').value.trim();
-  const stage=stageSelectForm.value; const group=groupSelectForm.value;
-  const totalFees=parseFloat(document.getElementById('totalFees').value)||0;
-  const note=document.getElementById('note').value.trim();
-  const subjects=Array.from(subjectsContainer.querySelectorAll('.subject-row')).map(r=>{ const inp=r.querySelectorAll('input,select'); return {name:inp[0].value,teacherId:inp[1].value,fee:parseFloat(inp[2].value)||0,remaining:parseFloat(inp[3].value)||0,payments:r.payments||[]}; }).filter(s=>s.name);
-  if(!name||!phone){ alert('الاسم والهاتف مطلوبان'); return; }
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const school = document.getElementById('school').value.trim();
+  const stage = stageSelectForm.value;
+  const group = groupSelectForm.value;
+  const totalFees = parseFloat(document.getElementById('totalFees').value)||0;
+  const note = document.getElementById('note').value.trim();
+  const subjects = Array.from(subjectsContainer.querySelectorAll('.subject-row')).map(r=>{
+    const inputs = r.querySelectorAll('input,select'); return { name:inputs[0].value, teacherId:inputs[1].value, fee:parseFloat(inputs[2].value)||0, remaining:parseFloat(inputs[3].value)||0, payments:r.payments||[] };
+  }).filter(s=>s.name);
+  if(!name||!phone){ alert('الاسم ورقم الهاتف مطلوب'); return; }
   if(subjects.length===0){ alert('أضف مادة واحدة على الأقل'); return; }
+  const computedTotal = subjects.reduce((a,s)=>a+(s.fee||0),0);
+  const finalTotal = totalFees>0?totalFees:computedTotal;
   try{
-    await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
-    alert('تم حفظ الطالب'); studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees(); loadStudents();
+    await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees:finalTotal,note,subjects,createdAt:new Date()});
+    alert('تم حفظ الطالب بنجاح'); studentForm.reset(); subjectsContainer.innerHTML=''; loadStudents();
   }catch(e){ console.error(e); alert('خطأ أثناء الحفظ'); }
 });
 
-/* تحميل الطلاب وعرض الجدول */
+/* --- Load students --- */
 async function loadStudents(filter={}){
-  try{
-    const q=query(collection(db,'students'),orderBy('createdAt','desc'));
-    const snap=await getDocs(q); studentsCache=[]; studentsTableBody.innerHTML='';
-    snap.forEach(d=>studentsCache.push({id:d.id,...d.data()}));
-    let filtered=studentsCache;
-    if(filter.stage) filtered=filtered.filter(s=>s.stage===filter.stage);
-    if(filter.group) filtered=filtered.filter(s=>s.group===filter.group);
-    if(searchInput.value.trim()) filtered=filtered.filter(s=>s.name.includes(searchInput.value)||s.phone.includes(searchInput.value));
-    filtered.forEach(s=>{
-      const tr=document.createElement('tr');
-      const subjectsHtml=(s.subjects||[]).map(sub=>{ const paid=(sub.payments||[]).reduce((a,p)=>a+(p.amount||0),0); const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid); const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-'; return `${sub.name} — ${teacherName} : ${sub.fee} / ${remaining}`; }).join('<br>');
-      const totalPaid=(s.subjects||[]).reduce((a,sub)=>a+((sub.payments||[]).reduce((x,p)=>x+(p.amount||0),0)),0);
-      const totalRemaining=(s.totalFees||0)-totalPaid;
-      tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${subjectsHtml}</td><td>${s.totalFees} / ${totalRemaining}</td>
-        <td><button class="btn small" onclick="showDetails('${s.id}')">عرض</button></td>`;
-      studentsTableBody.appendChild(tr);
-    });
-    totalCount.textContent=filtered.length;
-  }catch(e){ console.error('loadStudents',e); }
+  const snap = await getDocs(query(collection(db,'students'),orderBy('createdAt','desc')));
+  studentsCache=[]; studentsTableBody.innerHTML='';
+  snap.forEach(d=>studentsCache.push({id:d.id,...d.data()}));
+  let filtered = studentsCache;
+  if(filter.stage) filtered = filtered.filter(s=>s.stage===filter.stage);
+  if(filter.group) filtered = filtered.filter(s=>s.group===filter.group);
+  filtered.forEach(s=>{
+    const tr=document.createElement('tr');
+    const subjectsHtml=(s.subjects||[]).map(sub=>{ const paid=(sub.payments||[]).reduce((a,p)=>a+p.amount,0); const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid); const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-'; return `${sub.name} — ${teacherName} <br> إجمالي:${sub.fee} - مدفوع:${paid} - متبقي:${remaining}`; }).join('<hr style="border:none;border-top:1px dashed #ddd;margin:8px 0">');
+    tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${subjectsHtml}</td>
+      <td>
+        <button class="btn small" data-id="${s.id}" data-action="view">🔍 عرض</button>
+        <button class="btn small" data-id="${s.id}" data-action="edit">✏️ تعديل</button>
+        <button class="btn warn small" data-id="${s.id}" data-action="delete">🗑️ حذف</button>
+      </td>`;
+    studentsTableBody.appendChild(tr);
+    tr.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',handleRowAction));
+  });
+  totalCount.innerText=filtered.length;
 }
 
-/* Modal */
-window.showDetails=async function(id){
-  const s=studentsCache.find(x=>x.id===id); if(!s) return alert('لم يتم العثور على الطالب');
-  modalTitle.textContent=s.name;
-  modalBody.innerHTML=`<p><strong>الهاتف:</strong> ${s.phone}</p><p><strong>العنوان:</strong> ${s.address}</p><p><strong>المدرسة:</strong> ${s.school}</p><p><strong>المرحلة:</strong> ${s.stage}</p><p><strong>الكروب:</strong> ${s.group}</p><hr>
-  <strong>المواد:</strong>
-  ${(s.subjects||[]).map(sub=>{ const paid=(sub.payments||[]).reduce((a,p)=>a+(p.amount||0),0); const remaining=sub.remaining??Math.max(0,(sub.fee||0)-paid); const teacherName=(teachers.find(t=>t.id===sub.teacherId)||{}).name||'-'; return `<p>${sub.name} — ${teacherName} : إجمالي ${sub.fee}, مدفوع ${paid}, متبقي ${remaining}</p>`; }).join('')}<hr>
-  <strong>ملاحظة:</strong> ${s.note||'-'}`;
+/* --- Row actions --- */
+async function handleRowAction(e){
+  const id=e.currentTarget.dataset.id;
+  const action=e.currentTarget.dataset.action;
+  if(action==='view') return showStudent(id);
+  if(action==='edit') return editStudent(id);
+  if(action==='delete'){ if(confirm('هل تريد حذف الطالب؟')){ await deleteDoc(doc(db,'students',id)); loadStudents(); } }
+}
+
+/* --- Edit student --- */
+async function editStudent(id){
+  const snap=await getDoc(doc(db,'students',id));
+  if(!snap.exists()) return alert('الطالب غير موجود');
+  const s=snap.data();
+  document.getElementById('name').value=s.name;
+  document.getElementById('phone').value=s.phone;
+  document.getElementById('address').value=s.address;
+  document.getElementById('school').value=s.school;
+  stageSelectForm.value=s.stage;
+  groupSelectForm.value=s.group;
+  document.getElementById('totalFees').value=s.totalFees||0;
+  document.getElementById('note').value=s.note||'';
+  subjectsContainer.innerHTML='';
+  (s.subjects||[]).forEach(sub=>createSubjectRow(sub));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* --- Show student modal --- */
+async function showStudent(studentId){
+  const docRef = doc(db,'students',studentId);
+  const snap = await getDoc(docRef);
+  if(!snap.exists()) return alert('الطالب غير موجود');
+  const student = snap.data();
+  modalTitle.textContent = `استمارة الطالب - ${student.name}`;
+  modalBody.innerHTML = `
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px">
+      <div style="flex:1">
+        <h3>معلومات الطالب</h3>
+        <p><strong>الاسم:</strong> ${student.name}</p>
+        <p><strong>الهاتف:</strong> ${student.phone}</p>
+        <p><strong>العنوان:</strong> ${student.address||'-'}</p>
+        <p><strong>المدرسة:</strong> ${student.school||'-'}</p>
+        <p><strong>المرحلة:</strong> ${student.stage||'-'}</p>
+        <p><strong>الكروب:</strong> ${student.group||'-'}</p>
+      </div>
+      <div style="flex:1">
+        <h3>القسم المالي</h3>
+        <p><strong>إجمالي الأقساط:</strong> ${student.totalFees||0}</p>
+        <p><strong>إجمالي المدفوع:</strong> ${student.subjects.reduce((a,s)=>a+(s.payments?.reduce((x,p)=>x+p.amount,0)||0),0)}</p>
+        <p><strong>المتبقي:</strong> ${student.subjects.reduce((a,s)=>a+((s.fee||0)-(s.payments?.reduce((x,p)=>x+p.amount,0)||0)),0)}</p>
+      </div>
+    </div>
+    <hr>
+    <h3>الدفعات حسب المواد</h3>
+    <div id="modalSubjectsContainer" style="display:flex;flex-direction:column;gap:8px"></div>
+  `;
+  const modalSubjectsContainer = modalBody.querySelector('#modalSubjectsContainer');
+  student.subjects.forEach((sub,index)=>{
+    const totalPaid = sub.payments?.reduce((a,p)=>a+(p.amount||0),0)||0;
+    const remaining = (sub.fee||0)-totalPaid;
+    const div = document.createElement('div');
+    div.className='subject-card';
+    div.innerHTML = `
+      <strong>${sub.name}</strong> — إجمالي: ${sub.fee||0} - مدفوع: ${totalPaid} - متبقي: ${remaining}
+      <button class="btn small">💰 دفعة</button>
+      <div style="font-size:12px;margin-top:4px">
+        ${sub.payments?.map(p=>`<div>الدفعة: ${p.amount} - التاريخ: ${p.date}</div>`).join('')||'<em>لا توجد دفعات</em>'}
+      </div>
+    `;
+    const payBtn = div.querySelector('button');
+    payBtn.addEventListener('click',async ()=>{
+      const amt = parseFloat(prompt(`أدخل مبلغ الدفعة لمادة: ${sub.name}`));
+      if(isNaN(amt)||amt<=0) return alert('مبلغ غير صالح');
+      sub.payments = sub.payments||[];
+      sub.payments.push({amount:amt,date:new Date().toLocaleDateString()});
+      await updateDoc(doc(db,'students',studentId),{subjects:student.subjects});
+      showStudent(studentId);
+    });
+    modalSubjectsContainer.appendChild(div);
+  });
   modal.classList.add('open');
 }
 
 closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
-printStudentBtn.addEventListener('click',()=>{ const w=window.open(); w.document.write(`<h3>${instituteName.textContent}</h3><img src="${instituteLogo.src}" style="height:50px"/><hr>`+modalBody.innerHTML); w.print(); });
 
-applyFiltersBtn.addEventListener('click',()=>{ loadStudents({stage:filterSubject.value,group:filterGroup.value}); });
-searchInput.addEventListener('input',()=>{ loadStudents({stage:filterSubject.value,group:filterGroup.value}); });
-printListBtn.addEventListener('click',()=>{ window.print(); });
+/* --- Print student --- */
+printStudentBtn.addEventListener('click',()=>{
+  const content = modalBody.innerHTML;
+  const printWin = window.open('','_blank','width=900,height=700');
+  printWin.document.write(`
+    <html dir="rtl"><head>
+    <title>استمارة الطالب</title>
+    <style>
+      body{font-family:'Cairo',sans-serif;padding:20px;color:#102027;}
+      h3{border-bottom:1px solid #ddd;padding-bottom:4px;}
+      .subject-card{border:1px solid #d6dde9;padding:6px;margin-bottom:6px;border-radius:6px;}
+    </style></head><body>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div><h2>${instituteInfo.name||'اسم المعهد'}</h2></div>
+      <div>${instituteInfo.logo?`<img src="${instituteInfo.logo}" style="height:60px">`:''}</div>
+    </div>
+    ${content}
+    </body></html>
+  `);
+  printWin.document.close(); printWin.focus(); printWin.print(); printWin.close();
+});
 
-clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees(); });
+/* --- Filters --- */
+applyFiltersBtn.addEventListener('click',()=>loadStudents({stage:stageSelect.value,group:groupSelectTop.value}));
+printListBtn.addEventListener('click',()=>{
+  let html='<table style="width:100%;border-collapse:collapse"><tr><th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد</th></tr>';
+  studentsCache.forEach(s=>{
+    const subjectsHtml=(s.subjects||[]).map(sub=>`${sub.name} إجمالي:${sub.fee} - متبقي:${sub.remaining||0}`).join(', ');
+    html+=`<tr><td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${subjectsHtml}</td></tr>`;
+  });
+  html+='</table>';
+  const printWin = window.open('','_blank');
+  printWin.document.write(`<h2>${instituteInfo.name||'اسم المعهد'}</h2>${html}`);
+  printWin.document.close(); printWin.focus(); printWin.print(); printWin.close();
+});
+
+/* --- Clear form --- */
+clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; });
+
 </script>
 </body>
 </html>
