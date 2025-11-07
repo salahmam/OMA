@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>إعدادات المعهد</title>
 <style>
-:root{
-  --primary:#004aad;
-  --accent:#ffcc33;
-}
+:root{--primary:#004aad;--accent:#ffcc33;}
 body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
 header{display:flex;align-items:center;gap:12px;background:var(--primary);color:#fff;padding:12px 18px;font-size:20px;font-weight:700;cursor:pointer;}
 header img{height:40px;border-radius:5px;}
@@ -106,9 +103,28 @@ th{background:var(--primary);color:#fff;}
   </div>
 </div>
 
-<!-- إدارة المستخدمين -->
+<!-- إنشاء مستخدم -->
 <div class="card">
-  <strong>المستخدمون (طلاب وأساتذة)</strong>
+  <strong>إضافة مستخدم جديد</strong>
+  <form id="userForm">
+    <label>نوع المستخدم</label>
+    <select id="userType">
+      <option value="student">طالب</option>
+      <option value="teacher">أستاذ</option>
+    </select>
+    <label>الاسم</label>
+    <input type="text" id="userName" placeholder="اسم المستخدم">
+    <label>البريد الإلكتروني</label>
+    <input type="email" id="userEmail" required>
+    <label>كلمة المرور</label>
+    <input type="password" id="userPassword" required>
+    <button type="submit" class="btn">✅ إنشاء المستخدم</button>
+  </form>
+</div>
+
+<!-- قائمة المستخدمين -->
+<div class="card">
+  <strong>قائمة المستخدمين</strong>
   <div class="filters">
     <input type="text" id="searchUser" placeholder="بحث بالاسم...">
     <select id="filterType"><option value="">فلترة حسب النوع</option><option value="student">طالب</option><option value="teacher">أستاذ</option></select>
@@ -126,14 +142,14 @@ th{background:var(--primary);color:#fff;}
 <script type="module">
 // 🔹 Firebase إعداد
 import { db, auth } from "./firebase-config.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { onAuthStateChanged, createUserWithEmailAndPassword, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { setDoc, doc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // ----- تحقق تسجيل الدخول -----
 onAuthStateChanged(auth, user=>{
   if(!user){
     alert("⚠️ يجب تسجيل الدخول للمتابعة");
-    window.location.href="login.html"; // رابط صفحة تسجيل الدخول
+    window.location.href="login.html";
   }else{
     initPage();
   }
@@ -179,6 +195,11 @@ const branchesTableBody = document.querySelector("#branchesTable tbody");
 let branchesData = [];
 
 // المستخدمون
+const userForm = document.getElementById("userForm");
+const userTypeSelect = document.getElementById("userType");
+const userNameInput = document.getElementById("userName");
+const userEmailInput = document.getElementById("userEmail");
+const userPasswordInput = document.getElementById("userPassword");
 const usersTableBody = document.querySelector("#usersTable tbody");
 const searchUserInput = document.getElementById("searchUser");
 const filterTypeSelect = document.getElementById("filterType");
@@ -186,90 +207,107 @@ let usersData = [];
 
 // ----- وظائف الصفحة -----
 async function initPage(){
-  await loadInstituteInfo();
-  await loadSocial();
   await loadUsers();
   await loadBranches();
   applyColors();
-
-  // معاينة الشعار والاسم مباشرة
-  logoInput.addEventListener("input",()=>{instituteLogoImg.src=logoInput.value;});
-  nameInput.addEventListener("input",()=>{instituteNameSpan.textContent=nameInput.value;});
-  for(const [key,input] of Object.entries(socialInputs)){input.addEventListener("input", renderSocial);}
 }
 
-// تحميل بيانات المعهد
-async function loadInstituteInfo(){
-  try{
-    const docRef = doc(db,"settings","info");
-    const docSnap = await getDocs(collection(db,"settings"));
-    // يمكن إضافة الكود لتحميل info موجود من Firestore
-  }catch(err){console.warn(err);}
-}
-
-// حفظ معلومات المعهد
-saveInstituteBtn.addEventListener("click",async()=>{
-  await setDoc(doc(db,"settings","info"),{
-    name:nameInput.value,
-    logo:logoInput.value,
-    address:addressInput.value,
-    phone:phoneInput.value,
-    email:emailInput.value
-  });
-  alert("✅ تم حفظ معلومات المعهد");
-});
-
-// وظائف التواصل
-async function loadSocial(){
-  renderSocial();
-}
-function renderSocial(){
-  socialDisplay.innerHTML="";
-  for(const [key,input] of Object.entries(socialInputs)){
-    if(input.value){
-      const a = document.createElement("a");
-      a.href = input.value;
-      a.target="_blank";
-      const img = document.createElement("img");
-      img.src=`./icons/${key}.svg`;
-      a.appendChild(img);
-      socialDisplay.appendChild(a);
-    }
-  }
-}
-saveSocialBtn.addEventListener("click",async()=>{
-  const data = {};
-  for(const [key,input] of Object.entries(socialInputs)){data[key]=input.value;}
-  await setDoc(doc(db,"settings","social"),data);
-  alert("✅ تم حفظ الروابط");
-});
-
-// الألوان
+// معاينة الألوان
 function applyColors(){
   document.documentElement.style.setProperty("--primary",primaryColorInput.value);
   document.documentElement.style.setProperty("--accent",accentColorInput.value);
 }
 primaryColorInput.addEventListener("input",applyColors);
 accentColorInput.addEventListener("input",applyColors);
-saveColorsBtn.addEventListener("click",async()=>{
-  await setDoc(doc(db,"settings","colors"),{primary:primaryColorInput.value,accent:accentColorInput.value});
-  alert("✅ تم حفظ الألوان");
+
+// ----- إدارة المستخدمين -----
+// إنشاء مستخدم جديد
+userForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const type = userTypeSelect.value;
+  const name = userNameInput.value.trim();
+  const email = userEmailInput.value.trim();
+  const password = userPasswordInput.value.trim();
+  if(!name || !email || !password){alert("اكمل جميع الحقول"); return;}
+  try{
+    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    const uid = userCred.user.uid;
+    await setDoc(doc(db, type==="student"?"students":"teachers", uid), {name,email,createdAt:new Date().toISOString()});
+    usersData.push({id:uid,type,name,email});
+    renderUsers();
+    userForm.reset();
+    alert("✅ تم إنشاء المستخدم بنجاح!");
+  }catch(err){console.error(err);alert("❌ حدث خطأ: "+err.message);}
 });
 
-// النسب
-savePercentBtn.addEventListener("click",async()=>{
-  const t = parseFloat(teacherPercentInput.value)||0;
-  const i = parseFloat(institutePercentInput.value)||0;
-  if(t+i!==100){alert("مجموع النسب يجب أن يكون 100%"); return;}
-  await setDoc(doc(db,"settings","percentages"),{teacher:t,institute:i});
-  alert(`✅ تم حفظ النسب: الأستاذ ${t}% - المعهد ${i}%`);
-});
+// تحميل المستخدمين
+async function loadUsers(){
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  usersData = [];
+  studentsSnap.forEach(s=>usersData.push({id:s.id,type:"student",name:s.data().name,email:s.data().email||""}));
+  teachersSnap.forEach(t=>usersData.push({id:t.id,type:"teacher",name:t.data().name,email:t.data().email||""}));
+  renderUsers();
+}
 
-// الفروع
+// عرض المستخدمين مع تعديل البريد وكلمة المرور
+function renderUsers(){
+  const search = searchUserInput.value.toLowerCase();
+  const filter = filterTypeSelect.value;
+  usersTableBody.innerHTML="";
+  usersData.filter(u=>(!filter||u.type===filter)&&(!search||u.name.toLowerCase().includes(search)))
+  .forEach(u=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML=`<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
+      <td>
+        <button class="btn" onclick="editUser('${u.id}','${u.type}')">✏️ تعديل</button>
+        <button class="btn warn" onclick="deleteUser('${u.id}','${u.type}')">🗑️ حذف</button>
+      </td>`;
+    usersTableBody.appendChild(tr);
+  });
+}
+
+// تعديل البريد وكلمة المرور
+window.editUser = async function(id,type){
+  const user = usersData.find(u=>u.id===id);
+  if(!user) return;
+  const newEmail = prompt("أدخل البريد الإلكتروني الجديد:",user.email);
+  if(!newEmail) return;
+  const newPassword = prompt("أدخل كلمة المرور الجديدة (اتركه فارغ إذا لم تريد تغييره):","");
+  try{
+    // تحديث البريد في Firestore
+    await setDoc(doc(db,type==="student"?"students":"teachers",id),{...user,email:newEmail},{merge:true});
+    user.email = newEmail;
+    renderUsers();
+    alert("✅ تم تحديث البريد بنجاح!");
+    // تحديث كلمة المرور في Firebase Auth إذا تم إدخال كلمة
+    if(newPassword){
+      const userAuth = auth.currentUser;
+      await updatePassword(userAuth,newPassword);
+      alert("✅ تم تحديث كلمة المرور بنجاح!");
+    }
+  }catch(err){console.error(err);alert("❌ حدث خطأ: "+err.message);}
+}
+
+// حذف المستخدم
+window.deleteUser = async function(id,type){
+  if(confirm("هل تريد حذف المستخدم؟")){
+    if(type==="student") await deleteDoc(doc(db,"students",id));
+    else await deleteDoc(doc(db,"teachers",id));
+    usersData = usersData.filter(u=>u.id!==id);
+    renderUsers();
+  }
+}
+
+// البحث والفلترة
+searchUserInput.addEventListener("input", renderUsers);
+filterTypeSelect.addEventListener("change", renderUsers);
+
+// ----- الفروع -----
 async function loadBranches(){
   try{
     const docRef = doc(db,"settings","branches");
-    // تحميل branchesData من Firestore
+    // هنا يمكن تحميل branchesData من Firestore
   }catch(err){console.warn(err);}
 }
 function renderBranches(){
@@ -294,40 +332,6 @@ window.deleteBranch = async function(i){
     renderBranches();
   }
 }
-
-// المستخدمون
-async function loadUsers(){
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const teachersSnap = await getDocs(collection(db,"teachers"));
-  usersData = [];
-  studentsSnap.forEach(s=>usersData.push({id:s.id,type:"student",name:s.data().name,email:s.data().email||""}));
-  teachersSnap.forEach(t=>usersData.push({id:t.id,type:"teacher",name:t.data().name,email:t.data().email||""}));
-  renderUsers();
-}
-function renderUsers(){
-  const search = searchUserInput.value.toLowerCase();
-  const filter = filterTypeSelect.value;
-  usersTableBody.innerHTML="";
-  usersData.filter(u=>(!filter||u.type===filter)&&(!search||u.name.toLowerCase().includes(search)))
-  .forEach(u=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML=`<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
-      <td>
-        <button class="btn warn" onclick="deleteUser('${u.id}','${u.type}')">🗑️ حذف</button>
-      </td>`;
-    usersTableBody.appendChild(tr);
-  });
-}
-window.deleteUser = async function(id,type){
-  if(confirm("هل تريد حذف المستخدم؟")){
-    if(type==="student") await deleteDoc(doc(db,"students",id));
-    else if(type==="teacher") await deleteDoc(doc(db,"teachers",id));
-    usersData = usersData.filter(u=>u.id!==id);
-    renderUsers();
-  }
-}
-searchUserInput.addEventListener("input", renderUsers);
-filterTypeSelect.addEventListener("change", renderUsers);
 
 // العودة للوحة التحكم عند الضغط على الرأس
 header.addEventListener("click",()=>{window.location.href="dashboard.html";});
