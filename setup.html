@@ -50,7 +50,7 @@ pre {
 
 <script type="module">
 import { db } from "https://salahmam.github.io/OMA/firebase-config.js";
-import { setDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { setDoc, doc, getDocs, collection } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const log = document.getElementById("log");
 const setupBtn = document.getElementById("setupBtn");
@@ -60,10 +60,27 @@ function addLog(msg){
   log.scrollTop = log.scrollHeight;
 }
 
+async function checkFirebaseConnection() {
+  addLog("⏳ التحقق من الاتصال بـ Firebase...");
+  try {
+    await getDocs(collection(db, "settings"));
+    addLog("✅ تم الاتصال بنجاح بـ Firestore.\n");
+    return true;
+  } catch (error) {
+    addLog("❌ فشل الاتصال بـ Firestore: " + error.message);
+    setupBtn.disabled = true;
+    setupBtn.style.background = "#d32f2f";
+    return false;
+  }
+}
+
 setupBtn.addEventListener("click", async ()=>{
+  const connected = await checkFirebaseConnection();
+  if (!connected) return;
+
   setupBtn.disabled = true;
   setupBtn.textContent = "⏳ جاري التنفيذ...";
-  addLog("🔹 بدء إنشاء المجموعات الأساسية...");
+  addLog("🔹 بدء إنشاء المجموعات الأساسية...\n");
 
   try {
     // 📘 Collection: students
@@ -126,6 +143,9 @@ setupBtn.addEventListener("click", async ()=>{
     setupBtn.textContent = "🚀 إعادة المحاولة";
   }
 });
+
+// التحقق من الاتصال مباشرة عند تحميل الصفحة
+checkFirebaseConnection();
 </script>
 
 </body>
