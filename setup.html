@@ -3,241 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة مشروع OMA — المالية والمصاريف</title>
-<style>
-body { font-family:'Cairo',sans-serif; padding:20px; background:#f5f9ff; color:#102027; }
-h2,h3 { margin-top:0; }
-input,textarea,select,button { font-family:'Cairo',sans-serif; font-size:14px; margin:4px 0; padding:6px 10px; border-radius:6px; border:1px solid #ccc; }
-button { background:#004aad; color:#fff; cursor:pointer; border:none; }
-button:hover { background:#003a8c; }
-fieldset { border:1px solid #ddd; padding:10px; margin-bottom:15px; border-radius:8px; }
-legend { font-weight:bold; }
-#log { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; white-space:pre-wrap; height:250px; }
-.addBtn { background:#ff9800; margin-left:4px; }
-</style>
+<title>تهيئة النظام - OMA</title>
 </head>
 <body>
-
-<h2>🚀 تهيئة مشروع OMA — المالية والمصاريف</h2>
-<p>املأ البيانات الأساسية واضغط "ابدأ التهيئة" لإنشاء المستندات والدفعات التجريبية.</p>
-
-<fieldset>
-<legend>معلومات المعهد</legend>
-<label>اسم المعهد: <input type="text" id="instituteName" value="معهد OMA"></label><br>
-<label>البريد الإلكتروني: <input type="email" id="instituteEmail"></label><br>
-<label>الهاتف: <input type="text" id="institutePhone"></label><br>
-<label>العنوان: <input type="text" id="instituteAddress"></label><br>
-<label>رابط الشعار: <input type="text" id="instituteLogo"></label>
-</fieldset>
-
-<fieldset>
-<legend>المدرسون</legend>
-<div id="teachersList">
-  <div>
-    <input type="text" placeholder="اسم المدرس" class="teacherInput">
-    <button type="button" class="addBtn" onclick="addTeacherInput(this)">+</button>
-  </div>
-</div>
-</fieldset>
-
-<fieldset>
-<legend>الطلاب</legend>
-<div id="studentsList">
-  <div>
-    <input type="text" placeholder="اسم الطالب" class="studentInput">
-    <input type="text" placeholder="المواد مفصولة بفواصل" class="subjectsInput">
-    <button type="button" class="addBtn" onclick="addStudentInput(this)">+</button>
-  </div>
-</div>
-</fieldset>
-
-<fieldset>
-<legend>المصاريف الأولية</legend>
-<div id="expensesList">
-  <div>
-    <input type="text" placeholder="اسم المصروف" class="expenseInput">
-    <input type="number" placeholder="المبلغ" class="amountInput">
-    <button type="button" class="addBtn" onclick="addExpenseInput(this)">+</button>
-  </div>
-</div>
-</fieldset>
-
-<button id="initBtn">ابدأ التهيئة</button>
-<pre id="log"></pre>
+<h2>جارٍ تهيئة النظام...</h2>
+<p id="status"></p>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, collection, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
-  storageBucket: "oma0-33cc0.appspot.com",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
   messagingSenderId: "899300774863",
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
-const log = document.getElementById("log");
-const initBtn = document.getElementById("initBtn");
 
-function addLog(msg){ log.textContent += msg + "\n"; }
+const email = "Salahalkaleefa@gmail.com";
+const password = "123456salah";
 
-// --- مدخلات ديناميكية ---
-window.addTeacherInput = function(btn){
-  const div = document.createElement("div");
-  div.innerHTML = `<input type="text" placeholder="اسم المدرس" class="teacherInput"> <button type="button" class="addBtn" onclick="addTeacherInput(this)">+</button>`;
-  btn.parentNode.after(div);
-};
-window.addStudentInput = function(btn){
-  const div = document.createElement("div");
-  div.innerHTML = `<input type="text" placeholder="اسم الطالب" class="studentInput"> <input type="text" placeholder="المواد مفصولة بفواصل" class="subjectsInput"> <button type="button" class="addBtn" onclick="addStudentInput(this)">+</button>`;
-  btn.parentNode.after(div);
-};
-window.addExpenseInput = function(btn){
-  const div = document.createElement("div");
-  div.innerHTML = `<input type="text" placeholder="اسم المصروف" class="expenseInput"> <input type="number" placeholder="المبلغ" class="amountInput"> <button type="button" class="addBtn" onclick="addExpenseInput(this)">+</button>`;
-  btn.parentNode.after(div);
-};
+const statusEl = document.getElementById("status");
 
-// --- إنشاء المستندات الأساسية ---
-async function createSettings(info){
-  const colorsRef = doc(db,"settings","colors");
-  const infoRef = doc(db,"settings","info");
-  const instituteRef = doc(db,"settings","institute");
-  const percentagesRef = doc(db,"settings","percentages");
+async function initAdmin() {
+  try {
+    // تحقق إذا المستخدم موجود بالفعل
+    const tempUser = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ idToken: "" })
+    }).catch(()=>null);
 
-  const defaults = [
-    [colorsRef, { primary:"#004aad", accent:"#ffcc33", bg:"#f5f9ff", card:"#fff" }],
-    [infoRef, { name:info.name, logo:info.logo, address:info.address, email:info.email, phone:info.phone }],
-    [instituteRef, { name:info.name, logo:info.logo, address:info.address, email:info.email, phone:info.phone }],
-    [percentagesRef, { teacher:60, institute:40 }]
-  ];
+    // حاول إنشاء المستخدم
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
 
-  for(const [ref,data] of defaults){
-    if(!(await getDoc(ref)).exists()){
-      await setDoc(ref,data);
-      addLog(`✅ تم إنشاء ${ref.path}`);
-    } else {
-      addLog(`⚠️ ${ref.path} موجود مسبقًا`);
-    }
-  }
-}
-
-// --- إنشاء المدرسين ---
-async function createTeachers(teachers){
-  const col = collection(db,"teachers");
-  for(const t of teachers){
-    if(t.trim()==="") continue;
-    await addDoc(col,{name:t, subjects:[], createdAt: new Date()});
-    addLog(`✅ تم إنشاء مدرس: ${t}`);
-  }
-}
-
-// --- إنشاء الطلاب ---
-async function createStudents(students){
-  const col = collection(db,"students");
-  for(const s of students){
-    if(!s.name.trim()) continue;
-    await addDoc(col,{
-      name: s.name,
-      subjects: s.subjects.map(sub => ({ name: sub.trim(), fee: Math.floor(Math.random()*500+100), payments: [] })),
-      createdAt: new Date()
-    });
-    addLog(`✅ تم إنشاء طالب: ${s.name}`);
-  }
-}
-
-// --- إنشاء المصاريف ---
-async function createExpenses(expenses){
-  const col = collection(db,"expenses");
-  const today = new Date().toISOString().split('T')[0];
-  for(const e of expenses){
-    if(e.name.trim()==="") continue;
-    await addDoc(col,{
-      description: e.name,
-      amount: Number(e.amount || 0),
-      date: today,
-      notes:"",
+    // أضف بيانات المستخدم في Firestore
+    await setDoc(doc(db, "users", uid), {
+      type: "admin",
+      name: "مسؤول الموقع",
       createdAt: new Date().toISOString()
     });
-    addLog(`✅ تم إنشاء مصروف: ${e.name}`);
-  }
-}
 
-// --- إنشاء دفعات مع احتساب النسب ---
-async function createSamplePayments(students, teachers){
-  const percentagesRef = doc(db,"settings","percentages");
-  const percSnap = await getDoc(percentagesRef);
-  const perc = percSnap.exists() ? percSnap.data() : { teacher:60, institute:40 };
+    statusEl.textContent = `تم إنشاء مستخدم المسؤول بنجاح! يمكنك الآن تسجيل الدخول.`;
+    console.log("Admin UID:", uid);
 
-  const paymentsCol = collection(db,"payments");
-  for(const s of students){
-    if(!s.name.trim()) continue;
-    for(const sub of s.subjects){
-      if(!sub.name.trim()) continue;
-      const teacherName = teachers[Math.floor(Math.random()*teachers.length)] || "مدرس افتراضي";
-      const amount = sub.fee || Math.floor(Math.random()*500+100);
-      const teacherShare = amount * (perc.teacher/100);
-      const instituteShare = amount * (perc.institute/100);
-
-      await addDoc(paymentsCol,{
-        studentName: s.name,
-        subject: sub.name,
-        teacherName,
-        amount,
-        teacherShare,
-        instituteShare,
-        date: new Date().toISOString().slice(0,10)
-      });
-
-      addLog(`✅ دفعة للطالب ${s.name} في مادة ${sub.name} مع ${teacherName} — المجموع: ${amount} (المدرس: ${teacherShare}, المعهد: ${instituteShare})`);
+  } catch (err) {
+    if(err.code === "auth/email-already-in-use"){
+      statusEl.textContent = "المستخدم موجود مسبقًا. يمكنك تسجيل الدخول مباشرة.";
+    } else {
+      statusEl.textContent = "حدث خطأ أثناء إنشاء المستخدم: " + err.message;
+      console.error(err);
     }
   }
 }
 
-// --- زر التهيئة ---
-initBtn.addEventListener("click", async()=>{
-  initBtn.disabled = true;
-  initBtn.textContent = "⏳ جاري التهيئة...";
-
-  try{
-    const info = {
-      name: document.getElementById("instituteName").value,
-      email: document.getElementById("instituteEmail").value,
-      phone: document.getElementById("institutePhone").value,
-      address: document.getElementById("instituteAddress").value,
-      logo: document.getElementById("instituteLogo").value
-    };
-
-    const teachers = Array.from(document.querySelectorAll(".teacherInput")).map(i=>i.value);
-    const students = Array.from(document.querySelectorAll(".studentInput")).map((i,j)=>({
-      name:i.value,
-      subjects:(document.querySelectorAll(".subjectsInput")[j].value.split(",").map(s=>s.trim()))
-    }));
-    const expenses = Array.from(document.querySelectorAll(".expenseInput")).map((i,j)=>({
-      name:i.value,
-      amount: document.querySelectorAll(".amountInput")[j].value || 0
-    }));
-
-    await createSettings(info);
-    await createTeachers(teachers);
-    await createStudents(students);
-    await createExpenses(expenses);
-    await createSamplePayments(students, teachers);
-
-    addLog("\n🎉 تم تهيئة جميع المستندات الأساسية والدفعات بنجاح!");
-    initBtn.textContent = "تم الانتهاء";
-  }catch(e){
-    addLog("❌ خطأ أثناء التهيئة: "+e.message);
-    initBtn.disabled = false;
-    initBtn.textContent = "أعد المحاولة";
-  }
-});
+initAdmin();
 </script>
-
 </body>
 </html>
