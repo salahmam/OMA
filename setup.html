@@ -3,57 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة قاعدة البيانات - OMA</title>
+<title>تهيئة إعدادات Firebase - OMA</title>
 <style>
-body { font-family: 'Cairo', sans-serif; background: #f5f9ff; color: #102027; padding: 30px; direction: rtl; }
-.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
-button { background: #004aad; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-button:hover { background: #003a8c; }
-pre { background: #eef4ff; padding: 10px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
+body { font-family:'Cairo',sans-serif; padding:30px; background:#f5f9ff; color:#102027; }
+button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; }
+button:hover { background:#003a8c; }
+pre { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; white-space:pre-wrap; }
 </style>
 </head>
 <body>
-<h2>🔧 إعداد قاعدة بيانات OMA (Firestore)</h2>
-<p>اضغط على الزر لإنشاء المجموعات الأساسية.</p>
-<div class="card">
-  <button id="setupBtn">🚀 إنشاء البيانات الأساسية</button>
-  <pre id="log"></pre>
-</div>
+<h2>🚀 تهيئة إعدادات Firebase - OMA</h2>
+<p>اضغط على الزر لإنشاء جميع الحقول الأساسية تلقائيًا.</p>
+<button id="initBtn">ابدأ التهيئة</button>
+<pre id="log"></pre>
 
 <script type="module">
-import { db } from "./firebase-config.js";
-import { setDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+
+// إعداد Firebase لمشروع oma0
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
+};
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
 
 const log = document.getElementById("log");
-const setupBtn = document.getElementById("setupBtn");
+const initBtn = document.getElementById("initBtn");
 
 function addLog(msg){ log.textContent += msg + "\n"; }
 
-setupBtn.addEventListener("click", async ()=>{
-  setupBtn.disabled = true;
-  setupBtn.textContent = "⏳ جاري التنفيذ...";
-  addLog("🔹 بدء إنشاء المجموعات الأساسية...");
+initBtn.addEventListener("click", async()=>{
+  initBtn.disabled = true;
+  initBtn.textContent = "⏳ جاري التهيئة...";
 
   try {
-    await setDoc(doc(db, "students", "example_student"), {name:"أحمد علي",address:"بغداد",phone:"0770000000",level:"المرحلة الأولى",group:"A1",subjects:["رياضيات","علوم"],joinDate:"2025-11-07",fees:500000,installments:[250000,250000],status:"نشط"});
-    addLog("✅ students collection تم إنشاؤه.");
-    await setDoc(doc(db, "teachers", "example_teacher"), {name:"أستاذ كريم",specialty:"رياضيات",phone:"0780000000",salary:800000,percent:60,joinDate:"2025-11-07",address:"البصرة",status:"نشط"});
-    addLog("✅ teachers collection تم إنشاؤه.");
-    await setDoc(doc(db, "users", "admin_sample"), {name:"مدير النظام",email:"admin@oma.com",type:"admin",createdAt:new Date().toISOString()});
-    addLog("✅ users collection تم إنشاؤه.");
-    await setDoc(doc(db, "settings", "percentages"), {teacher:60,institute:40});
-    addLog("✅ settings collection تم إنشاؤه.");
+    // 1️⃣ معلومات المعهد
+    const instituteDoc = doc(db,"settings","institute");
+    if(!(await getDoc(instituteDoc)).exists()){
+      await setDoc(instituteDoc,{name:"اسم المعهد",logo:"",address:"",phone:"",email:""});
+      addLog("✅ تم إنشاء document 'institute'");
+    }
 
-    addLog("\n🎉 تم إنشاء جميع المجموعات بنجاح!");
-    setupBtn.textContent = "✅ تم الإنشاء بنجاح";
-    setupBtn.style.background="#00b67a";
+    // 2️⃣ وسائل التواصل
+    const socialDoc = doc(db,"settings","social");
+    if(!(await getDoc(socialDoc)).exists()){
+      await setDoc(socialDoc,{facebook:"",instagram:"",tiktok:"",telegram:""});
+      addLog("✅ تم إنشاء document 'social'");
+    }
 
-    addLog("\n➡️ سيتم تحويلك إلى لوحة التحكم خلال 3 ثوانٍ...");
-    setTimeout(()=>{window.location.href="dashboard.html";},3000);
+    // 3️⃣ الألوان
+    const colorsDoc = doc(db,"settings","colors");
+    if(!(await getDoc(colorsDoc)).exists()){
+      await setDoc(colorsDoc,{primary:"#004aad",accent:"#ffcc33"});
+      addLog("✅ تم إنشاء document 'colors'");
+    }
+
+    // 4️⃣ نسب الأستاذ والمعهد
+    const percentagesDoc = doc(db,"settings","percentages");
+    if(!(await getDoc(percentagesDoc)).exists()){
+      await setDoc(percentagesDoc,{teacher:60,institute:40});
+      addLog("✅ تم إنشاء document 'percentages'");
+    }
+
+    // 5️⃣ الفروع
+    const branchesDoc = doc(db,"settings","branches");
+    if(!(await getDoc(branchesDoc)).exists()){
+      await setDoc(branchesDoc,{list:[]});
+      addLog("✅ تم إنشاء document 'branches'");
+    }
+
+    // 6️⃣ مستخدم تجريبي (Admin)
+    const usersDoc = doc(db,"users","admin");
+    if(!(await getDoc(usersDoc)).exists()){
+      await setDoc(usersDoc,{name:"مدير النظام",type:"admin",email:"admin@oma.com",createdAt:new Date().toISOString()});
+      addLog("✅ تم إنشاء مستخدم تجريبي 'admin'");
+    }
+
+    addLog("\n🎉 تم تهيئة جميع الحقول بنجاح!");
+    initBtn.textContent = "✅ تم الانتهاء";
   } catch(e){
-    addLog("❌ خطأ أثناء الإنشاء: " + e.message);
-    setupBtn.disabled=false;
-    setupBtn.textContent="🚀 إعادة المحاولة";
+    addLog("❌ خطأ أثناء التهيئة: "+e.message);
+    initBtn.disabled = false;
+    initBtn.textContent = "أعد المحاولة";
   }
 });
 </script>
