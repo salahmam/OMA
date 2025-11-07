@@ -1,128 +1,163 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>إدارة المعاهد - OMA</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>إدارة المعاهد - نظام OMA</title>
 <style>
-  body{font-family:'Cairo',sans-serif;background:#f5f9ff;padding:20px;color:#102027}
-  header{background:#004aad;color:#fff;padding:12px;border-radius:8px;text-align:center;margin-bottom:20px}
-  .wrap{max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06)}
-  h2{color:#004aad;text-align:center;margin-bottom:20px}
-  label{display:block;margin-top:12px;font-weight:600}
-  input[type=text], input[type=email], input[type=password]{width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;margin-top:4px}
-  button{margin-top:16px;padding:10px 16px;background:#004aad;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
-  table{width:100%;border-collapse:collapse;margin-top:20px}
-  th,td{border:1px solid #ccc;padding:8px;text-align:center}
-  th{background:#004aad;color:#fff}
+  body{font-family:'Cairo',sans-serif;background:#f5f9ff;margin:0;padding:20px;}
+  header{background:#004aad;color:white;text-align:center;padding:15px;font-size:20px;font-weight:bold;border-radius:8px;}
+  .wrap{max-width:900px;margin:20px auto;}
+  .card{background:white;padding:20px;margin-bottom:20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+  .card h3{color:#004aad;margin-top:0;}
+  input,button,select{padding:8px;border-radius:6px;border:1px solid #ccc;margin:4px 0;width:100%;box-sizing:border-box;}
+  button{background:#004aad;color:white;border:none;cursor:pointer;}
+  button:hover{background:#003380;}
+  table{width:100%;border-collapse:collapse;margin-top:12px;}
+  th,td{border:1px solid #ccc;padding:8px;text-align:center;}
+  th{background:#004aad;color:white;}
+  .flex{display:flex;gap:8px;flex-wrap:wrap;}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>إدارة المعاهد</h1>
-</header>
-
+<header>🗂️ إدارة المعاهد - نظام OMA</header>
 <div class="wrap">
-  <h2>إضافة معهد جديد</h2>
-  <form id="addInstituteForm">
-    <label>اسم المعهد</label>
-    <input type="text" id="instName" required placeholder="اسم المعهد">
 
-    <label>إيميل المدير</label>
-    <input type="email" id="instEmail" required placeholder="admin@example.com">
+  <!-- إضافة معهد جديد -->
+  <div class="card">
+    <h3>➕ إضافة معهد جديد</h3>
+    <form id="addInstituteForm">
+      <label>اسم المعهد:</label>
+      <input type="text" id="instName" required />
+      <label>إيميل مدير المعهد:</label>
+      <input type="email" id="instEmail" required />
+      <label>كلمة مرور المدير:</label>
+      <input type="password" id="instPassword" required />
+      <button type="submit">💾 إضافة المعهد</button>
+    </form>
+  </div>
 
-    <label>كلمة المرور</label>
-    <input type="password" id="instPassword" required placeholder="كلمة المرور">
+  <!-- إضافة مسؤول إضافي -->
+  <div class="card">
+    <h3>➕ إضافة مسؤول آخر لمعهد</h3>
+    <form id="addAdminForm">
+      <label>اختر المعهد:</label>
+      <select id="selectInstitute"></select>
+      <label>إيميل المسؤول:</label>
+      <input type="email" id="adminEmail" required />
+      <label>كلمة مرور المسؤول:</label>
+      <input type="password" id="adminPassword" required />
+      <button type="submit">💾 إضافة المسؤول</button>
+    </form>
+  </div>
 
-    <button type="submit">💾 إضافة المعهد</button>
-  </form>
-  <div id="msg" style="margin-top:12px;color:green;"></div>
+  <!-- قائمة المعاهد -->
+  <div class="card">
+    <h3>📋 قائمة المعاهد</h3>
+    <table>
+      <thead>
+        <tr><th>اسم المعهد</th><th>مدير المعهد</th><th>تاريخ الإنشاء</th></tr>
+      </thead>
+      <tbody id="institutesTable"></tbody>
+    </table>
+  </div>
 
-  <h2 style="margin-top:40px">قائمة المعاهد</h2>
-  <table>
-    <thead><tr><th>اسم المعهد</th><th>إيميل المدير</th><th>تاريخ الإنشاء</th></tr></thead>
-    <tbody id="institutesList"></tbody>
-  </table>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, orderBy, query } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-// Firebase configuration
+// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
   projectId: "oma0-33cc0",
   storageBucket: "oma0-33cc0.firebasestorage.app",
   messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const addInstituteForm = document.getElementById('addInstituteForm');
-const msg = document.getElementById('msg');
-const institutesList = document.getElementById('institutesList');
-
-// تأكد أن المسؤول مسجل الدخول
-onAuthStateChanged(auth, user=>{
-  if(!user) window.location.href='login.html';
-  loadInstitutes();
+// 🔐 منع الوصول قبل تسجيل الدخول
+onAuthStateChanged(auth, user => {
+  if(!user) window.location.href = 'login.html';
 });
+
+// عناصر DOM
+const addInstituteForm = document.getElementById('addInstituteForm');
+const instName = document.getElementById('instName');
+const instEmail = document.getElementById('instEmail');
+const instPassword = document.getElementById('instPassword');
+
+const selectInstitute = document.getElementById('selectInstitute');
+const addAdminForm = document.getElementById('addAdminForm');
+const adminEmail = document.getElementById('adminEmail');
+const adminPassword = document.getElementById('adminPassword');
+
+const institutesTable = document.getElementById('institutesTable');
+
+// تحميل قائمة المعاهد
+async function loadInstitutes(){
+  const snap = await getDocs(collection(db,'institutes'));
+  institutesTable.innerHTML = '';
+  selectInstitute.innerHTML = '';
+  snap.forEach(d=>{
+    const data = d.data();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${data.name}</td><td>${data.adminEmail}</td><td>${data.createdAt}</td>`;
+    institutesTable.appendChild(tr);
+
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = data.name;
+    selectInstitute.appendChild(opt);
+  });
+}
 
 // إضافة معهد جديد
 addInstituteForm.addEventListener('submit', async e=>{
   e.preventDefault();
-  const name = document.getElementById('instName').value.trim();
-  const email = document.getElementById('instEmail').value.trim();
-  const password = document.getElementById('instPassword').value.trim();
-  const createdAt = new Date().toISOString();
-
   try{
-    // إنشاء مستخدم Firebase Auth للمدير
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const userId = userCredential.user.uid;
-
-    // إنشاء وثيقة المعهد في Firestore
-    const docRef = await addDoc(collection(db,'institutes'), {
-      name, email, userId, createdAt
+    // إنشاء حساب مدير المعهد
+    const userCred = await createUserWithEmailAndPassword(auth, instEmail.value, instPassword.value);
+    // إضافة المعهد إلى Firestore
+    await addDoc(collection(db,'institutes'),{
+      name: instName.value,
+      adminUid: userCred.user.uid,
+      adminEmail: instEmail.value,
+      createdAt: new Date().toLocaleDateString()
     });
-
-    // إنشاء مجموعات افتراضية للمعهد (قاعدة بيانات منفصلة افتراضية)
-    const instituteId = docRef.id;
-    await addDoc(collection(db, `institute_${instituteId}/settings`), { createdAt });
-
-    msg.textContent = 'تم إنشاء المعهد بنجاح ✅';
-    addInstituteForm.reset();
-    loadInstitutes();
-  }catch(err){
-    console.error(err);
-    msg.textContent = 'حدث خطأ أثناء إنشاء المعهد ❌';
-  }
+    instName.value=''; instEmail.value=''; instPassword.value='';
+    alert('تم إنشاء المعهد بنجاح');
+    await loadInstitutes();
+  }catch(err){ console.error(err); alert('خطأ أثناء إنشاء المعهد'); }
 });
 
-// تحميل قائمة المعاهد
-async function loadInstitutes(){
-  institutesList.innerHTML = '';
+// إضافة مسؤول آخر للمعهد
+addAdminForm.addEventListener('submit', async e=>{
+  e.preventDefault();
   try{
-    const q = query(collection(db,'institutes'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    snap.forEach(d=>{
-      const data = d.data();
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${data.name || '-'}</td>
-        <td>${data.email || '-'}</td>
-        <td>${new Date(data.createdAt).toLocaleString()}</td>
-      `;
-      institutesList.appendChild(tr);
+    // إنشاء حساب المسؤول
+    const userCred = await createUserWithEmailAndPassword(auth, adminEmail.value, adminPassword.value);
+    // ربطه بالمعهد المحدد
+    const instRef = collection(db,'institutes');
+    await addDoc(instRef.doc(selectInstitute.value).collection('admins'),{
+      uid: userCred.user.uid,
+      email: adminEmail.value
     });
-  }catch(err){ console.error(err); }
-}
+    adminEmail.value=''; adminPassword.value='';
+    alert('تم إضافة المسؤول بنجاح');
+  }catch(err){ console.error(err); alert('خطأ أثناء إضافة المسؤول'); }
+});
+
+// تحميل المعاهد عند فتح الصفحة
+loadInstitutes();
 </script>
 
 </body>
