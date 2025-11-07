@@ -1,155 +1,94 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>تسجيل الدخول - نظام OMA</title>
-<style>
-:root {
-  --primary: #004aad;
-  --accent: #ffcc33;
-  --bg: #f5f9ff;
-  --card: #fff;
-}
-body {
-  margin: 0;
-  font-family: 'Cairo', sans-serif;
-  background: linear-gradient(180deg, #ffffff, #f5f9ff);
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.login-box {
-  background: var(--card);
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-  text-align: center;
-  width: 320px;
-}
-h2 {
-  margin-bottom: 25px;
-  color: var(--primary);
-}
-input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-}
-button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 12px;
-  width: 100%;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-button:hover {
-  background: #003a8c;
-}
-.error {
-  color: red;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-footer {
-  position: fixed;
-  bottom: 10px;
-  width: 100%;
-  text-align: center;
-  color: #888;
-  font-size: 13px;
-}
-</style>
-</head>
-<body>
-  <div class="login-box">
-    <h2>تسجيل الدخول 🔐</h2>
-    <p class="error" id="errorMsg"></p>
-    <input type="email" id="email" placeholder="البريد الإلكتروني" required />
-    <input type="password" id="password" placeholder="كلمة المرور" required />
-    <button id="loginBtn">دخول</button>
-  </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-  <footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { 
-    getAuth, 
-    signInWithEmailAndPassword,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+// إعداد Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.firebasestorage.app",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
+};
 
-  // 🔹 إعدادات مشروعك الجديد
-  const firebaseConfig = {
-    apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
-    authDomain: "oma0-33cc0.firebaseapp.com",
-    projectId: "oma0-33cc0",
-    storageBucket: "oma0-33cc0.firebasestorage.app",
-    messagingSenderId: "899300774863",
-    appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
-    measurementId: "G-5CKWYQT9XZ"
-  };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const errorMsg = document.getElementById("errorMsg");
 
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-  const loginBtn = document.getElementById("loginBtn");
-  const errorMsg = document.getElementById("errorMsg");
+// تحقق إذا المستخدم مسجل دخول مسبقاً
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    redirectByRole(user.uid);
+  }
+});
 
-  // ✅ تحقق إذا المستخدم مسجل دخول مسبقاً
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("🔹 المستخدم مسجّل الدخول:", user.email);
-      window.location.href = "dashboard.html"; // تعديل المسار إذا لزم
+// تسجيل الدخول
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
+    return;
+  }
+
+  errorMsg.textContent = "";
+  loginBtn.disabled = true;
+  loginBtn.textContent = "جاري التحقق...";
+
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+    redirectByRole(uid);
+  } catch (error) {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "دخول";
+    errorMsg.style.color = "red";
+    if (error.code === "auth/user-not-found") {
+      errorMsg.textContent = "المستخدم غير موجود.";
+    } else if (error.code === "auth/wrong-password") {
+      errorMsg.textContent = "كلمة المرور غير صحيحة.";
+    } else {
+      errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
     }
-  });
+  }
+});
 
-  // 🎯 تسجيل الدخول
-  loginBtn.addEventListener("click", async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+// دالة لإعادة التوجيه حسب نوع المستخدم
+async function redirectByRole(uid) {
+  try {
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (!userDoc.exists()) throw new Error("المستخدم غير موجود في قاعدة البيانات");
 
-    if (!email || !password) {
-      errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
-      return;
+    const userData = userDoc.data();
+    const role = userData.type;
+
+    if (role === "admin") {
+      window.location.href = "dashboard.html";
+    } else if (role === "teacher") {
+      window.location.href = "teacher-dashboard.html";
+    } else if (role === "student") {
+      window.location.href = "student-dashboard.html";
+    } else {
+      throw new Error("نوع المستخدم غير معروف");
     }
-
-    errorMsg.textContent = "";
-    loginBtn.disabled = true;
-    loginBtn.textContent = "جاري التحقق...";
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("✅ تم تسجيل الدخول بنجاح");
-      errorMsg.style.color = "green";
-      errorMsg.textContent = "تم تسجيل الدخول بنجاح...";
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
-    } catch (error) {
-      loginBtn.disabled = false;
-      loginBtn.textContent = "دخول";
-      errorMsg.style.color = "red";
-      if (error.code === "auth/user-not-found") {
-        errorMsg.textContent = "المستخدم غير موجود.";
-      } else if (error.code === "auth/wrong-password") {
-        errorMsg.textContent = "كلمة المرور غير صحيحة.";
-      } else {
-        errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
-      }
-    }
-  });
-  </script>
-</body>
-</html>
+  } catch (err) {
+    console.error(err);
+    errorMsg.style.color = "red";
+    errorMsg.textContent = "تعذّر تحديد نوع المستخدم.";
+  }
+}
+</script>
