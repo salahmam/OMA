@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الأستاذ - OMA</title>
+<style>
+body {font-family:'Cairo',sans-serif; background:#f5f9ff; margin:0; color:#102027; direction:rtl;}
+header {background:#004aad; color:#fff; padding:18px; text-align:center; font-size:20px; font-weight:700;}
+.wrap {max-width:1200px; margin:20px auto; padding:12px;}
+.card {background:#fff; border-radius:10px; padding:14px; margin-bottom:16px; box-shadow:0 6px 18px rgba(0,0,0,0.06);}
+h3 {margin-top:0;}
+table {width:100%; border-collapse:collapse; margin-top:10px;}
+th, td {padding:10px; border-bottom:1px solid #eee; text-align:center; font-size:14px;}
+th {background:#004aad; color:#fff;}
+</style>
+</head>
+<body>
+
+<header>لوحة الأستاذ</header>
+<div class="wrap">
+
+  <!-- معلومات الأستاذ -->
+  <div class="card">
+    <h3>معلوماتي</h3>
+    <p><strong>الاسم:</strong> <span id="teacherName"></span></p>
+    <p><strong>التخصص:</strong> <span id="teacherSpecialty"></span></p>
+    <p><strong>البريد الإلكتروني:</strong> <span id="teacherEmail"></span></p>
+    <p><strong>الراتب الأساسي:</strong> <span id="teacherSalary"></span> د.ع</p>
+  </div>
+
+  <!-- قائمة الطلاب المكلفين -->
+  <div class="card">
+    <h3>طلابي</h3>
+    <table>
+      <thead>
+        <tr><th>الاسم</th><th>المجموعة</th><th>المستوى</th><th>المواد</th></tr>
+      </thead>
+      <tbody id="studentsTable"></tbody>
+    </table>
+  </div>
+
+  <!-- الدروس -->
+  <div class="card">
+    <h3>الدروس</h3>
+    <ul id="teacherSubjects"></ul>
+  </div>
+
+  <!-- المبالغ المستحقة والمدفوعة -->
+  <div class="card">
+    <h3>المدفوعات</h3>
+    <p><strong>المبلغ المستحق من المعهد:</strong> <span id="dueAmount"></span> د.ع</p>
+    <p><strong>الدفعات المدفوعة:</strong> <span id="paidAmount"></span> د.ع</p>
+    <p><strong>المتبقي:</strong> <span id="remainingAmount"></span> د.ع</p>
+  </div>
+
+</div>
+
+<script type="module">
+// Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.appspot.com",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// التحقق من تسجيل الدخول
+onAuthStateChanged(auth, async user => {
+  if (!user) return window.location.href="login.html";
+
+  const uid = user.uid;
+
+  // جلب بيانات الأستاذ
+  const teacherDoc = await getDoc(doc(db,"teachers",uid));
+  if(!teacherDoc.exists()) return alert("لا توجد بيانات لهذا الأستاذ");
+
+  const teacher = teacherDoc.data();
+  document.getElementById("teacherName").textContent = teacher.name;
+  document.getElementById("teacherSpecialty").textContent = teacher.specialty;
+  document.getElementById("teacherEmail").textContent = teacher.email || user.email;
+  document.getElementById("teacherSalary").textContent = teacher.salary || 0;
+
+  // جلب الطلاب المكلفين
+  const studentsQ = query(collection(db,"students"), where("teacherId","==",uid));
+  const studentsSnap = await getDocs(studentsQ);
+  const studentsTable = document.getElementById("studentsTable");
+  studentsTable.innerHTML = "";
+  let totalDue = 0, totalPaid = 0;
+  studentsSnap.forEach(docSnap=>{
+    const s = docSnap.data();
+    studentsTable.innerHTML += `<tr>
+      <td>${s.name}</td>
+      <td>${s.group}</td>
+      <td>${s.level}</td>
+      <td>${s.subjects.join(", ")}</td>
+    </tr>`;
+
+    // حساب المدفوعات
+    if(s.installments && s.installments.length>0){
+      totalPaid += s.installments.reduce((a,b)=>a+b,0);
+      totalDue += s.fees;
+    }
+  });
+
+  // عرض الدروس
+  const subjectsSet = new Set();
+  studentsSnap.forEach(docSnap=>docSnap.data().subjects.forEach(sub=>subjectsSet.add(sub)));
+  document.getElementById("teacherSubjects").innerHTML = [...subjectsSet].map(s=>`<li>${s}</li>`).join("");
+
+  // عرض المدفوعات
+  document.getElementById("dueAmount").textContent = totalDue;
+  document.getElementById("paidAmount").textContent = totalPaid;
+  document.getElementById("remainingAmount").textContent = totalDue - totalPaid;
+});
+</script>
+
+</body>
+</html>
