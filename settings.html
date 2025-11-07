@@ -1,151 +1,75 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>إعدادات المعهد</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إعدادات المعهد - Firestore</title>
 <style>
-:root{--primary:#004aad;--accent:#ffcc33;}
-body{font-family:'Cairo',sans-serif;direction:rtl;margin:0;background:#f5f9ff;color:#102027;}
-header{display:flex;align-items:center;gap:12px;background:var(--primary);color:#fff;padding:12px 18px;font-size:20px;font-weight:700;cursor:pointer;}
-header img{height:40px;border-radius:5px;}
-.wrap{max-width:1200px;margin:22px auto;padding:12px;}
-.card{background:#fff;border-radius:10px;padding:14px;margin-bottom:16px;box-shadow:0 6px 18px rgba(6,20,30,0.06);}
-input, select{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;margin-bottom:8px;}
-label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:8px;}
-.btn.warn{background:#ff7043;}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--primary);}
-.table-container{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;margin-top:12px;}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
-th{background:var(--primary);color:#fff;}
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-.filters input, .filters select{flex:1;}
-.social-icons{display:flex;gap:10px;margin-top:8px;}
-.social-icons a img{height:28px;}
-.color-input{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-.small{padding:4px 8px;font-size:12px;}
+body { font-family: 'Cairo', sans-serif; background: #f5f9ff; color: #102027; padding: 20px; direction: rtl; }
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+input, select, button { padding: 10px; margin-bottom: 10px; border-radius: 8px; font-size: 15px; width: 100%; }
+button { background: #004aad; color: #fff; border: none; font-weight: bold; cursor: pointer; }
+button:hover { background: #003a8c; }
+label { font-size: 14px; display:block; margin-bottom:5px; }
+.social-icons img { height:28px; margin-left:5px; cursor:pointer; }
 </style>
 </head>
 <body>
 
-<header id="header">
-  <img id="instituteLogo" src="" alt="شعار المعهد">
-  <span id="instituteName">اسم المعهد</span>
-</header>
+<h2>🔧 إعدادات المعهد</h2>
 
-<div class="wrap">
-
-<!-- معلومات المعهد -->
 <div class="card">
   <strong>معلومات المعهد</strong>
   <label>اسم المعهد</label>
-  <input type="text" id="instituteNameInput" placeholder="مثال: معهد X">
+  <input type="text" id="instituteName">
   <label>الشعار (رابط الصورة)</label>
-  <input type="text" id="instituteLogoInput" placeholder="رابط الشعار">
+  <input type="text" id="instituteLogo">
   <label>العنوان</label>
-  <input type="text" id="instituteAddress" placeholder="مثال: بغداد - العراق">
+  <input type="text" id="instituteAddress">
   <label>رقم الهاتف</label>
-  <input type="text" id="institutePhone" placeholder="مثال: 07701234567">
+  <input type="text" id="institutePhone">
   <label>البريد الإلكتروني</label>
-  <input type="email" id="instituteEmail" placeholder="مثال: info@x.com">
-  <button class="btn" id="saveInstituteInfoBtn">💾 حفظ معلومات المعهد</button>
+  <input type="email" id="instituteEmail">
+  <button id="saveInstituteBtn">💾 حفظ معلومات المعهد</button>
 </div>
 
-<!-- وسائل التواصل -->
 <div class="card">
   <strong>وسائل التواصل الاجتماعي</strong>
-  <label>فيسبوك</label><input type="text" id="facebookLink" placeholder="رابط فيسبوك">
-  <label>إنستغرام</label><input type="text" id="instagramLink" placeholder="رابط إنستغرام">
-  <label>تيك توك</label><input type="text" id="tiktokLink" placeholder="رابط تيك توك">
-  <label>تليجرام</label><input type="text" id="telegramLink" placeholder="رابط تليجرام">
-  <div class="social-icons" id="socialDisplay"></div>
-  <button class="btn" id="saveSocialBtn">💾 حفظ روابط التواصل</button>
+  <label>فيسبوك</label><input type="text" id="facebookLink">
+  <label>إنستغرام</label><input type="text" id="instagramLink">
+  <label>تيك توك</label><input type="text" id="tiktokLink">
+  <label>تليجرام</label><input type="text" id="telegramLink">
+  <button id="saveSocialBtn">💾 حفظ روابط التواصل</button>
 </div>
 
-<!-- تخصيص الألوان -->
 <div class="card">
   <strong>تخصيص ألوان المعهد</strong>
-  <div class="color-input">
-    <label>اللون الأساسي:</label>
-    <input type="color" id="primaryColor">
-  </div>
-  <div class="color-input">
-    <label>اللون الثانوي:</label>
-    <input type="color" id="accentColor">
-  </div>
-  <button class="btn" id="saveColorsBtn">💾 حفظ الألوان</button>
+  <label>اللون الأساسي</label><input type="color" id="primaryColor">
+  <label>اللون الثانوي</label><input type="color" id="accentColor">
+  <button id="saveColorsBtn">💾 حفظ الألوان</button>
 </div>
 
-<!-- إعداد النسب -->
 <div class="card">
-  <strong>إعداد نسبة الأستاذ والمعهد</strong>
-  <label>نسبة الأستاذ (%)</label>
-  <input type="number" id="teacherPercent" min="0" max="100" placeholder="مثال: 60">
-  <label>نسبة المعهد (%)</label>
-  <input type="number" id="institutePercent" min="0" max="100" placeholder="مثال: 40">
-  <button class="btn" id="savePercentBtn">💾 حفظ النسب</button>
+  <strong>نسب الأستاذ والمعهد</strong>
+  <label>نسبة الأستاذ (%)</label><input type="number" id="teacherPercent" min="0" max="100">
+  <label>نسبة المعهد (%)</label><input type="number" id="institutePercent" min="0" max="100">
+  <button id="savePercentBtn">💾 حفظ النسب</button>
 </div>
 
-<!-- إدارة الفروع -->
 <div class="card">
-  <strong>إدارة الفروع</strong>
-  <label>إضافة فرع جديد</label>
-  <input type="text" id="newBranch" placeholder="اسم الفرع">
-  <button class="btn" id="addBranchBtn">➕ إضافة فرع</button>
-  <div class="table-container">
-    <table id="branchesTable">
-      <thead><tr><th>اسم الفرع</th><th>خيارات</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- إنشاء مستخدم -->
-<div class="card">
-  <strong>إضافة مستخدم جديد</strong>
-  <form id="userForm">
-    <label>نوع المستخدم</label>
-    <select id="userType">
-      <option value="student">طالب</option>
-      <option value="teacher">أستاذ</option>
-    </select>
-    <label>الاسم</label>
-    <select id="userName"><option value="">اختر الاسم</option></select>
-    <input type="text" id="searchUserName" placeholder="بحث بالاسم داخل القائمة...">
-    <label>البريد الإلكتروني</label>
-    <input type="email" id="userEmail" required>
-    <label>كلمة المرور</label>
-    <input type="password" id="userPassword" required>
-    <button type="submit" class="btn">✅ إنشاء المستخدم</button>
-  </form>
-</div>
-
-<!-- قائمة المستخدمين -->
-<div class="card">
-  <strong>قائمة المستخدمين</strong>
-  <div class="filters">
-    <input type="text" id="searchUser" placeholder="بحث بالاسم...">
-    <select id="filterType"><option value="">فلترة حسب النوع</option><option value="student">طالب</option><option value="teacher">أستاذ</option></select>
-  </div>
-  <div class="table-container">
-    <table id="usersTable">
-      <thead>
-        <tr><th>الاسم</th><th>النوع</th><th>البريد</th><th>خيارات</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <strong>الفروع</strong>
+  <label>أضف فرع جديد</label><input type="text" id="newBranch">
+  <button id="addBranchBtn">➕ إضافة فرع</button>
+  <ul id="branchesList"></ul>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// ----- إعداد Firebase -----
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -160,108 +84,113 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ----- تسجيل الدخول -----
-onAuthStateChanged(auth, user=>{
-  if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html"; }
+// التحقق من تسجيل الدخول
+onAuthStateChanged(auth,user=>{
+  if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html";}
 });
 
-// ----- عناصر الصفحة -----
-const header = document.getElementById("header");
-const instituteNameSpan = document.getElementById("instituteName");
-const instituteLogoImg = document.getElementById("instituteLogo");
-const userTypeSelect = document.getElementById("userType");
-const userNameSelect = document.getElementById("userName");
-const searchUserNameInput = document.getElementById("searchUserName");
-const usersTableBody = document.querySelector("#usersTable tbody");
+// --- عناصر الصفحة ---
+const instituteName = document.getElementById("instituteName");
+const instituteLogo = document.getElementById("instituteLogo");
+const instituteAddress = document.getElementById("instituteAddress");
+const institutePhone = document.getElementById("institutePhone");
+const instituteEmail = document.getElementById("instituteEmail");
+const facebookLink = document.getElementById("facebookLink");
+const instagramLink = document.getElementById("instagramLink");
+const tiktokLink = document.getElementById("tiktokLink");
+const telegramLink = document.getElementById("telegramLink");
+const primaryColor = document.getElementById("primaryColor");
+const accentColor = document.getElementById("accentColor");
+const teacherPercent = document.getElementById("teacherPercent");
+const institutePercent = document.getElementById("institutePercent");
+const newBranch = document.getElementById("newBranch");
+const branchesList = document.getElementById("branchesList");
 
-// ----- تخزين بيانات مؤقتة -----
-let usersData = [];
-let allNames = {students:[], teachers:[]};
-let branchesData = [];
-
-// ----- دوال تحميل البيانات من Firestore -----
-async function fetchNames(){
-  const studentsSnap = await getDocs(collection(db,"students"));
-  const teachersSnap = await getDocs(collection(db,"teachers"));
-  allNames.students = studentsSnap.docs.map(d=>d.data().name);
-  allNames.teachers = teachersSnap.docs.map(d=>d.data().name);
-  updateNamesSelect();
-}
-
-function updateNamesSelect(){
-  const type = userTypeSelect.value;
-  userNameSelect.innerHTML = "<option value=''>اختر الاسم</option>";
-  let names = type==="student"?allNames.students:allNames.teachers;
-  names.forEach(n=>userNameSelect.innerHTML += `<option value="${n}">${n}</option>`);
-}
-
-// ----- إنشاء مستخدم جديد -----
-document.getElementById("userForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const type = userTypeSelect.value;
-  const name = userNameSelect.value;
-  const email = document.getElementById("userEmail").value.trim();
-  const password = document.getElementById("userPassword").value.trim();
-  if(!type || !name || !email || !password){alert("اكمل جميع الحقول"); return;}
-  try{
-    const userCred = await createUserWithEmailAndPassword(auth,email,password);
-    const uid = userCred.user.uid;
-    await setDoc(doc(db,"users",uid), {name,type,email,createdAt:new Date().toISOString()});
-    usersData.push({id:uid,name,type,email});
-    renderUsers();
-    e.target.reset();
-    updateNamesSelect();
-    alert("✅ تم إنشاء المستخدم بنجاح!");
-  }catch(err){console.error(err); alert("❌ "+err.message);}
+// --- حفظ معلومات المعهد ---
+document.getElementById("saveInstituteBtn").addEventListener("click", async()=>{
+  await setDoc(doc(db,"settings","institute"),{
+    name: instituteName.value,
+    logo: instituteLogo.value,
+    address: instituteAddress.value,
+    phone: institutePhone.value,
+    email: instituteEmail.value
+  });
+  alert("✅ تم حفظ معلومات المعهد");
 });
 
-// ----- عرض المستخدمين -----
-function renderUsers(){
-  const filter = document.getElementById("filterType").value.toLowerCase();
-  const searchText = document.getElementById("searchUser").value.toLowerCase();
-  usersTableBody.innerHTML="";
-  usersData.filter(u=>(!filter||u.type===filter) && (!searchText||u.name.toLowerCase().includes(searchText)))
-    .forEach(u=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
-      <td>
-        <button class="btn small" onclick="editUser('${u.id}')">✏️ تعديل</button>
-        <button class="btn warn small" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
-      </td>`;
-      usersTableBody.appendChild(tr);
+// --- حفظ وسائل التواصل ---
+document.getElementById("saveSocialBtn").addEventListener("click", async()=>{
+  await setDoc(doc(db,"settings","social"),{
+    facebook: facebookLink.value,
+    instagram: instagramLink.value,
+    tiktok: tiktokLink.value,
+    telegram: telegramLink.value
+  });
+  alert("✅ تم حفظ وسائل التواصل");
+});
+
+// --- حفظ الألوان ---
+document.getElementById("saveColorsBtn").addEventListener("click", async()=>{
+  await setDoc(doc(db,"settings","colors"),{
+    primary: primaryColor.value,
+    accent: accentColor.value
+  });
+  alert("✅ تم حفظ الألوان");
+});
+
+// --- حفظ النسب ---
+document.getElementById("savePercentBtn").addEventListener("click", async()=>{
+  const t = parseFloat(teacherPercent.value) || 0;
+  const i = parseFloat(institutePercent.value) || 0;
+  if(t+i!==100){ alert("مجموع النسب يجب أن يكون 100%"); return; }
+  await setDoc(doc(db,"settings","percentages"),{teacher:t,institute:i});
+  alert("✅ تم حفظ النسب");
+});
+
+// --- إدارة الفروع ---
+async function loadBranches(){
+  branchesList.innerHTML="";
+  const docSnap = await getDoc(doc(db,"settings","branches"));
+  if(docSnap.exists()){
+    const data = docSnap.data();
+    if(data.list) data.list.forEach(b=>{
+      const li = document.createElement("li");
+      li.textContent = b;
+      const btn = document.createElement("button");
+      btn.textContent="🗑️";
+      btn.style.marginLeft="10px";
+      btn.onclick = async()=>{
+        await updateDoc(doc(db,"settings","branches"),{list:arrayRemove(b)});
+        loadBranches();
+      };
+      li.appendChild(btn);
+      branchesList.appendChild(li);
     });
-}
-
-// ----- حذف مستخدم -----
-window.deleteUser = function(id){
-  if(confirm("هل تريد حذف المستخدم؟")){
-    usersData = usersData.filter(u=>u.id!==id);
-    renderUsers();
   }
 }
-
-// ----- تعديل مستخدم -----
-window.editUser = function(id){
-  const user = usersData.find(u=>u.id===id);
-  if(!user) return;
-  userTypeSelect.value = user.type;
-  updateNamesSelect();
-  userNameSelect.value = user.name;
-  document.getElementById("userEmail").value = user.email;
-  usersData = usersData.filter(u=>u.id!==id);
-}
-
-// ----- تفعيل البحث داخل قائمة الاسماء -----
-searchUserNameInput.addEventListener("input", ()=>{
-  const filter = searchUserNameInput.value.toLowerCase();
-  Array.from(userNameSelect.options).forEach(opt=>{
-    opt.style.display = opt.value.toLowerCase().includes(filter)?"block":"none";
+document.getElementById("addBranchBtn").addEventListener("click", async()=>{
+  const name = newBranch.value.trim();
+  if(!name) return;
+  await updateDoc(doc(db,"settings","branches"),{list:arrayUnion(name)}).catch(async()=>{
+    await setDoc(doc(db,"settings","branches"),{list:[name]});
   });
+  newBranch.value="";
+  loadBranches();
 });
 
-// ----- تحميل البيانات عند البداية -----
-fetchNames();
-
+// --- تحميل البيانات عند البداية ---
+async function loadSettings(){
+  const inst = await getDoc(doc(db,"settings","institute"));
+  if(inst.exists()){ Object.assign({name:instituteName.value,logo:instituteLogo.value,address:instituteAddress.value,phone:institutePhone.value,email:instituteEmail.value},inst.data()); instituteName.value=inst.data().name; instituteLogo.value=inst.data().logo; instituteAddress.value=inst.data().address; institutePhone.value=inst.data().phone; instituteEmail.value=inst.data().email; }
+  const social = await getDoc(doc(db,"settings","social"));
+  if(social.exists()){ facebookLink.value=social.data().facebook; instagramLink.value=social.data().instagram; tiktokLink.value=social.data().tiktok; telegramLink.value=social.data().telegram; }
+  const colors = await getDoc(doc(db,"settings","colors"));
+  if(colors.exists()){ primaryColor.value=colors.data().primary; accentColor.value=colors.data().accent; document.documentElement.style.setProperty("--primary",colors.data().primary); document.documentElement.style.setProperty("--accent",colors.data().accent);}
+  const perc = await getDoc(doc(db,"settings","percentages"));
+  if(perc.exists()){ teacherPercent.value=perc.data().teacher; institutePercent.value=perc.data().institute; }
+  loadBranches();
+}
+loadSettings();
 </script>
 
 </body>
