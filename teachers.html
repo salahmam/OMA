@@ -7,7 +7,7 @@
 <style>
 :root{--primary:#004aad;--accent:#ffcc33;--bg:#f5f9ff;--card:#fff;}
 *{box-sizing:border-box;}
-body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
+body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:visible;}
 header{background:var(--primary);color:#fff;padding:18px;text-align:center;font-size:20px;font-weight:700;}
 .wrap{max-width:1200px;margin:22px auto;padding:12px;}
 .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:16px;}
@@ -204,36 +204,41 @@ teacherForm.addEventListener("submit", async(e)=>{
 
 // تحميل الأساتذة
 async function loadTeachers(){
-  const snapshot = await getDocs(collection(db,"teachers"));
-  teachersTableBody.innerHTML="";
-  teachersData=[];
-  snapshot.forEach(docSnap=>{
-    const t = {...docSnap.data(),id:docSnap.id};
-    teachersData.push(t);
-    const teacherShare = (t.totalFees * t.teacherPercent/100).toFixed(2);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${t.name}</td>
-      <td>${t.phone}</td>
-      <td>${t.stage}</td>
-      <td>${t.group}</td>
-      <td>${t.subjects.map(s=>`${s.name} (المتبقي:${s.fee})`).join("<br>")}</td>
-      <td>${t.totalFees}</td>
-      <td>${teacherShare}</td>
-      <td class="actions">
-        <button class="btn small" onclick="showTeacher('${t.id}')">🔍 التفاصيل</button>
-        <button class="btn warn small" onclick="deleteTeacher('${t.id}')">🗑️ حذف</button>
-      </td>
-    `;
-    teachersTableBody.appendChild(tr);
-  });
-  document.body.style.visibility="visible";
+  try{
+    const snapshot = await getDocs(collection(db,"teachers"));
+    teachersTableBody.innerHTML="";
+    teachersData=[];
+    snapshot.forEach(docSnap=>{
+      const t = {...docSnap.data(),id:docSnap.id};
+      teachersData.push(t);
+      const teacherShare = (t.totalFees * t.teacherPercent/100).toFixed(2);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${t.name}</td>
+        <td>${t.phone}</td>
+        <td>${t.stage}</td>
+        <td>${t.group}</td>
+        <td>${t.subjects.map(s=>`${s.name} (المتبقي:${s.fee})`).join("<br>")}</td>
+        <td>${t.totalFees}</td>
+        <td>${teacherShare}</td>
+        <td class="actions">
+          <button class="btn small" onclick="showTeacher('${t.id}')">🔍 التفاصيل</button>
+          <button class="btn warn small" onclick="deleteTeacher('${t.id}')">🗑️ حذف</button>
+        </td>
+      `;
+      teachersTableBody.appendChild(tr);
+    });
+  }catch(err){
+    console.error("خطأ في تحميل الأساتذة:",err);
+  } finally {
+    document.body.style.visibility="visible";
+  }
 }
 
 // حذف الأستاذ
 window.deleteTeacher = async function(id){
   if(confirm("هل تريد حذف الأستاذ؟")){
-    await deleteDoc(doc(db,"teachers",id));
+    try{ await deleteDoc(doc(db,"teachers",id)); }catch(e){console.error(e);}
     loadTeachers();
   }
 }
