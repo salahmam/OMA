@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة الطلاب - OMA</title>
+<title>تهيئة الأساتذة - OMA</title>
 <style>
 body { font-family:'Cairo',sans-serif; padding:30px; background:#f5f9ff; color:#102027; }
 button { padding:10px 16px; border:none; border-radius:8px; background:#004aad; color:#fff; cursor:pointer; font-weight:bold; }
@@ -12,8 +12,9 @@ pre { background:#eef4ff; padding:10px; border-radius:8px; overflow-x:auto; whit
 </style>
 </head>
 <body>
-<h2>🚀 تهيئة Collection الطلاب - OMA</h2>
-<p>اضغط على الزر لإنشاء جميع الحقول الأساسية لكل طالب جديد تلقائيًا.</p>
+
+<h2>🚀 تهيئة Collection الأساتذة - OMA</h2>
+<p>اضغط على الزر لإنشاء جميع الحقول الأساسية لكل أستاذ جديد تلقائيًا.</p>
 <button id="initBtn">ابدأ التهيئة</button>
 <pre id="log"></pre>
 
@@ -22,7 +23,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// إعداد Firebase
+// إعداد Firebase لمشروع OMA0
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -32,36 +33,41 @@ const firebaseConfig = {
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
+
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
 const log = document.getElementById("log");
 const initBtn = document.getElementById("initBtn");
+
 function addLog(msg){ log.textContent += msg + "\n"; }
 
-// دالة إنشاء هيكل طالب جديد
-async function createStudent(studentId){
-  const studentRef = doc(db, "students", studentId);
-  if((await getDoc(studentRef)).exists()){
-    addLog(`⚠️ الطالب ${studentId} موجود مسبقًا`);
+// ✅ إنشاء هيكل أستاذ جديد
+async function createTeacher(teacherId){
+  const teacherRef = doc(db, "teachers", teacherId);
+
+  if((await getDoc(teacherRef)).exists()){
+    addLog(`⚠️ الأستاذ ${teacherId} موجود مسبقًا`);
     return;
   }
-  await setDoc(studentRef, {
+
+  await setDoc(teacherRef, {
     name: "",
     phone: "",
     address: "",
-    school: "",
-    stage: "",
-    group: "",
-    enrollmentDate: new Date().toISOString(),
-    subjects: [], // مصفوفة المواد لكل طالب
-    totalFee: 0,
-    remainingFee: 0,
-    payments: [], // لتسجيل الدفعات لاحقًا
-    notes: ""
+    subjects: [],     // مواد المدرس
+    stages: [],       // المراحل التي يدرسها
+    groups: [],       // الكروبات الخاصة به
+    percentTeacher: 0,   // نسبة الأستاذ
+    percentInstitute: 0, // نسبة المعهد
+    totalStudents: 0,
+    totalIncome: 0,
+    notes: "",
+    createdAt: new Date().toISOString()
   });
-  addLog(`✅ تم إنشاء هيكل الطالب ${studentId}`);
+
+  addLog(`✅ تم إنشاء هيكل الأستاذ ${teacherId}`);
 }
 
 initBtn.addEventListener("click", async()=>{
@@ -69,13 +75,13 @@ initBtn.addEventListener("click", async()=>{
   initBtn.textContent = "⏳ جاري التهيئة...";
 
   try {
-    // مثال: إنشاء 3 طلاب تجريبيين
-    await createStudent("student_001");
-    await createStudent("student_002");
-    await createStudent("student_003");
+    // أمثلة أساتذة تجريبيين
+    await createTeacher("teacher_001");
+    await createTeacher("teacher_002");
+    await createTeacher("teacher_003");
 
-    addLog("\n🎉 تم تهيئة جميع الحقول الأساسية للطلاب بنجاح!");
-    initBtn.textContent = "✅ تم الانتهاء";
+    addLog("\n🎉 تم تهيئة جميع الحقول الأساسية للأساتذة بنجاح!");
+    initBtn.textContent = "تم الانتهاء";
   } catch(e){
     addLog("❌ خطأ أثناء التهيئة: "+e.message);
     initBtn.disabled = false;
