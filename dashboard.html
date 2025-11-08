@@ -2,79 +2,98 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة تحكم مدير المعهد - نظام OMA</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>لوحة تحكم المعهد - نظام OMA</title>
 <style>
 :root {
-  --primary: #004aad;
-  --accent: #ffcc33;
-  --bg: #f5f9ff;
-  --card: #fff;
+  --primary:#004aad;
+  --accent:#ffcc33;
+  --bg:#f5f9ff;
+  --card:#ffffff;
 }
 
 body {
-  font-family: 'Cairo', sans-serif;
-  background: var(--bg);
-  margin: 0;
-  padding: 0;
+  font-family:'Cairo',sans-serif;
+  background:var(--bg);
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
 }
 
 header {
-  background-color: var(--primary);
-  color: white;
-  text-align: center;
-  padding: 15px 0;
-  font-size: 20px;
-  font-weight: bold;
+  background:var(--primary);
+  color:white;
+  text-align:center;
+  padding:15px;
+  font-size:20px;
+  font-weight:bold;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+
+header img {
+  height:40px;
+  width:40px;
+  border-radius:50%;
+  object-fit:cover;
+  background:white;
 }
 
 .container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  padding: 40px;
-  justify-content: center;
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:20px;
+  padding:30px;
 }
 
 .card {
-  background: var(--card);
-  padding: 30px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  transition: 0.3s;
-  cursor: pointer;
+  background:var(--card);
+  text-align:center;
+  border-radius:10px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.1);
+  padding:30px;
+  transition:0.3s;
+  cursor:pointer;
 }
-
 .card:hover {
-  transform: translateY(-5px);
-  background: #eef4ff;
+  transform:translateY(-5px);
+  background:#eef4ff;
 }
-
-.card h3 {
-  color: var(--primary);
-}
+.card h3 { color:var(--primary); }
 
 #logoutBtn {
-  background-color: #d32f2f;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: 0.3s;
-  display: block;
-  margin: 30px auto;
+  background:#d32f2f;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:16px;
+  margin:30px auto;
+  display:block;
+  transition:0.3s;
 }
+#logoutBtn:hover { background:#b71c1c; }
 
-#logoutBtn:hover {
-  background-color: #b71c1c;
+footer {
+  text-align:center;
+  padding:10px;
+  background:#eee;
+  font-size:14px;
+  color:#555;
 }
 </style>
 </head>
 <body>
-<header>👋 مرحباً بك في لوحة تحكم مدير المعهد</header>
+
+<header>
+  <img id="instituteLogo" src="" alt="شعار المعهد">
+  <span id="instituteName">تحميل...</span>
+</header>
 
 <div class="container">
   <div class="card" id="studentsCard"><h3>📚 إدارة الطلاب</h3></div>
@@ -87,12 +106,13 @@ header {
 
 <button id="logoutBtn">🔓 تسجيل الخروج</button>
 
+<footer>© 2025 نظام OMA لإدارة المعاهد</footer>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -107,45 +127,44 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let instituteId = null; // سيتم تعيينه بعد تحميل بيانات المدير
+const logoEl = document.getElementById("instituteLogo");
+const nameEl = document.getElementById("instituteName");
+const logoutBtn = document.getElementById("logoutBtn");
 
-// ✅ منع الدخول إلا بعد تسجيل الدخول والتحقق من نوع المستخدم
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "login.html";
+// 🟢 منع الدخول بدون تسجيل
+onAuthStateChanged(auth, async(user)=>{
+  if(!user){
+    window.location.href = "institute-login.html";
     return;
   }
 
-  const userDoc = await getDoc(doc(db, "users", user.uid));
-  if (!userDoc.exists()) {
-    alert("المستخدم غير موجود!");
+  const instituteId = localStorage.getItem("instituteId");
+  if(!instituteId){
+    alert("تعذر تحميل بيانات المعهد.");
     await signOut(auth);
-    window.location.href = "login.html";
-    return;
+    return window.location.href = "institute-login.html";
   }
 
-  const userData = userDoc.data();
-  if (userData.type !== "instituteAdmin") {
-    alert("لا يحق لك الدخول إلى لوحة مدير المعهد!");
-    await signOut(auth);
-    window.location.href = "login.html";
-    return;
-  }
+  // تحميل بيانات المعهد
+  const docSnap = await getDoc(doc(db, "institutes", instituteId));
+  if(docSnap.exists()){
+    const data = docSnap.data();
+    nameEl.textContent = data.name || "المعهد";
+    if(data.logoUrl) logoEl.src = data.logoUrl;
 
-  instituteId = userData.instituteId; // معرف المعهد الخاص بالمدير
-
-  // تحميل ألوان المعهد من إعدادات المعهد
-  const instituteDoc = await getDoc(doc(db, "institutes", instituteId));
-  if (instituteDoc.exists()) {
-    const colors = instituteDoc.data().colors || {};
-    if (colors.primary) document.documentElement.style.setProperty('--primary', colors.primary);
-    if (colors.accent) document.documentElement.style.setProperty('--accent', colors.accent);
-    if (colors.bg) document.documentElement.style.setProperty('--bg', colors.bg);
-    if (colors.card) document.documentElement.style.setProperty('--card', colors.card);
+    // تطبيق ألوان المعهد
+    if(data.colors){
+      document.documentElement.style.setProperty("--primary", data.colors.primary);
+      document.documentElement.style.setProperty("--bg", data.colors.bg);
+      document.documentElement.style.setProperty("--card", data.colors.card);
+      document.documentElement.style.setProperty("--accent", data.colors.accent);
+    }
+  } else {
+    nameEl.textContent = "بيانات المعهد غير موجودة";
   }
 });
 
-// 🔘 التنقل بين الصفحات الخاصة بالمعهد
+// 🔘 التنقل بين الصفحات
 const pageLinks = {
   studentsCard: "students.html",
   teachersCard: "teachers.html",
@@ -154,27 +173,21 @@ const pageLinks = {
   settingsCard: "settings.html",
   financeCard: "finance.html"
 };
-
-Object.keys(pageLinks).forEach(id => {
+Object.keys(pageLinks).forEach(id=>{
   const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener("click", () => {
-      if(!instituteId){
-        alert("جارٍ تحميل بيانات المعهد، الرجاء الانتظار...");
-        return;
-      }
-      // تمرير instituteId للصفحات الفرعية
-      window.location.href = pageLinks[id] + "?instituteId=" + instituteId;
-    });
+  if(el){
+    el.addEventListener("click", ()=>window.location.href = pageLinks[id]);
   }
 });
 
-// 🔒 زر تسجيل الخروج
-document.getElementById("logoutBtn").addEventListener("click", async () => {
+// 🔒 تسجيل الخروج
+logoutBtn.addEventListener("click", async()=>{
   await signOut(auth);
+  localStorage.clear();
   alert("تم تسجيل الخروج بنجاح");
-  window.location.href = "login.html";
+  window.location.href = "institute-login.html";
 });
 </script>
+
 </body>
 </html>
