@@ -2,87 +2,32 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل دخول مدير المعهد - نظام OMA</title>
 <style>
-:root {
-  --primary:#004aad;
-  --accent:#ffcc33;
-  --bg:#f5f9ff;
-}
-body {
-  font-family:'Cairo',sans-serif;
-  background:var(--bg);
-  margin:0;
-  padding:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-.login-card {
-  background:#fff;
-  padding:35px 30px;
-  border-radius:12px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.1);
-  width:90%;
-  max-width:400px;
-  text-align:center;
-}
-h2 {
-  color:var(--primary);
-  margin-bottom:20px;
-}
-input {
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border:1px solid #ccc;
-  border-radius:8px;
-  font-size:15px;
-}
-button {
-  width:100%;
-  background:var(--primary);
-  color:white;
-  border:none;
-  padding:12px;
-  border-radius:8px;
-  font-size:16px;
-  cursor:pointer;
-  margin-top:10px;
-  transition:0.3s;
-}
+body { font-family:'Cairo',sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.login-box { background:white; padding:40px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); width:320px; text-align:center; }
+.login-box h2 { color:#004aad; margin-bottom:20px; }
+input { width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; }
+button { width:100%; padding:12px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; transition:0.3s; }
 button:hover { background:#003a8c; }
-#errorMsg {
-  color:red;
-  margin-top:10px;
-  font-size:14px;
-}
-footer {
-  text-align:center;
-  font-size:13px;
-  color:#888;
-  margin-top:20px;
-}
+#errorMsg { color:red; font-size:14px; margin-bottom:10px; }
 </style>
 </head>
 <body>
 
-<div class="login-card">
-  <h2>تسجيل دخول مدير المعهد</h2>
-  <input type="email" id="email" placeholder="البريد الإلكتروني">
-  <input type="password" id="password" placeholder="كلمة المرور">
-  <button id="loginBtn">تسجيل الدخول</button>
-  <p id="errorMsg"></p>
+<div class="login-box">
+<h2>تسجيل دخول مدير المعهد</h2>
+<p id="errorMsg"></p>
+<input type="email" id="email" placeholder="البريد الإلكتروني">
+<input type="password" id="password" placeholder="كلمة المرور">
+<button id="loginBtn">دخول</button>
 </div>
-
-<footer>© 2025 نظام OMA لإدارة المعاهد</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, getDocs, getDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // إعداد Firebase
 const firebaseConfig = {
@@ -91,57 +36,53 @@ const firebaseConfig = {
   projectId: "oma0-33cc0",
   storageBucket: "oma0-33cc0.firebasestorage.app",
   messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
+  measurementId: "G-5CKWYQT9XZ"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
 const errorMsg = document.getElementById("errorMsg");
 
-loginBtn.addEventListener("click", async () => {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  errorMsg.textContent = "";
+// تسجيل الدخول
+loginBtn.addEventListener("click", async()=>{
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if(!email || !password){ errorMsg.textContent="الرجاء إدخال البريد وكلمة المرور."; return; }
 
-  if(!email || !password){
-    errorMsg.textContent = "يرجى إدخال البريد الإلكتروني وكلمة المرور.";
-    return;
-  }
+  loginBtn.disabled = true;
+  loginBtn.textContent = "جاري التحقق...";
+  errorMsg.textContent="";
 
-  try {
-    // تسجيل الدخول
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCred.user;
+  try{
+    const userCred = await signInWithEmailAndPassword(auth,email,password);
+    const uid = userCred.user.uid;
+    const userDoc = await getDoc(doc(db,"users",uid));
+    if(!userDoc.exists()) throw new Error("المستخدم غير موجود.");
+    const userData = userDoc.data();
+    if(userData.type !== "instituteAdmin") throw new Error("هذا الحساب ليس مدير معهد.");
 
-    // التحقق من أنه مدير معهد
-    const q = query(collection(db, "users"), where("uid", "==", user.uid));
-    const querySnapshot = await getDocs(q);
+    // جلب بيانات المعهد وألوانه
+    const instituteDoc = await getDoc(doc(db,"institutes",userData.instituteId));
+    if(!instituteDoc.exists()) throw new Error("المعهد المرتبط غير موجود.");
+    const instituteData = instituteDoc.data();
+    const colors = instituteData.colors || {};
+    // تخزين الألوان في localStorage لتطبيقها في dashboard
+    localStorage.setItem("instituteColors", JSON.stringify(colors));
+    localStorage.setItem("instituteName", instituteData.name || "");
 
-    if (querySnapshot.empty) {
-      errorMsg.textContent = "⚠️ لم يتم العثور على بيانات المستخدم.";
-      return;
-    }
-
-    const userData = querySnapshot.docs[0].data();
-
-    if (userData.type === "instituteAdmin") {
-      // ✅ نجاح الدخول
-      localStorage.setItem("currentInstituteId", userData.instituteId);
-      window.location.href = "dashboard.html"; // ← يمكن تغييرها إلى student-dashboard.html
-    } else {
-      errorMsg.textContent = "⚠️ هذا الحساب ليس حساب مدير معهد.";
-    }
-
-  } catch (error) {
-    console.error(error);
-    if (error.code === "auth/invalid-credential") {
-      errorMsg.textContent = "❌ البريد الإلكتروني أو كلمة المرور غير صحيحة.";
-    } else {
-      errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
-    }
+    // إعادة التوجيه إلى لوحة التحكم
+    window.location.href = "dashboard.html";
+  }catch(err){
+    console.error(err);
+    loginBtn.disabled = false;
+    loginBtn.textContent = "دخول";
+    errorMsg.textContent = err.message || "حدث خطأ أثناء تسجيل الدخول.";
   }
 });
 </script>
