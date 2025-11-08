@@ -3,74 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إدارة المعاهد - نظام OMA</title>
+<title>إنشاء المعهد - نظام OMA</title>
 <style>
-:root {
-  --primary:#004aad;
-  --bg:#f5f9ff;
-  --card:#fff;
-  --accent:#ffcc33;
+:root { --primary:#004aad; --bg:#f5f9ff; --card:#fff; }
+body { font-family:'Cairo',sans-serif; background: var(--bg); margin:0; padding:20px; }
+h2 { text-align:center; color:var(--primary); }
+.form-container {
+  background: var(--card); padding:30px; max-width:600px; margin:20px auto;
+  border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1);
 }
-
-body {
-  font-family:'Cairo',sans-serif;
-  background: var(--bg);
-  margin:0;
-  padding:20px;
-}
-
-h2 { text-align:center; color:var(--primary); margin-bottom:20px; }
-
-.form-container, .institutes-list {
-  background: var(--card);
-  padding:20px;
-  margin:10px auto;
-  border-radius:12px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.1);
-  max-width:700px;
-}
-
-input, select, button {
-  width:100%;
-  padding:12px;
-  margin-bottom:12px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-size:15px;
-}
-
-button {
-  background: var(--primary);
-  color:white;
-  border:none;
-  cursor:pointer;
-  transition:0.3s;
-}
-
+input, select, button { width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
+button { background: var(--primary); color:white; border:none; cursor:pointer; transition:0.3s; }
 button:hover { background:#003a8c; }
-
 .label { font-weight:bold; margin-bottom:5px; display:block; }
-
-.institute-item {
-  padding:10px;
-  border-bottom:1px solid #ccc;
-  display:flex;
-  justify-content: space-between;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-.institute-info { flex:1; }
-
-.institute-actions button {
-  margin-left:5px;
-  margin-top:5px;
-}
+.institutes-list { margin-top:30px; background:#eef4ff; padding:20px; border-radius:10px; }
+.institutes-list h3 { margin-top:0; color:var(--primary); }
+.institute-item { padding:10px; border-bottom:1px solid #ccc; display:flex; justify-content:space-between; align-items:center; }
+.institute-item:last-child { border-bottom:none; }
+.institute-actions button { margin-left:5px; padding:5px 10px; font-size:13px; border-radius:5px; border:none; cursor:pointer; }
+.institute-actions .edit { background:#f0ad4e; color:white; }
+.institute-actions .delete { background:#d9534f; color:white; }
 </style>
 </head>
 <body>
 
-<h2>إدارة المعاهد</h2>
+<h2>إنشاء معهد جديد</h2>
 
 <div class="form-container">
   <label class="label">اسم المعهد</label>
@@ -114,11 +71,11 @@ button:hover { background:#003a8c; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// Firebase Config
+// 🔹 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -156,13 +113,11 @@ async function loadInstitutes() {
     const div = document.createElement("div");
     div.classList.add("institute-item");
     div.innerHTML = `
-      <div class="institute-info">
-        ${data.name} - البريد: ${data.adminEmail} - تاريخ الإنشاء: ${data.createdAt?.toDate?.().toLocaleDateString() || "غير محدد"}
-      </div>
-      <div class="institute-actions">
-        <button onclick="editInstitute('${docSnap.id}')">تعديل</button>
-        <button onclick="deleteInstitute('${docSnap.id}')">حذف</button>
-      </div>
+      <span>${data.name} - البريد: ${data.adminEmail} - تاريخ الإنشاء: ${data.createdAt?.toDate?.().toLocaleDateString() || "غير محدد"}</span>
+      <span class="institute-actions">
+        <button class="edit" onclick="editInstitute('${docSnap.id}')">تعديل</button>
+        <button class="delete" onclick="deleteInstitute('${docSnap.id}')">حذف</button>
+      </span>
     `;
     listContainer.appendChild(div);
   });
@@ -178,6 +133,7 @@ createBtn.addEventListener("click", async () => {
     return;
   }
   statusMsg.textContent = "جاري إنشاء المعهد...";
+  statusMsg.style.color = "red";
 
   try{
     let logoUrl = "";
@@ -231,28 +187,25 @@ createBtn.addEventListener("click", async () => {
   }
 });
 
-// حذف المعهد
-window.deleteInstitute = async function(id){
-  if(confirm("هل أنت متأكد من حذف هذا المعهد؟")){
+// حذف معهد
+window.deleteInstitute = async (id) => {
+  if(!confirm("هل تريد حذف هذا المعهد؟")) return;
+  try{
     await deleteDoc(doc(db,"institutes",id));
     loadInstitutes();
+  }catch(err){
+    console.error(err);
+    alert("حدث خطأ أثناء الحذف.");
   }
 }
 
-// تعديل المعهد
-window.editInstitute = async function(id){
-  const docRef = doc(db,"institutes",id);
-  const docSnap = await getDocs(collection(db, "institutes"));
-  const newName = prompt("أدخل الاسم الجديد للمعهد:");
-  if(newName){
-    await updateDoc(docRef,{name:newName});
-    loadInstitutes();
-  }
+// تعديل معهد (مثال، يمكن تطويره لاحقاً)
+window.editInstitute = (id) => {
+  alert("وظيفة تعديل المعهد يمكن تطويرها لاحقاً. المعرف: " + id);
 }
 
 // تحميل القائمة عند فتح الصفحة
 loadInstitutes();
 </script>
-
 </body>
 </html>
