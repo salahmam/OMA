@@ -3,27 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة نظام OMA</title>
+<title>تهيئة النظام - OMA</title>
 <style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-.box { background:white; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); text-align:center; width:320px; }
-button { padding:12px 20px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; font-size:16px; margin-top:15px; }
-button:hover { background:#003a8c; }
-p { margin-top:15px; font-size:14px; }
+  body { font-family: 'Cairo', sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+  .box { background:white; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); width:320px; text-align:center; }
+  h2 { color:#004aad; margin-bottom:20px; }
+  button { padding:12px 20px; font-size:16px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; transition:0.3s; }
+  button:hover { background:#003a8c; }
+  p { margin-top:15px; font-size:14px; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h2>تهيئة نظام OMA</h2>
-  <p>إنشاء حساب مسؤول الموقع تلقائيًا</p>
-  <button id="initBtn">ابدأ التهيئة</button>
-  <p id="status"></p>
+  <h2>تهيئة النظام - OMA</h2>
+  <p>إنشاء أول حساب مسؤول الموقع</p>
+  <button id="initBtn">إنشاء حساب المسؤول</button>
+  <p id="statusMsg"></p>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, setDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // 🔹 إعداد Firebase
 const firebaseConfig = {
@@ -35,38 +36,46 @@ const firebaseConfig = {
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const initBtn = document.getElementById('initBtn');
-const status = document.getElementById('status');
+const initBtn = document.getElementById("initBtn");
+const statusMsg = document.getElementById("statusMsg");
 
-initBtn.addEventListener('click', async () => {
+initBtn.addEventListener("click", async () => {
   initBtn.disabled = true;
-  status.textContent = "جاري إنشاء حساب المسؤول...";
-
+  statusMsg.textContent = "جاري إنشاء الحساب...";
+  
   const email = "Salahalkaleefa@gmail.com";
   const password = "123456salah";
+  const name = "مسؤول الموقع";
 
   try {
     // إنشاء المستخدم على Firebase Auth
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
 
-    // إنشاء مستند في Firestore مع type admin
+    // إنشاء مستند المسؤول في Firestore
     await setDoc(doc(db, "users", uid), {
-      name: "مسؤول الموقع",
+      name: name,
       email: email,
       type: "admin",
       createdAt: serverTimestamp()
     });
 
-    status.textContent = "✅ تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.";
+    statusMsg.style.color = "green";
+    statusMsg.textContent = "تم إنشاء حساب المسؤول بنجاح!";
   } catch (error) {
     console.error(error);
-    if (error.code === "auth/email-already-in-use") status.textContent = "⚠️ هذا البريد موجود بالفعل.";
-    else status.textContent = "❌ حدث خطأ أثناء التهيئة.";
+    statusMsg.style.color = "red";
+    if (error.code === "auth/email-already-in-use") {
+      statusMsg.textContent = "البريد الإلكتروني مستخدم بالفعل!";
+    } else {
+      statusMsg.textContent = "حدث خطأ أثناء إنشاء الحساب.";
+    }
+    initBtn.disabled = false;
   }
 });
 </script>
