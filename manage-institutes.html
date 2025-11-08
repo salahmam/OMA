@@ -3,119 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إدارة المعاهد - نظام OMA</title>
+<title>إدارة المعهد - نظام OMA</title>
 <style>
 :root {
   --primary:#004aad;
   --bg:#f5f9ff;
   --card:#fff;
+  --accent:#ffcc33;
 }
 body {
-  font-family:'Cairo',sans-serif;
+  font-family: 'Cairo', sans-serif;
   background: var(--bg);
   margin:0;
   padding:20px;
 }
 h2 { text-align:center; color:var(--primary); margin-bottom:20px; }
-
-.institute-list {
-  max-width: 1000px;
-  margin: auto;
+.institute-card {
   background: var(--card);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.1);
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  margin-bottom:20px;
 }
-
-.institute-item {
-  display: flex;
-  flex-wrap: wrap;
+.institute-header {
+  display:flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom:1px solid #ccc;
+  align-items:center;
+  flex-wrap: wrap;
 }
-
-.institute-item:last-child { border-bottom:none; }
-
-.institute-info { flex:1; min-width:200px; }
-
-.institute-actions { display:flex; gap:5px; margin-top:5px; }
-
-button {
+.institute-header h3 { margin:0; color:var(--primary); }
+.institute-actions button {
+  margin-left:5px;
   padding:6px 12px;
   border:none;
   border-radius:6px;
   cursor:pointer;
   color:white;
+  font-weight:bold;
   transition:0.3s;
 }
-.edit-btn { background:#ff9800; }
-.edit-btn:hover { background:#e68900; }
-.delete-btn { background:#d32f2f; }
-.delete-btn:hover { background:#b71c1c; }
-
-.modal {
-  position:fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.5);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:1000;
+.editBtn { background:#004aad; }
+.editBtn:hover { background:#003a8c; }
+.deleteBtn { background:#d32f2f; }
+.deleteBtn:hover { background:#b71c1c; }
+.institute-colors { margin-top:10px; display:flex; gap:10px; flex-wrap: wrap; }
+.color-box { width:40px; height:40px; border-radius:5px; border:1px solid #ccc; }
+#logoutBtn {
+  background-color: #d32f2f;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:16px;
+  margin:20px auto 0;
+  display:block;
+  transition:0.3s;
 }
-.modal-content {
-  background:#fff;
-  padding:20px;
-  border-radius:12px;
-  max-width:500px;
-  width:100%;
-}
-.modal-content h3 { margin-top:0; color:var(--primary); text-align:center; }
-.modal-content label { display:block; margin-top:10px; font-weight:bold; }
-.modal-content input, .modal-content select { width:100%; padding:8px; margin-top:5px; }
-.modal-content button { margin-top:15px; width:100%; }
-.close-btn { background:#555; }
-.close-btn:hover { background:#333; }
+#logoutBtn:hover { background-color:#b71c1c; }
 </style>
 </head>
 <body>
 
-<h2>📝 إدارة المعاهد</h2>
-<div class="institute-list" id="institutesList"></div>
-
-<!-- مودال تعديل المعهد -->
-<div class="modal" id="editModal">
-  <div class="modal-content">
-    <h3>تعديل المعهد</h3>
-    <label>اسم المعهد</label>
-    <input type="text" id="editName">
-    <label>البريد الإلكتروني للمدير</label>
-    <input type="email" id="editEmail">
-    <label>شعار المعهد</label>
-    <input type="file" id="editLogo" accept="image/*">
-    <label>اللون الرئيسي</label>
-    <input type="color" id="editPrimary">
-    <label>لون الخلفية</label>
-    <input type="color" id="editBg">
-    <label>لون البطاقات</label>
-    <input type="color" id="editCard">
-    <label>لون عناصر التمييز</label>
-    <input type="color" id="editAccent">
-    <label>مدة الاشتراك</label>
-    <select id="editSubscription">
-      <option value="lifetime">مدى الحياة</option>
-      <option value="trial">تجريبي</option>
-    </select>
-    <button id="saveEditBtn">حفظ التعديلات</button>
-    <button class="close-btn" id="closeModal">إلغاء</button>
-  </div>
-</div>
+<h2>إدارة المعهد - نظام OMA</h2>
+<div id="institutesContainer"></div>
+<button id="logoutBtn">🔓 تسجيل الخروج</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -129,103 +86,89 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
+const auth = getAuth(app);
+const institutesContainer = document.getElementById("institutesContainer");
 
-const institutesList = document.getElementById("institutesList");
-const editModal = document.getElementById("editModal");
-const closeModal = document.getElementById("closeModal");
+let currentUser = null;
 
-let currentEditId = null;
+// منع الدخول إلا بعد تسجيل الدخول
+onAuthStateChanged(auth, async (user)=>{
+  if(!user) window.location.href="institute-login.html";
+  else {
+    currentUser = user;
+    loadInstitutesForUser();
+  }
+});
 
-// الحقول داخل المودال
-const editName = document.getElementById("editName");
-const editEmail = document.getElementById("editEmail");
-const editLogo = document.getElementById("editLogo");
-const editPrimary = document.getElementById("editPrimary");
-const editBg = document.getElementById("editBg");
-const editCard = document.getElementById("editCard");
-const editAccent = document.getElementById("editAccent");
-const editSubscription = document.getElementById("editSubscription");
-const saveEditBtn = document.getElementById("saveEditBtn");
+// تحميل المعهد الخاص بالمستخدم
+async function loadInstitutesForUser(){
+  institutesContainer.innerHTML = "";
+  const userDoc = await doc(db,"users",currentUser.uid).get();
+  const userSnap = await getDocs(collection(db,"users"));
+  const userRef = doc(db,"users",currentUser.uid);
+  const userDataSnap = await getDocs(collection(db,"users"));
+  const usersCollection = collection(db,"users");
 
-// تحميل المعاهد
-async function loadInstitutes() {
-  institutesList.innerHTML = "";
-  const querySnapshot = await getDocs(collection(db,"institutes"));
-  querySnapshot.forEach(docSnap=>{
-    const data = docSnap.data();
-    const div = document.createElement("div");
-    div.classList.add("institute-item");
-    div.innerHTML = `
-      <div class="institute-info">
-        <strong>${data.name}</strong><br>
-        البريد: ${data.adminEmail || data.email || "-"}<br>
-        نوع الاشتراك: ${data.subscriptionType || (data.plan?.type) || "-"}
+  const userDocSnap = await doc(db,"users",currentUser.uid);
+  const userData = (await userDocSnap.get()).data();
+
+  // superAdmin يرى كل المعاهد
+  let querySnapshot;
+  if(userData.type==="superAdmin"){
+    querySnapshot = await getDocs(collection(db,"institutes"));
+  } else if(userData.type==="instituteAdmin"){
+    querySnapshot = await getDocs(collection(db,"institutes"));
+    querySnapshot = querySnapshot.docs.filter(d=>d.id===userData.instituteId).map(d=>({id:d.id,data:d.data()}));
+  } else return;
+
+  for(const docSnap of querySnapshot){
+    const data = docSnap.data? docSnap.data : docSnap.data();
+    const instituteId = docSnap.id ? docSnap.id : docSnap.id;
+    const card = document.createElement("div");
+    card.classList.add("institute-card");
+    card.innerHTML = `
+      <div class="institute-header">
+        <h3>${data.name}</h3>
+        <div class="institute-actions">
+          ${userData.type==="superAdmin"?'<button class="editBtn">تعديل</button>':'<button class="editBtn">تعديل</button>'}
+        </div>
       </div>
-      <div class="institute-actions">
-        <button class="edit-btn">تعديل</button>
-        <button class="delete-btn">حذف</button>
+      <p>البريد: ${data.email || "غير محدد"}</p>
+      <p>نوع الاشتراك: ${data.subscriptionType || "غير محدد"}</p>
+      <div class="institute-colors">
+        <div class="color-box" style="background:${data.colors?.primary || "#004aad"}" title="Primary"></div>
+        <div class="color-box" style="background:${data.colors?.bg || "#f5f9ff"}" title="Background"></div>
+        <div class="color-box" style="background:${data.colors?.card || "#fff"}" title="Card"></div>
+        <div class="color-box" style="background:${data.colors?.accent || "#ffcc33"}" title="Accent"></div>
       </div>
     `;
 
-    // تعديل
-    div.querySelector(".edit-btn").addEventListener("click", ()=>{
-      currentEditId = docSnap.id;
-      editName.value = data.name || "";
-      editEmail.value = data.adminEmail || data.email || "";
-      editPrimary.value = data.colors?.primary || "#004aad";
-      editBg.value = data.colors?.bg || "#f5f9ff";
-      editCard.value = data.colors?.card || "#fff";
-      editAccent.value = data.colors?.accent || "#ffcc33";
-      editSubscription.value = data.subscriptionType || (data.plan?.type) || "lifetime";
-      editModal.style.display = "flex";
+    // تعديل المعهد
+    card.querySelector(".editBtn").addEventListener("click", async()=>{
+      const newName = prompt("أدخل اسم المعهد الجديد:", data.name);
+      if(!newName) return;
+      const newPrimary = prompt("أدخل اللون الرئيسي:", data.colors?.primary || "#004aad");
+      const newBg = prompt("أدخل لون الخلفية:", data.colors?.bg || "#f5f9ff");
+      const newCard = prompt("أدخل لون البطاقات:", data.colors?.card || "#fff");
+      const newAccent = prompt("أدخل لون التمييز:", data.colors?.accent || "#ffcc33");
+
+      await updateDoc(doc(db,"institutes",instituteId),{
+        name:newName,
+        colors:{primary:newPrimary,bg:newBg,card:newCard,accent:newAccent}
+      });
+      loadInstitutesForUser();
     });
 
-    // حذف
-    div.querySelector(".delete-btn").addEventListener("click", async ()=>{
-      if(confirm(`هل أنت متأكد من حذف المعهد "${data.name}"؟`)){
-        await deleteDoc(doc(db,"institutes",docSnap.id));
-        loadInstitutes();
-      }
-    });
-
-    institutesList.appendChild(div);
-  });
+    institutesContainer.appendChild(card);
+  }
 }
 
-// حفظ التعديلات
-saveEditBtn.addEventListener("click", async()=>{
-  if(!currentEditId) return;
-  let updateData = {
-    name: editName.value,
-    adminEmail: editEmail.value,
-    subscriptionType: editSubscription.value,
-    colors:{
-      primary: editPrimary.value,
-      bg: editBg.value,
-      card: editCard.value,
-      accent: editAccent.value
-    }
-  };
-
-  if(editLogo.files.length > 0){
-    const file = editLogo.files[0];
-    const logoRef = ref(storage, `instituteLogos/${Date.now()}_${file.name}`);
-    await uploadBytes(logoRef,file);
-    const logoUrl = await getDownloadURL(logoRef);
-    updateData.logoUrl = logoUrl;
-  }
-
-  await updateDoc(doc(db,"institutes",currentEditId), updateData);
-  editModal.style.display = "none";
-  loadInstitutes();
+// زر تسجيل الخروج
+document.getElementById("logoutBtn").addEventListener("click", async()=>{
+  await signOut(auth);
+  alert("تم تسجيل الخروج بنجاح");
+  window.location.href="institute-login.html";
 });
-
-// إغلاق المودال
-closeModal.addEventListener("click", ()=>{ editModal.style.display = "none"; });
-
-// تحميل القائمة عند الفتح
-loadInstitutes();
 </script>
 </body>
 </html>
