@@ -32,7 +32,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -54,7 +53,7 @@ const errorMsg = document.getElementById("errorMsg");
 
 // تحقق تسجيل دخول مسبق
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
+  if(user){
     const userDoc = await getDoc(doc(db,"users",user.uid));
     if(userDoc.exists()) redirectUser(userDoc.data());
   }
