@@ -3,28 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة Super Admin - نظام OMA</title>
+<title>تهيئة النظام - OMA</title>
 <style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-.container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); text-align:center; }
-button { padding:12px 20px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; font-size:16px; transition:0.3s; }
-button:hover { background:#003a8c; }
-p { margin-top:20px; font-weight:bold; }
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #f5f9ff;
+  text-align: center;
+  padding: 40px;
+  color: #004aad;
+}
+button {
+  padding: 12px 25px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #004aad;
+  color: white;
+  cursor: pointer;
+}
+button:hover { background: #003a8c; }
+#log {
+  margin-top: 20px;
+  white-space: pre-wrap;
+  text-align: right;
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <h2>تهيئة Super Admin</h2>
-  <button id="setupBtn">إنشاء حساب المسؤول</button>
-  <p id="status"></p>
-</div>
+<h2>🔧 تهيئة نظام OMA</h2>
+<p>اضغط الزر أدناه لإنشاء المستخدم والمعهد التجريبي.</p>
+<button id="initBtn">بدء التهيئة</button>
+<div id="log"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -39,38 +60,81 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const setupBtn = document.getElementById("setupBtn");
-const status = document.getElementById("status");
+const log = document.getElementById("log");
+const btn = document.getElementById("initBtn");
 
-// بيانات Super Admin
-const superAdminEmail = "Salahalkaleefa@gmail.com";
-const superAdminPassword = "123456salah";
+function write(msg){ log.innerHTML += `✅ ${msg}\n`; }
 
-setupBtn.addEventListener("click", async () => {
-  status.textContent = "جاري إنشاء الحساب...";
+btn.addEventListener("click", async()=>{
+  btn.disabled = true;
+  write("جاري التهيئة...");
+
   try {
-    // إنشاء حساب في Firebase Auth
-    const userCred = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
+    // إنشاء المستخدم الأساسي (superAdmin)
+    const email = "Salahalkaleefa@gmail.com";
+    const password = "123456salah";
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
 
-    // إنشاء مستند في Firestore
-    await setDoc(doc(db, "users", uid), {
-      name: "مسؤول الموقع",
-      email: superAdminEmail,
-      type: "superAdmin",
-      createdAt: serverTimestamp()
+    await setDoc(doc(db,"users",uid),{
+      name:"مسؤول النظام",
+      email,
+      type:"superAdmin",
+      createdAt:serverTimestamp()
+    });
+    write("تم إنشاء مستخدم superAdmin بنجاح.");
+
+    // إنشاء معهد تجريبي افتراضي
+    const instituteId = "demo-institute";
+    await setDoc(doc(db,"institutes",instituteId),{
+      name:"معهد OMA التجريبي",
+      email:"oma-demo@oma.edu",
+      logo:"https://i.ibb.co/vqC4ZP6/institute-logo.png",
+      theme:{
+        primary:"#004aad",
+        accent:"#ffcc33",
+        background:"#f5f9ff"
+      },
+      createdAt:serverTimestamp(),
+      plan:{
+        type:"تجريبي",
+        expiresAt:"مدى الحياة"
+      },
+      createdBy:uid
+    });
+    write("تم إنشاء المعهد التجريبي بنجاح.");
+
+    // إنشاء مدير المعهد التجريبي
+    const managerEmail = "demo@oma.edu";
+    const managerPassword = "123456demo";
+    const managerCred = await createUserWithEmailAndPassword(auth, managerEmail, managerPassword);
+    const managerUid = managerCred.user.uid;
+
+    await setDoc(doc(db,"users",managerUid),{
+      name:"مدير معهد OMA التجريبي",
+      email:managerEmail,
+      type:"instituteAdmin",
+      instituteId:instituteId,
+      createdAt:serverTimestamp()
+    });
+    write("تم إنشاء مدير المعهد التجريبي بنجاح.");
+
+    // إنشاء هيكل أساسي للمعهد
+    await setDoc(doc(db,`institutes/${instituteId}/settings/general`),{
+      openHours:"8:00 AM - 5:00 PM",
+      contact:"07800000000",
+      address:"بغداد - العراق",
+      updatedAt:serverTimestamp()
     });
 
-    status.style.color = "green";
-    status.textContent = "تم إنشاء Super Admin بنجاح! يمكنك الآن تسجيل الدخول.";
-  } catch(err) {
-    status.style.color = "red";
-    if(err.code === "auth/email-already-in-use") {
-      status.textContent = "الحساب موجود بالفعل.";
-    } else {
-      console.error(err);
-      status.textContent = "حدث خطأ أثناء إنشاء الحساب.";
-    }
+    write("تم إنشاء الإعدادات الأساسية للمعهد.");
+    write("🎉 تمت التهيئة بنجاح! يمكنك الآن تسجيل الدخول كأحد المستخدمين:\n");
+    write("🔹 مسؤول النظام:\n   البريد: Salahalkaleefa@gmail.com\n   كلمة المرور: 123456salah\n");
+    write("🔹 مدير المعهد التجريبي:\n   البريد: demo@oma.edu\n   كلمة المرور: 123456demo\n");
+    write("\nالرجاء الانتقال إلى صفحة login.html لتسجيل الدخول.");
+  } catch (err) {
+    console.error(err);
+    write("❌ حدث خطأ أثناء التهيئة: " + err.message);
   }
 });
 </script>
