@@ -3,53 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إنشاء المعاهد - نظام OMA</title>
+<title>إنشاء المعهد - نظام OMA</title>
 <style>
-:root { --primary:#004aad; --bg:#f5f9ff; --card:#fff; }
-body { margin:0; font-family:'Cairo',sans-serif; background:var(--bg); }
-header { background:var(--primary); color:white; padding:15px; text-align:center; font-size:20px; font-weight:bold; }
-.container { max-width:900px; margin:30px auto; padding:20px; display:flex; flex-direction:column; gap:20px; }
-.card { background:var(--card); padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); }
-input, button { padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ccc; width:100%; }
-button { background:var(--primary); color:white; border:none; cursor:pointer; transition:0.3s; }
-button:hover { background:#003a8c; }
-table { width:100%; border-collapse:collapse; margin-top:15px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:var(--primary); color:white; }
-.status { margin-top:10px; font-size:14px; }
+  :root { --primary: #004aad; --bg: #f5f9ff; --card: #fff; }
+  body { margin:0; font-family:'Cairo',sans-serif; background:var(--bg); }
+  header { background: var(--primary); color:white; text-align:center; padding:15px; font-size:20px; font-weight:bold; }
+  .container { max-width:900px; margin:30px auto; padding:20px; background:white; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+  h2 { color: var(--primary); margin-bottom:20px; text-align:center; }
+  input, select { width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
+  label { font-weight:bold; margin-bottom:5px; display:block; }
+  button { background: var(--primary); color:white; border:none; padding:12px; width:100%; border-radius:8px; font-size:16px; cursor:pointer; transition:0.3s; }
+  button:hover { background:#003a8c; }
+  .color-input { width:50px; height:30px; padding:0; border:none; margin-right:10px; vertical-align:middle; }
+  table { width:100%; border-collapse:collapse; margin-top:25px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+  th { background:#eef4ff; }
+  .logo-preview { max-width:80px; max-height:50px; display:block; margin-top:10px; }
+  .error { color:red; margin-bottom:15px; }
+  .success { color:green; margin-bottom:15px; }
 </style>
 </head>
 <body>
-<header>إنشاء المعاهد - نظام OMA</header>
+<header>إنشاء وإدارة المعاهد - نظام OMA</header>
 <div class="container">
+  <h2>إنشاء معهد جديد</h2>
+  <p class="error" id="errorMsg"></p>
+  <p class="success" id="successMsg"></p>
 
-  <div class="card">
-    <h3>إضافة معهد جديد</h3>
-    <input type="text" id="instituteName" placeholder="اسم المعهد" required />
-    <input type="email" id="managerEmail" placeholder="البريد الإلكتروني لمدير المعهد" required />
-    <input type="password" id="managerPassword" placeholder="كلمة المرور" required />
-    <button id="addInstituteBtn">➕ إنشاء المعهد</button>
-    <div class="status" id="statusMsg"></div>
-  </div>
+  <label>البريد الإلكتروني لمدير المعهد</label>
+  <input type="email" id="adminEmail" placeholder="example@domain.com" required />
 
-  <div class="card">
-    <h3>قائمة المعاهد الحالية</h3>
-    <table>
-      <thead>
-        <tr><th>اسم المعهد</th><th>مدير المعهد</th><th>تاريخ الإنشاء</th></tr>
-      </thead>
-      <tbody id="institutesTable"></tbody>
-    </table>
-  </div>
+  <label>كلمة المرور لمدير المعهد</label>
+  <input type="password" id="adminPassword" placeholder="********" required />
 
+  <label>اسم المعهد</label>
+  <input type="text" id="instituteName" placeholder="اسم المعهد" required />
+
+  <label>شعار المعهد</label>
+  <input type="file" id="instituteLogo" accept="image/*" />
+  <img id="logoPreview" class="logo-preview" src="" alt="Logo Preview" />
+
+  <label>تخصيص ألوان صفحات المعهد</label>
+  <input type="color" id="colorPrimary" class="color-input" title="اللون الرئيسي" value="#004aad" />
+  <input type="color" id="colorAccent" class="color-input" title="اللون الثانوي" value="#ffcc33" />
+
+  <label>نوع الترخيص</label>
+  <select id="licenseType">
+    <option value="lifetime">سنة مدى الحياة</option>
+    <option value="trial">تجريبي</option>
+  </select>
+
+  <button id="createBtn">إنشاء المعهد</button>
+
+  <h2>قائمة المعاهد الحالية</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>اسم المعهد</th>
+        <th>البريد الإلكتروني للمدير</th>
+        <th>شعار المعهد</th>
+        <th>تاريخ الإنشاء</th>
+        <th>نوع الترخيص</th>
+      </tr>
+    </thead>
+    <tbody id="instituteList"></tbody>
+  </table>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// إعداد Firebase
+// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -59,82 +86,113 @@ const firebaseConfig = {
   appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
   measurementId: "G-5CKWYQT9XZ"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
-// عناصر DOM
-const instituteNameInput = document.getElementById("instituteName");
-const managerEmailInput = document.getElementById("managerEmail");
-const managerPasswordInput = document.getElementById("managerPassword");
-const addInstituteBtn = document.getElementById("addInstituteBtn");
-const statusMsg = document.getElementById("statusMsg");
-const institutesTable = document.getElementById("institutesTable");
+// عناصر الصفحة
+const adminEmail = document.getElementById("adminEmail");
+const adminPassword = document.getElementById("adminPassword");
+const instituteName = document.getElementById("instituteName");
+const instituteLogo = document.getElementById("instituteLogo");
+const logoPreview = document.getElementById("logoPreview");
+const colorPrimary = document.getElementById("colorPrimary");
+const colorAccent = document.getElementById("colorAccent");
+const licenseType = document.getElementById("licenseType");
+const createBtn = document.getElementById("createBtn");
+const errorMsg = document.getElementById("errorMsg");
+const successMsg = document.getElementById("successMsg");
+const instituteList = document.getElementById("instituteList");
 
-// إضافة معهد جديد
-addInstituteBtn.addEventListener("click", async () => {
-  const name = instituteNameInput.value.trim();
-  const email = managerEmailInput.value.trim();
-  const password = managerPasswordInput.value.trim();
-  if (!name || !email || !password) {
-    statusMsg.style.color = "red";
-    statusMsg.textContent = "الرجاء تعبئة جميع الحقول.";
-    return;
-  }
-  
-  addInstituteBtn.disabled = true;
-  statusMsg.style.color = "black";
-  statusMsg.textContent = "جاري إنشاء المعهد...";
-
-  try {
-    // إنشاء مستخدم مدير المعهد
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-
-    // إنشاء مستند للمعهد
-    const instituteRef = doc(db, "institutes", uid);
-    await setDoc(instituteRef, {
-      name: name,
-      managerEmail: email,
-      managerUid: uid,
-      createdAt: serverTimestamp()
-    });
-
-    statusMsg.style.color = "green";
-    statusMsg.textContent = "تم إنشاء المعهد بنجاح!";
-    instituteNameInput.value = "";
-    managerEmailInput.value = "";
-    managerPasswordInput.value = "";
-    
-    // إعادة تحميل قائمة المعاهد
-    loadInstitutes();
-
-  } catch (error) {
-    console.error(error);
-    statusMsg.style.color = "red";
-    statusMsg.textContent = "حدث خطأ أثناء إنشاء المعهد.";
-  } finally {
-    addInstituteBtn.disabled = false;
+// عرض صورة الشعار فور اختيارها
+instituteLogo.addEventListener("change", () => {
+  const file = instituteLogo.files[0];
+  if(file){
+    logoPreview.src = URL.createObjectURL(file);
   }
 });
 
-// تحميل قائمة المعاهد
-async function loadInstitutes() {
-  institutesTable.innerHTML = "";
-  const snap = await getDocs(collection(db, "institutes"));
-  snap.forEach(d => {
-    const data = d.data();
+// جلب قائمة المعاهد
+async function loadInstitutes(){
+  instituteList.innerHTML = "";
+  const querySnapshot = await getDocs(collection(db,"institutes"));
+  querySnapshot.forEach(docSnap => {
+    const data = docSnap.data();
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${data.name || "-"}</td>
-      <td>${data.managerEmail || "-"}</td>
-      <td>${data.createdAt ? new Date(data.createdAt.seconds*1000).toLocaleString() : "-"}</td>
+      <td>${data.name}</td>
+      <td>${data.adminEmail}</td>
+      <td>${data.logoURL ? `<img src="${data.logoURL}" width="60">` : ''}</td>
+      <td>${data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : ''}</td>
+      <td>${data.licenseType}</td>
     `;
-    institutesTable.appendChild(tr);
+    instituteList.appendChild(tr);
   });
 }
 
-// تحميل عند البداية
+// إنشاء المعهد
+createBtn.addEventListener("click", async () => {
+  errorMsg.textContent = "";
+  successMsg.textContent = "";
+
+  const email = adminEmail.value.trim();
+  const password = adminPassword.value.trim();
+  const name = instituteName.value.trim();
+  const license = licenseType.value;
+  const primaryColor = colorPrimary.value;
+  const accentColor = colorAccent.value;
+  const logoFile = instituteLogo.files[0];
+
+  if(!email || !password || !name){
+    errorMsg.textContent = "الرجاء تعبئة جميع الحقول المطلوبة.";
+    return;
+  }
+
+  createBtn.disabled = true;
+  createBtn.textContent = "جارٍ الإنشاء...";
+
+  try{
+    // 1️⃣ إنشاء مستخدم مدير المعهد
+    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    const adminUid = userCred.user.uid;
+
+    // 2️⃣ رفع الشعار إن وجد
+    let logoURL = "";
+    if(logoFile){
+      const storageRef = ref(storage, `instituteLogos/${adminUid}_${logoFile.name}`);
+      await uploadBytes(storageRef, logoFile);
+      logoURL = await getDownloadURL(storageRef);
+    }
+
+    // 3️⃣ إضافة المعهد في Firestore
+    await addDoc(collection(db,"institutes"),{
+      name: name,
+      adminEmail: email,
+      adminUid: adminUid,
+      logoURL: logoURL,
+      colors: { primary: primaryColor, accent: accentColor },
+      licenseType: license,
+      createdAt: serverTimestamp()
+    });
+
+    successMsg.textContent = "تم إنشاء المعهد بنجاح!";
+    adminEmail.value = adminPassword.value = instituteName.value = "";
+    instituteLogo.value = "";
+    logoPreview.src = "";
+
+    loadInstitutes();
+  }catch(err){
+    console.error(err);
+    errorMsg.textContent = "حدث خطأ أثناء إنشاء المعهد: "+err.message;
+  }finally{
+    createBtn.disabled = false;
+    createBtn.textContent = "إنشاء المعهد";
+  }
+});
+
+// تحميل قائمة المعاهد عند فتح الصفحة
 loadInstitutes();
 </script>
 </body>
