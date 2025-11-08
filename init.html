@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة نظام OMA</title>
+<title>تهيئة النظام - OMA</title>
 <style>
 body {
   font-family: 'Cairo', sans-serif;
@@ -66,81 +66,72 @@ function write(msg){ log.innerHTML += `✅ ${msg}\n`; }
 
 btn.addEventListener("click", async()=>{
   btn.disabled = true;
-  write("🔄 جاري التهيئة...");
+  write("جاري التهيئة...");
 
   try {
-    // ✅ إنشاء مستخدم مسؤول النظام (superAdmin)
-    const superEmail = "Salahalkaleefa@gmail.com";
-    const superPass = "123456salah";
-    const superCred = await createUserWithEmailAndPassword(auth, superEmail, superPass);
-    const superUid = superCred.user.uid;
-    await setDoc(doc(db,"users",superUid),{
-      name: "مسؤول النظام",
-      email: superEmail,
-      type: "superAdmin",
-      createdAt: serverTimestamp()
+    // إنشاء superAdmin
+    const email = "Salahalkaleefa@gmail.com";
+    const password = "123456salah";
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+
+    await setDoc(doc(db,"users",uid),{
+      name:"مسؤول النظام",
+      email,
+      type:"superAdmin",
+      createdAt:serverTimestamp()
     });
     write("تم إنشاء مستخدم superAdmin بنجاح.");
 
-    // ✅ إنشاء معهد تجريبي
+    // إنشاء معهد تجريبي
     const instituteId = "demo-institute";
     await setDoc(doc(db,"institutes",instituteId),{
-      name: "معهد OMA التجريبي",
-      adminEmail: "demo@oma.edu",
-      logo: "https://i.ibb.co/vqC4ZP6/institute-logo.png",
-      colors: {
-        primary: "#004aad",
-        accent: "#ffcc33",
-        bg: "#f5f9ff",
-        card: "#ffffff"
+      name:"معهد OMA التجريبي",
+      adminEmail:"demo@oma.edu",
+      logo:"https://i.ibb.co/vqC4ZP6/institute-logo.png",
+      colors:{
+        primary:"#004aad",
+        accent:"#ffcc33",
+        background:"#f5f9ff",
+        card:"#ffffff"
       },
-      createdAt: serverTimestamp(),
-      subscription: {
-        type: "تجريبي",
-        expires: "مدى الحياة"
-      },
-      createdBy: superUid
+      subscriptionType:"trial",
+      createdAt:serverTimestamp(),
+      createdBy:uid
     });
     write("تم إنشاء المعهد التجريبي بنجاح.");
 
-    // ✅ إنشاء مدير المعهد التجريبي
+    // إنشاء مدير المعهد التجريبي
     const managerEmail = "demo@oma.edu";
-    const managerPass = "123456demo";
-    const managerCred = await createUserWithEmailAndPassword(auth, managerEmail, managerPass);
+    const managerPassword = "123456demo";
+    const managerCred = await createUserWithEmailAndPassword(auth, managerEmail, managerPassword);
     const managerUid = managerCred.user.uid;
+
     await setDoc(doc(db,"users",managerUid),{
-      name: "مدير معهد OMA التجريبي",
-      email: managerEmail,
-      type: "instituteAdmin",
-      instituteId: instituteId,
-      colors: {
-        primary: "#004aad",
-        accent: "#ffcc33",
-        bg: "#f5f9ff",
-        card: "#ffffff"
-      },
-      createdAt: serverTimestamp()
+      name:"مدير معهد OMA التجريبي",
+      email:managerEmail,
+      type:"instituteAdmin",
+      instituteId:instituteId,
+      createdAt:serverTimestamp()
     });
     write("تم إنشاء مدير المعهد التجريبي بنجاح.");
 
-    // ✅ إعداد الإعدادات العامة للمعهد
+    // إعدادات أساسية للمعهد
     await setDoc(doc(db,`institutes/${instituteId}/settings/general`),{
-      openHours: "8:00 AM - 5:00 PM",
-      contact: "07800000000",
-      address: "بغداد - العراق",
-      updatedAt: serverTimestamp()
+      openHours:"8:00 AM - 5:00 PM",
+      contact:"07800000000",
+      address:"بغداد - العراق",
+      updatedAt:serverTimestamp()
     });
+
     write("تم إعداد الإعدادات العامة للمعهد.");
-
-    write("🎉 تمت التهيئة بنجاح!");
-    write("يمكنك تسجيل الدخول باستخدام:");
-    write("🔹 مسؤول النظام: Salahalkaleefa@gmail.com / 123456salah");
-    write("🔹 مدير المعهد: demo@oma.edu / 123456demo");
-
-  } catch(err){
+    write("🎉 تم التهيئة بنجاح! يمكنك تسجيل الدخول الآن:\n");
+    write("🔹 مسؤول النظام:\n   البريد: Salahalkaleefa@gmail.com\n   كلمة المرور: 123456salah\n");
+    write("🔹 مدير المعهد:\n   البريد: demo@oma.edu\n   كلمة المرور: 123456demo\n");
+    write("\nانتقل إلى صفحة login.html لتسجيل الدخول.");
+  } catch (err) {
     console.error(err);
     write("❌ حدث خطأ أثناء التهيئة: " + err.message);
-    btn.disabled = false;
   }
 });
 </script>
