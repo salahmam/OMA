@@ -1,63 +1,140 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>إنشاء وإدارة المعاهد - نظام OMA</title>
 <style>
 :root {
-  --primary:#004aad; --bg:#f5f9ff; --card:#fff;
+  --primary:#004aad;
+  --bg:#f5f9ff;
+  --card:#fff;
+  --accent:#ffcc33;
 }
-body { margin:0; font-family:'Cairo',sans-serif; background:var(--bg); }
-header { background:var(--primary); color:white; text-align:center; padding:15px; font-size:20px; font-weight:bold; }
-.container { padding:30px; display:flex; gap:30px; flex-wrap:wrap; }
-.card { background:var(--card); padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); flex:1 1 400px; }
-input, select { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; font-size:15px; }
-button { padding:12px; width:100%; border:none; border-radius:8px; background:var(--primary); color:white; font-size:16px; cursor:pointer; transition:0.3s; }
+
+body {
+  font-family:'Cairo',sans-serif;
+  background: var(--bg);
+  margin:0;
+  padding:20px;
+}
+
+h2 { text-align:center; color:var(--primary); }
+.form-container {
+  background: var(--card);
+  padding:30px;
+  max-width:700px;
+  margin:20px auto;
+  border-radius:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+
+input, select, button {
+  width:100%;
+  padding:12px;
+  margin-bottom:15px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:15px;
+}
+
+button {
+  background: var(--primary);
+  color:white;
+  border:none;
+  cursor:pointer;
+  transition:0.3s;
+}
+
 button:hover { background:#003a8c; }
-.error { color:red; margin-bottom:10px; font-size:14px; }
-.institute-list { margin-top:20px; }
-.institute-item { background:#eef4ff; margin:5px 0; padding:10px; border-radius:6px; }
+
+.label { font-weight:bold; margin-bottom:5px; display:block; }
+
+.institutes-list {
+  margin-top:30px;
+  background:#eef4ff;
+  padding:20px;
+  border-radius:10px;
+}
+
+.institutes-list h3 { margin-top:0; color:var(--primary); }
+
+.institute-item {
+  padding:10px;
+  border-bottom:1px solid #ccc;
+  display:flex;
+  flex-direction: column;
+}
+
+.institute-item:last-child { border-bottom:none; }
+
+.institute-item div {
+  margin-top:5px;
+}
+
+.institute-item button {
+  width:auto;
+  padding:5px 10px;
+  margin-left:5px;
+}
+
+@media(max-width:600px){
+  .form-container, .institutes-list { padding:15px; }
+  .institute-item { font-size:14px; }
+}
 </style>
 </head>
 <body>
 
-<header>🛠️ إنشاء وإدارة المعاهد - نظام OMA</header>
+<h2>إنشاء وإدارة المعاهد</h2>
 
-<div class="container">
+<div class="form-container">
+  <label class="label">اسم المعهد</label>
+  <input type="text" id="instituteName" placeholder="أدخل اسم المعهد">
 
-  <div class="card">
-    <h3>إضافة معهد جديد</h3>
-    <p class="error" id="errorMsg"></p>
-    <input type="text" id="instituteName" placeholder="اسم المعهد" required />
-    <input type="email" id="adminEmail" placeholder="إيميل مدير المعهد" required />
-    <input type="password" id="adminPassword" placeholder="كلمة مرور مدير المعهد" required />
-    <input type="file" id="logoFile" accept="image/*" />
-    <label>لون رئيسي:</label>
-    <input type="color" id="mainColor" value="#004aad" />
-    <label>لون خلفية:</label>
-    <input type="color" id="bgColor" value="#f5f9ff" />
-    <select id="duration">
-      <option value="lifetime">مدى الحياة</option>
-      <option value="trial">تجريبي</option>
-    </select>
-    <button id="createBtn">إنشاء المعهد</button>
-  </div>
+  <label class="label">شعار المعهد</label>
+  <input type="file" id="instituteLogo" accept="image/*">
 
-  <div class="card">
-    <h3>قائمة المعاهد</h3>
-    <div class="institute-list" id="instituteList"></div>
-  </div>
+  <label class="label">البريد الإلكتروني لمدير المعهد</label>
+  <input type="email" id="adminEmail" placeholder="example@mail.com">
 
+  <label class="label">كلمة المرور لمدير المعهد</label>
+  <input type="password" id="adminPassword" placeholder="********">
+
+  <label class="label">لون رئيسي</label>
+  <input type="color" id="colorPrimary" value="#004aad">
+
+  <label class="label">لون خلفية</label>
+  <input type="color" id="colorBg" value="#f5f9ff">
+
+  <label class="label">لون البطاقات</label>
+  <input type="color" id="colorCard" value="#ffffff">
+
+  <label class="label">لون عناصر التمييز</label>
+  <input type="color" id="colorAccent" value="#ffcc33">
+
+  <label class="label">مدة الاشتراك</label>
+  <select id="subscriptionType">
+    <option value="lifetime">مدى الحياة</option>
+    <option value="trial">تجريبي</option>
+  </select>
+
+  <button id="createBtn">إنشاء المعهد</button>
+  <p id="statusMsg" style="color:red;"></p>
+</div>
+
+<div class="institutes-list" id="institutesList">
+  <h3>المعاهد الموجودة</h3>
+  <div id="listContainer"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, setDoc, doc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// إعداد Firebase
+// 🔹 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -69,96 +146,149 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 const storage = getStorage(app);
 
 const instituteName = document.getElementById("instituteName");
+const instituteLogo = document.getElementById("instituteLogo");
 const adminEmail = document.getElementById("adminEmail");
 const adminPassword = document.getElementById("adminPassword");
-const logoFile = document.getElementById("logoFile");
-const mainColor = document.getElementById("mainColor");
-const bgColor = document.getElementById("bgColor");
-const duration = document.getElementById("duration");
+const colorPrimary = document.getElementById("colorPrimary");
+const colorBg = document.getElementById("colorBg");
+const colorCard = document.getElementById("colorCard");
+const colorAccent = document.getElementById("colorAccent");
+const subscriptionType = document.getElementById("subscriptionType");
 const createBtn = document.getElementById("createBtn");
-const errorMsg = document.getElementById("errorMsg");
-const instituteList = document.getElementById("instituteList");
+const statusMsg = document.getElementById("statusMsg");
+const listContainer = document.getElementById("listContainer");
 
-async function loadInstitutes(){
-  instituteList.innerHTML = "";
-  const snapshot = await getDocs(collection(db,"institutes"));
-  snapshot.forEach(docSnap=>{
+// تحميل قائمة المعاهد
+async function loadInstitutes() {
+  listContainer.innerHTML = "";
+  const querySnapshot = await getDocs(collection(db, "institutes"));
+  querySnapshot.forEach(docSnap => {
     const data = docSnap.data();
     const div = document.createElement("div");
-    div.className = "institute-item";
-    div.textContent = `${data.name} - ${data.email} - ${data.duration}`;
-    instituteList.appendChild(div);
+    div.classList.add("institute-item");
+    div.innerHTML = `
+      <span><strong>${data.name}</strong> - البريد: ${data.adminEmail} - تاريخ الإنشاء: ${data.createdAt?.toDate?.().toLocaleDateString() || "غير محدد"}</span>
+      <div>
+        <button data-id="${docSnap.id}" class="editBtn">تعديل</button>
+        <button data-id="${docSnap.id}" class="deleteBtn">حذف</button>
+      </div>
+    `;
+    listContainer.appendChild(div);
+  });
+
+  document.querySelectorAll(".editBtn").forEach(btn=>{
+    btn.addEventListener("click",()=> editInstitute(btn.dataset.id));
+  });
+  document.querySelectorAll(".deleteBtn").forEach(btn=>{
+    btn.addEventListener("click",()=> deleteInstitute(btn.dataset.id));
   });
 }
 
-loadInstitutes();
-
-createBtn.addEventListener("click", async()=>{
+// إنشاء معهد جديد
+createBtn.addEventListener("click", async () => {
   const name = instituteName.value.trim();
   const email = adminEmail.value.trim();
   const password = adminPassword.value.trim();
   if(!name || !email || !password){
-    errorMsg.textContent="الرجاء ملء الحقول المطلوبة.";
+    statusMsg.style.color = "red";
+    statusMsg.textContent = "الرجاء تعبئة جميع الحقول المطلوبة.";
     return;
   }
-
-  createBtn.disabled = true;
-  createBtn.textContent = "جارٍ الإنشاء...";
-  errorMsg.textContent="";
+  statusMsg.style.color = "black";
+  statusMsg.textContent = "جاري إنشاء المعهد...";
 
   try{
-    // رفع الشعار
-    let logoURL = "";
-    if(logoFile.files.length>0){
-      const file = logoFile.files[0];
-      const storageRef = ref(storage,"institute-logos/"+Date.now()+"-"+file.name);
-      await uploadBytes(storageRef,file);
-      logoURL = await getDownloadURL(storageRef);
+    let logoUrl = "";
+    if(instituteLogo.files.length > 0){
+      const file = instituteLogo.files[0];
+      const logoRef = ref(storage, `instituteLogos/${Date.now()}_${file.name}`);
+      await uploadBytes(logoRef, file);
+      logoUrl = await getDownloadURL(logoRef);
     }
 
-    // إنشاء المستخدم
     const userCred = await createUserWithEmailAndPassword(auth,email,password);
     const adminId = userCred.user.uid;
 
-    // إنشاء المعهد
     const docRef = await addDoc(collection(db,"institutes"),{
       name,
-      email,
-      logoURL,
-      mainColor: mainColor.value,
-      bgColor: bgColor.value,
-      duration: duration.value,
+      adminId,
+      adminEmail: email,
+      logoUrl,
+      colors:{
+        primary: colorPrimary.value,
+        bg: colorBg.value,
+        card: colorCard.value,
+        accent: colorAccent.value
+      },
+      subscriptionType: subscriptionType.value,
       createdAt: serverTimestamp()
     });
 
-    // إضافة مدير المعهد في users مع uid كمفتاح
-    await setDoc(doc(db,"users",adminId),{
+    await addDoc(collection(db,"users"),{
       uid: adminId,
       type: "instituteAdmin",
       instituteId: docRef.id,
-      email,
+      email: email,
       createdAt: serverTimestamp()
     });
 
-    alert("تم إنشاء المعهد بنجاح!");
+    statusMsg.style.color = "green";
+    statusMsg.textContent = "تم إنشاء المعهد بنجاح!";
     instituteName.value = "";
     adminEmail.value = "";
     adminPassword.value = "";
-    logoFile.value = "";
+    instituteLogo.value = "";
     loadInstitutes();
   }catch(err){
     console.error(err);
-    errorMsg.textContent="حدث خطأ أثناء إنشاء المعهد.";
-  }finally{
-    createBtn.disabled = false;
-    createBtn.textContent = "إنشاء المعهد";
+    statusMsg.style.color = "red";
+    statusMsg.textContent = "حدث خطأ أثناء إنشاء المعهد.";
   }
 });
+
+// تعديل المعهد
+async function editInstitute(id){
+  const docRef = doc(db,"institutes",id);
+  const docSnap = await getDocs(docRef);
+  const docData = await doc(db,"institutes",id);
+  if(!docData.exists()) return alert("المعهد غير موجود");
+
+  const newName = prompt("اسم المعهد:", docData.data().name) || docData.data().name;
+  const newDuration = prompt("مدة الاشتراك (lifetime/trial):", docData.data().subscriptionType) || docData.data().subscriptionType;
+
+  await updateDoc(docRef,{
+    name: newName,
+    subscriptionType: newDuration
+  });
+  alert("تم تحديث المعهد");
+  loadInstitutes();
+}
+
+// حذف المعهد
+async function deleteInstitute(id){
+  if(!confirm("هل أنت متأكد من حذف هذا المعهد؟")) return;
+  await deleteDoc(doc(db,"institutes",id));
+
+  // حذف المدير من users
+  const usersSnapshot = await getDocs(collection(db,"users"));
+  usersSnapshot.forEach(async userDoc=>{
+    const userData = userDoc.data();
+    if(userData.instituteId === id){
+      await deleteDoc(doc(db,"users",userDoc.id));
+    }
+  });
+
+  alert("تم حذف المعهد");
+  loadInstitutes();
+}
+
+// تحميل القائمة عند فتح الصفحة
+loadInstitutes();
 </script>
 
 </body>
