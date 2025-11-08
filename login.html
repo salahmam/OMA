@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل الدخول - نظام OMA</title>
 <style>
 :root { --primary:#004aad; --bg:#f5f9ff; --card:#fff; }
@@ -17,13 +17,14 @@ footer { position:fixed; bottom:10px; width:100%; text-align:center; color:#888;
 </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>تسجيل الدخول 🔐</h2>
-    <p class="error" id="errorMsg"></p>
-    <input type="email" id="email" placeholder="البريد الإلكتروني" required />
-    <input type="password" id="password" placeholder="كلمة المرور" required />
-    <button id="loginBtn">دخول</button>
-  </div>
+
+<div class="login-box">
+  <h2>تسجيل الدخول 🔐</h2>
+  <p class="error" id="errorMsg"></p>
+  <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+  <input type="password" id="password" placeholder="كلمة المرور" required>
+  <button id="loginBtn">دخول</button>
+</div>
 
 <footer>© 2025 نظام OMA - جميع الحقوق محفوظة</footer>
 
@@ -52,50 +53,53 @@ const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
 const errorMsg = document.getElementById("errorMsg");
 
-// التحقق إذا كان المستخدم مسجل الدخول مسبقاً
+// ✅ تحقق تسجيل دخول مسبق
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) return;
-    redirectUser(userDoc.data());
+    try {
+      const userDoc = await getDoc(doc(db,"users",user.uid));
+      if(userDoc.exists()) redirectUser(userDoc.data());
+    } catch(err){
+      console.error(err);
+    }
   }
 });
 
-// تسجيل الدخول
+// 🎯 تسجيل الدخول
 loginBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) {
-    errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
-    return;
+  if(!email || !password){ 
+    errorMsg.textContent="الرجاء إدخال البريد وكلمة المرور."; 
+    return; 
   }
 
   loginBtn.disabled = true;
   loginBtn.textContent = "جاري التحقق...";
-  errorMsg.textContent = "";
+  errorMsg.textContent="";
 
-  try {
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
+  try{
+    const userCred = await signInWithEmailAndPassword(auth,email,password);
     const uid = userCred.user.uid;
-    const userDoc = await getDoc(doc(db, "users", uid));
-    if (!userDoc.exists()) throw new Error("المستخدم غير موجود في النظام.");
+    const userDoc = await getDoc(doc(db,"users",uid));
+    if(!userDoc.exists()) throw new Error("المستخدم غير موجود في النظام.");
     redirectUser(userDoc.data());
-  } catch (err) {
+  }catch(err){
     loginBtn.disabled = false;
     loginBtn.textContent = "دخول";
-    if (err.code === "auth/user-not-found") errorMsg.textContent = "المستخدم غير موجود.";
-    else if (err.code === "auth/wrong-password") errorMsg.textContent = "كلمة المرور غير صحيحة.";
-    else errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
+    if(err.code==="auth/user-not-found") errorMsg.textContent="المستخدم غير موجود.";
+    else if(err.code==="auth/wrong-password") errorMsg.textContent="كلمة المرور غير صحيحة.";
+    else errorMsg.textContent="حدث خطأ أثناء تسجيل الدخول.";
     console.error(err);
   }
 });
 
-// توجيه المستخدم حسب نوعه
-function redirectUser(userData) {
-  if (userData.type === "superAdmin") window.location.href = "manage-institutes.html";
-  else if (userData.type === "instituteAdmin") window.location.href = "dashboard.html";
-  else if (userData.type === "teacher") window.location.href = "teacher-dashboard.html";
-  else if (userData.type === "student") window.location.href = "student-dashboard.html";
+// 🔹 توجيه المستخدم حسب النوع
+function redirectUser(userData){
+  if(userData.type==="superAdmin") window.location.href="manage-institutes.html";
+  else if(userData.type==="instituteAdmin") window.location.href="dashboard.html";
+  else if(userData.type==="teacher") window.location.href="teacher-dashboard.html";
+  else if(userData.type==="student") window.location.href="student-dashboard.html";
   else alert("نوع المستخدم غير معروف!");
 }
 </script>
