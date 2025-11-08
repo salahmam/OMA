@@ -5,78 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>إنشاء المعهد - نظام OMA</title>
 <style>
-  :root { --primary: #004aad; --bg: #f5f9ff; --card: #fff; }
-  body { margin:0; font-family:'Cairo',sans-serif; background:var(--bg); }
-  header { background: var(--primary); color:white; text-align:center; padding:15px; font-size:20px; font-weight:bold; }
-  .container { max-width:900px; margin:30px auto; padding:20px; background:white; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-  h2 { color: var(--primary); margin-bottom:20px; text-align:center; }
-  input, select { width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
-  label { font-weight:bold; margin-bottom:5px; display:block; }
-  button { background: var(--primary); color:white; border:none; padding:12px; width:100%; border-radius:8px; font-size:16px; cursor:pointer; transition:0.3s; }
-  button:hover { background:#003a8c; }
-  .color-input { width:50px; height:30px; padding:0; border:none; margin-right:10px; vertical-align:middle; }
-  table { width:100%; border-collapse:collapse; margin-top:25px; }
-  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
-  th { background:#eef4ff; }
-  .logo-preview { max-width:80px; max-height:50px; display:block; margin-top:10px; }
-  .error { color:red; margin-bottom:15px; }
-  .success { color:green; margin-bottom:15px; }
+:root {
+  --primary: #004aad;
+  --accent: #ffcc33;
+  --bg: #f5f9ff;
+  --card: #fff;
+}
+body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+header { background: var(--primary); color: #fff; text-align: center; padding: 15px; font-size: 20px; }
+.container { padding: 30px; display: flex; flex-direction: column; gap: 25px; max-width: 700px; margin: auto; }
+.card { background: var(--card); padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+input, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; }
+button { background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+button:hover { background: #003a8c; }
+.error { color:red; font-size: 14px; margin:5px 0; }
+.success { color:green; font-size: 14px; margin:5px 0; }
+.institute-list { margin-top: 15px; border-top:1px solid #ccc; padding-top: 15px; }
+.institute-item { padding: 8px 0; border-bottom:1px solid #eee; display:flex; justify-content: space-between; }
 </style>
 </head>
 <body>
-<header>إنشاء وإدارة المعاهد - نظام OMA</header>
+
+<header>📌 إنشاء وإدارة المعاهد - نظام OMA</header>
+
 <div class="container">
-  <h2>إنشاء معهد جديد</h2>
-  <p class="error" id="errorMsg"></p>
-  <p class="success" id="successMsg"></p>
 
-  <label>البريد الإلكتروني لمدير المعهد</label>
-  <input type="email" id="adminEmail" placeholder="example@domain.com" required />
+  <div class="card">
+    <h3>إنشاء معهد جديد</h3>
+    <p class="error" id="errorMsg"></p>
+    <p class="success" id="successMsg"></p>
 
-  <label>كلمة المرور لمدير المعهد</label>
-  <input type="password" id="adminPassword" placeholder="********" required />
+    <input type="text" id="instituteName" placeholder="اسم المعهد" required />
+    <input type="email" id="adminEmail" placeholder="البريد الإلكتروني لمدير المعهد" required />
+    <input type="password" id="adminPassword" placeholder="كلمة المرور للمدير" required />
 
-  <label>اسم المعهد</label>
-  <input type="text" id="instituteName" placeholder="اسم المعهد" required />
+    <label>رفع شعار المعهد</label>
+    <input type="file" id="instituteLogo" accept="image/*" />
 
-  <label>شعار المعهد</label>
-  <input type="file" id="instituteLogo" accept="image/*" />
-  <img id="logoPreview" class="logo-preview" src="" alt="Logo Preview" />
+    <label>لون رئيسي</label>
+    <input type="color" id="colorPrimary" value="#004aad" />
+    <label>لون ثانوي</label>
+    <input type="color" id="colorAccent" value="#ffcc33" />
 
-  <label>تخصيص ألوان صفحات المعهد</label>
-  <input type="color" id="colorPrimary" class="color-input" title="اللون الرئيسي" value="#004aad" />
-  <input type="color" id="colorAccent" class="color-input" title="اللون الثانوي" value="#ffcc33" />
+    <label>مدة الاشتراك</label>
+    <select id="subscriptionType">
+      <option value="lifetime">مدى الحياة</option>
+      <option value="year">سنة</option>
+      <option value="trial">تجريبي</option>
+    </select>
 
-  <label>نوع الترخيص</label>
-  <select id="licenseType">
-    <option value="lifetime">سنة مدى الحياة</option>
-    <option value="trial">تجريبي</option>
-  </select>
+    <button id="createInstituteBtn">➕ إنشاء المعهد</button>
+  </div>
 
-  <button id="createBtn">إنشاء المعهد</button>
+  <div class="card">
+    <h3>قائمة المعاهد</h3>
+    <div id="instituteList" class="institute-list"></div>
+  </div>
 
-  <h2>قائمة المعاهد الحالية</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>اسم المعهد</th>
-        <th>البريد الإلكتروني للمدير</th>
-        <th>شعار المعهد</th>
-        <th>تاريخ الإنشاء</th>
-        <th>نوع الترخيص</th>
-      </tr>
-    </thead>
-    <tbody id="instituteList"></tbody>
-  </table>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// 🔹 إعداد Firebase
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -88,112 +82,108 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const storage = getStorage(app);
 
-// عناصر الصفحة
-const adminEmail = document.getElementById("adminEmail");
-const adminPassword = document.getElementById("adminPassword");
-const instituteName = document.getElementById("instituteName");
-const instituteLogo = document.getElementById("instituteLogo");
-const logoPreview = document.getElementById("logoPreview");
-const colorPrimary = document.getElementById("colorPrimary");
-const colorAccent = document.getElementById("colorAccent");
-const licenseType = document.getElementById("licenseType");
-const createBtn = document.getElementById("createBtn");
+// عناصر HTML
+const instituteNameInput = document.getElementById("instituteName");
+const adminEmailInput = document.getElementById("adminEmail");
+const adminPasswordInput = document.getElementById("adminPassword");
+const logoInput = document.getElementById("instituteLogo");
+const colorPrimaryInput = document.getElementById("colorPrimary");
+const colorAccentInput = document.getElementById("colorAccent");
+const subscriptionSelect = document.getElementById("subscriptionType");
+const createBtn = document.getElementById("createInstituteBtn");
 const errorMsg = document.getElementById("errorMsg");
 const successMsg = document.getElementById("successMsg");
-const instituteList = document.getElementById("instituteList");
+const instituteListDiv = document.getElementById("instituteList");
 
-// عرض صورة الشعار فور اختيارها
-instituteLogo.addEventListener("change", () => {
-  const file = instituteLogo.files[0];
-  if(file){
-    logoPreview.src = URL.createObjectURL(file);
-  }
-});
-
-// جلب قائمة المعاهد
-async function loadInstitutes(){
-  instituteList.innerHTML = "";
+// عرض المعاهد الحالية
+async function loadInstitutes() {
+  instituteListDiv.innerHTML = "";
   const querySnapshot = await getDocs(collection(db,"institutes"));
-  querySnapshot.forEach(docSnap => {
+  querySnapshot.forEach(docSnap=>{
     const data = docSnap.data();
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${data.name}</td>
-      <td>${data.adminEmail}</td>
-      <td>${data.logoURL ? `<img src="${data.logoURL}" width="60">` : ''}</td>
-      <td>${data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : ''}</td>
-      <td>${data.licenseType}</td>
-    `;
-    instituteList.appendChild(tr);
+    const div = document.createElement("div");
+    div.className = "institute-item";
+    div.innerHTML = `<span>${data.name}</span><span>${data.subscriptionType}</span>`;
+    instituteListDiv.appendChild(div);
   });
 }
 
-// إنشاء المعهد
-createBtn.addEventListener("click", async () => {
+// إنشاء معهد جديد
+createBtn.addEventListener("click", async ()=>{
+  const name = instituteNameInput.value.trim();
+  const email = adminEmailInput.value.trim();
+  const password = adminPasswordInput.value.trim();
+  const logoFile = logoInput.files[0];
+  const primary = colorPrimaryInput.value;
+  const accent = colorAccentInput.value;
+  const subscriptionType = subscriptionSelect.value;
+
   errorMsg.textContent = "";
   successMsg.textContent = "";
 
-  const email = adminEmail.value.trim();
-  const password = adminPassword.value.trim();
-  const name = instituteName.value.trim();
-  const license = licenseType.value;
-  const primaryColor = colorPrimary.value;
-  const accentColor = colorAccent.value;
-  const logoFile = instituteLogo.files[0];
-
-  if(!email || !password || !name){
-    errorMsg.textContent = "الرجاء تعبئة جميع الحقول المطلوبة.";
+  if(!name || !email || !password){
+    errorMsg.textContent = "الرجاء ملء جميع الحقول المطلوبة.";
     return;
   }
 
   createBtn.disabled = true;
-  createBtn.textContent = "جارٍ الإنشاء...";
+  createBtn.textContent = "جاري الإنشاء...";
 
-  try{
-    // 1️⃣ إنشاء مستخدم مدير المعهد
-    const userCred = await createUserWithEmailAndPassword(auth,email,password);
-    const adminUid = userCred.user.uid;
-
-    // 2️⃣ رفع الشعار إن وجد
+  try {
+    // رفع الشعار إذا موجود
     let logoURL = "";
     if(logoFile){
-      const storageRef = ref(storage, `instituteLogos/${adminUid}_${logoFile.name}`);
-      await uploadBytes(storageRef, logoFile);
-      logoURL = await getDownloadURL(storageRef);
+      const logoRef = ref(storage, `institute-logos/${Date.now()}_${logoFile.name}`);
+      await uploadBytes(logoRef, logoFile);
+      logoURL = await getDownloadURL(logoRef);
     }
 
-    // 3️⃣ إضافة المعهد في Firestore
+    // إنشاء مدير المعهد في Firebase Auth
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const adminUid = userCred.user.uid;
+
+    // حفظ بيانات المعهد في Firestore
     await addDoc(collection(db,"institutes"),{
-      name: name,
-      adminEmail: email,
-      adminUid: adminUid,
-      logoURL: logoURL,
-      colors: { primary: primaryColor, accent: accentColor },
-      licenseType: license,
+      name,
+      logo: logoURL,
+      colors: { primary, accent },
+      subscriptionType,
+      createdAt: serverTimestamp(),
+      adminUid
+    });
+
+    // حفظ بيانات المدير في collection users
+    await addDoc(collection(db,"users"),{
+      name: "مدير المعهد",
+      email,
+      type: "instituteAdmin",
+      instituteId: adminUid, // معرف المعهد مرتبط بالمدير
       createdAt: serverTimestamp()
     });
 
     successMsg.textContent = "تم إنشاء المعهد بنجاح!";
-    adminEmail.value = adminPassword.value = instituteName.value = "";
-    instituteLogo.value = "";
-    logoPreview.src = "";
+    instituteNameInput.value = "";
+    adminEmailInput.value = "";
+    adminPasswordInput.value = "";
+    logoInput.value = "";
 
     loadInstitutes();
-  }catch(err){
+  } catch(err){
     console.error(err);
-    errorMsg.textContent = "حدث خطأ أثناء إنشاء المعهد: "+err.message;
-  }finally{
+    errorMsg.textContent = "حدث خطأ أثناء إنشاء المعهد.";
+  } finally {
     createBtn.disabled = false;
-    createBtn.textContent = "إنشاء المعهد";
+    createBtn.textContent = "➕ إنشاء المعهد";
   }
 });
 
-// تحميل قائمة المعاهد عند فتح الصفحة
+// تحميل المعاهد عند فتح الصفحة
 loadInstitutes();
 </script>
+
 </body>
 </html>
