@@ -32,6 +32,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+// 🔹 إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -51,11 +52,12 @@ const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
 const errorMsg = document.getElementById("errorMsg");
 
-// تحقق تسجيل دخول مسبق
+// التحقق إذا كان المستخدم مسجل الدخول مسبقاً
 onAuthStateChanged(auth, async (user) => {
-  if(user){
-    const userDoc = await getDoc(doc(db,"users",user.uid));
-    if(userDoc.exists()) redirectUser(userDoc.data());
+  if (user) {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (!userDoc.exists()) return;
+    redirectUser(userDoc.data());
   }
 });
 
@@ -63,34 +65,37 @@ onAuthStateChanged(auth, async (user) => {
 loginBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if(!email || !password){ errorMsg.textContent="الرجاء إدخال البريد وكلمة المرور."; return; }
+  if (!email || !password) {
+    errorMsg.textContent = "الرجاء إدخال البريد الإلكتروني وكلمة المرور.";
+    return;
+  }
 
   loginBtn.disabled = true;
   loginBtn.textContent = "جاري التحقق...";
-  errorMsg.textContent="";
+  errorMsg.textContent = "";
 
-  try{
-    const userCred = await signInWithEmailAndPassword(auth,email,password);
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
-    const userDoc = await getDoc(doc(db,"users",uid));
-    if(!userDoc.exists()) throw new Error("المستخدم غير موجود في النظام.");
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (!userDoc.exists()) throw new Error("المستخدم غير موجود في النظام.");
     redirectUser(userDoc.data());
-  }catch(err){
+  } catch (err) {
     loginBtn.disabled = false;
     loginBtn.textContent = "دخول";
-    if(err.code==="auth/user-not-found") errorMsg.textContent="المستخدم غير موجود.";
-    else if(err.code==="auth/wrong-password") errorMsg.textContent="كلمة المرور غير صحيحة.";
-    else errorMsg.textContent="حدث خطأ أثناء تسجيل الدخول.";
+    if (err.code === "auth/user-not-found") errorMsg.textContent = "المستخدم غير موجود.";
+    else if (err.code === "auth/wrong-password") errorMsg.textContent = "كلمة المرور غير صحيحة.";
+    else errorMsg.textContent = "حدث خطأ أثناء تسجيل الدخول.";
     console.error(err);
   }
 });
 
-// توجيه المستخدم حسب النوع
-function redirectUser(userData){
-  if(userData.type==="superAdmin") window.location.href="manage-institutes.html";
-  else if(userData.type==="instituteAdmin") window.location.href="dashboard.html";
-  else if(userData.type==="teacher") window.location.href="teacher-dashboard.html";
-  else if(userData.type==="student") window.location.href="student-dashboard.html";
+// توجيه المستخدم حسب نوعه
+function redirectUser(userData) {
+  if (userData.type === "superAdmin") window.location.href = "manage-institutes.html";
+  else if (userData.type === "instituteAdmin") window.location.href = "dashboard.html";
+  else if (userData.type === "teacher") window.location.href = "teacher-dashboard.html";
+  else if (userData.type === "student") window.location.href = "student-dashboard.html";
   else alert("نوع المستخدم غير معروف!");
 }
 </script>
