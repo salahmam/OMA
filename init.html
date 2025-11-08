@@ -67,7 +67,7 @@ function write(msg){ log.innerHTML += `✅ ${msg}\n`; }
 
 btn.addEventListener("click", async()=>{
   btn.disabled = true;
-  write("جاري التهيئة...");
+  write("🚀 جاري تهيئة النظام...");
 
   try {
     // إنشاء المستخدم الأساسي (superAdmin)
@@ -90,10 +90,11 @@ btn.addEventListener("click", async()=>{
       name:"معهد OMA التجريبي",
       email:"oma-demo@oma.edu",
       logo:"https://i.ibb.co/vqC4ZP6/institute-logo.png",
-      theme:{
+      colors:{ // ✅ الحقل الصحيح المتوافق مع manage-institutes.html
         primary:"#004aad",
-        accent:"#ffcc33",
-        background:"#f5f9ff"
+        bg:"#f5f9ff",
+        card:"#ffffff",
+        accent:"#ffcc33"
       },
       createdAt:serverTimestamp(),
       plan:{
@@ -119,7 +120,7 @@ btn.addEventListener("click", async()=>{
     });
     write("تم إنشاء مدير المعهد التجريبي بنجاح.");
 
-    // إنشاء هيكل أساسي للمعهد
+    // إعدادات عامة للمعهد
     await setDoc(doc(db,`institutes/${instituteId}/settings/general`),{
       openHours:"8:00 AM - 5:00 PM",
       contact:"07800000000",
@@ -127,11 +128,13 @@ btn.addEventListener("click", async()=>{
       updatedAt:serverTimestamp()
     });
 
-    write("تم إنشاء الإعدادات الأساسية للمعهد.");
-    write("🎉 تمت التهيئة بنجاح! يمكنك الآن تسجيل الدخول كأحد المستخدمين:\n");
+    write("تم إنشاء الإعدادات العامة للمعهد.");
+    write("🎉 تمت التهيئة بنجاح! يمكنك الآن تسجيل الدخول باستخدام:");
+
     write("🔹 مسؤول النظام:\n   البريد: Salahalkaleefa@gmail.com\n   كلمة المرور: 123456salah\n");
     write("🔹 مدير المعهد التجريبي:\n   البريد: demo@oma.edu\n   كلمة المرور: 123456demo\n");
-    write("\nالرجاء الانتقال إلى صفحة login.html لتسجيل الدخول.");
+
+    write("\n✅ يمكنك الآن الذهاب إلى صفحة login.html لتسجيل الدخول.");
   } catch (err) {
     console.error(err);
     write("❌ حدث خطأ أثناء التهيئة: " + err.message);
