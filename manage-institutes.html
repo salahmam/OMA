@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إنشاء وإدارة المعاهد - نظام OMA</title>
+<title>إدارة المعاهد - نظام OMA</title>
 <style>
 :root {
   --primary:#004aad;
@@ -19,20 +19,21 @@ body {
   padding:20px;
 }
 
-h2 { text-align:center; color:var(--primary); }
-.form-container {
+h2 { text-align:center; color:var(--primary); margin-bottom:20px; }
+
+.form-container, .institutes-list {
   background: var(--card);
-  padding:30px;
-  max-width:700px;
-  margin:20px auto;
+  padding:20px;
+  margin:10px auto;
   border-radius:12px;
   box-shadow:0 4px 15px rgba(0,0,0,0.1);
+  max-width:700px;
 }
 
 input, select, button {
   width:100%;
   padding:12px;
-  margin-bottom:15px;
+  margin-bottom:12px;
   border-radius:8px;
   border:1px solid #ccc;
   font-size:15px;
@@ -50,43 +51,26 @@ button:hover { background:#003a8c; }
 
 .label { font-weight:bold; margin-bottom:5px; display:block; }
 
-.institutes-list {
-  margin-top:30px;
-  background:#eef4ff;
-  padding:20px;
-  border-radius:10px;
-}
-
-.institutes-list h3 { margin-top:0; color:var(--primary); }
-
 .institute-item {
   padding:10px;
   border-bottom:1px solid #ccc;
   display:flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
-.institute-item:last-child { border-bottom:none; }
+.institute-info { flex:1; }
 
-.institute-item div {
-  margin-top:5px;
-}
-
-.institute-item button {
-  width:auto;
-  padding:5px 10px;
+.institute-actions button {
   margin-left:5px;
-}
-
-@media(max-width:600px){
-  .form-container, .institutes-list { padding:15px; }
-  .institute-item { font-size:14px; }
+  margin-top:5px;
 }
 </style>
 </head>
 <body>
 
-<h2>إنشاء وإدارة المعاهد</h2>
+<h2>إدارة المعاهد</h2>
 
 <div class="form-container">
   <label class="label">اسم المعهد</label>
@@ -130,11 +114,11 @@ button:hover { background:#003a8c; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// 🔹 Firebase Config
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -172,20 +156,15 @@ async function loadInstitutes() {
     const div = document.createElement("div");
     div.classList.add("institute-item");
     div.innerHTML = `
-      <span><strong>${data.name}</strong> - البريد: ${data.adminEmail} - تاريخ الإنشاء: ${data.createdAt?.toDate?.().toLocaleDateString() || "غير محدد"}</span>
-      <div>
-        <button data-id="${docSnap.id}" class="editBtn">تعديل</button>
-        <button data-id="${docSnap.id}" class="deleteBtn">حذف</button>
+      <div class="institute-info">
+        ${data.name} - البريد: ${data.adminEmail} - تاريخ الإنشاء: ${data.createdAt?.toDate?.().toLocaleDateString() || "غير محدد"}
+      </div>
+      <div class="institute-actions">
+        <button onclick="editInstitute('${docSnap.id}')">تعديل</button>
+        <button onclick="deleteInstitute('${docSnap.id}')">حذف</button>
       </div>
     `;
     listContainer.appendChild(div);
-  });
-
-  document.querySelectorAll(".editBtn").forEach(btn=>{
-    btn.addEventListener("click",()=> editInstitute(btn.dataset.id));
-  });
-  document.querySelectorAll(".deleteBtn").forEach(btn=>{
-    btn.addEventListener("click",()=> deleteInstitute(btn.dataset.id));
   });
 }
 
@@ -195,11 +174,9 @@ createBtn.addEventListener("click", async () => {
   const email = adminEmail.value.trim();
   const password = adminPassword.value.trim();
   if(!name || !email || !password){
-    statusMsg.style.color = "red";
     statusMsg.textContent = "الرجاء تعبئة جميع الحقول المطلوبة.";
     return;
   }
-  statusMsg.style.color = "black";
   statusMsg.textContent = "جاري إنشاء المعهد...";
 
   try{
@@ -211,9 +188,11 @@ createBtn.addEventListener("click", async () => {
       logoUrl = await getDownloadURL(logoRef);
     }
 
-    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    // إنشاء مستخدم مدير المعهد
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const adminId = userCred.user.uid;
 
+    // إضافة المعهد إلى Firestore
     const docRef = await addDoc(collection(db,"institutes"),{
       name,
       adminId,
@@ -229,6 +208,7 @@ createBtn.addEventListener("click", async () => {
       createdAt: serverTimestamp()
     });
 
+    // ربط المستخدم بالمعهد
     await addDoc(collection(db,"users"),{
       uid: adminId,
       type: "instituteAdmin",
@@ -251,40 +231,23 @@ createBtn.addEventListener("click", async () => {
   }
 });
 
-// تعديل المعهد
-async function editInstitute(id){
-  const docRef = doc(db,"institutes",id);
-  const docSnap = await getDocs(docRef);
-  const docData = await doc(db,"institutes",id);
-  if(!docData.exists()) return alert("المعهد غير موجود");
-
-  const newName = prompt("اسم المعهد:", docData.data().name) || docData.data().name;
-  const newDuration = prompt("مدة الاشتراك (lifetime/trial):", docData.data().subscriptionType) || docData.data().subscriptionType;
-
-  await updateDoc(docRef,{
-    name: newName,
-    subscriptionType: newDuration
-  });
-  alert("تم تحديث المعهد");
-  loadInstitutes();
+// حذف المعهد
+window.deleteInstitute = async function(id){
+  if(confirm("هل أنت متأكد من حذف هذا المعهد؟")){
+    await deleteDoc(doc(db,"institutes",id));
+    loadInstitutes();
+  }
 }
 
-// حذف المعهد
-async function deleteInstitute(id){
-  if(!confirm("هل أنت متأكد من حذف هذا المعهد؟")) return;
-  await deleteDoc(doc(db,"institutes",id));
-
-  // حذف المدير من users
-  const usersSnapshot = await getDocs(collection(db,"users"));
-  usersSnapshot.forEach(async userDoc=>{
-    const userData = userDoc.data();
-    if(userData.instituteId === id){
-      await deleteDoc(doc(db,"users",userDoc.id));
-    }
-  });
-
-  alert("تم حذف المعهد");
-  loadInstitutes();
+// تعديل المعهد
+window.editInstitute = async function(id){
+  const docRef = doc(db,"institutes",id);
+  const docSnap = await getDocs(collection(db, "institutes"));
+  const newName = prompt("أدخل الاسم الجديد للمعهد:");
+  if(newName){
+    await updateDoc(docRef,{name:newName});
+    loadInstitutes();
+  }
 }
 
 // تحميل القائمة عند فتح الصفحة
