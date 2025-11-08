@@ -3,22 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة النظام - OMA</title>
+<title>تهيئة Super Admin - نظام OMA</title>
 <style>
-  body { font-family: 'Cairo', sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-  .box { background:white; padding:30px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); width:320px; text-align:center; }
-  h2 { color:#004aad; margin-bottom:20px; }
-  button { padding:12px 20px; font-size:16px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; transition:0.3s; }
-  button:hover { background:#003a8c; }
-  p { margin-top:15px; font-size:14px; }
+body { font-family:'Cairo',sans-serif; background:#f5f9ff; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); text-align:center; }
+button { padding:12px 20px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; font-size:16px; transition:0.3s; }
+button:hover { background:#003a8c; }
+p { margin-top:20px; font-weight:bold; }
 </style>
 </head>
 <body>
-<div class="box">
-  <h2>تهيئة النظام - OMA</h2>
-  <p>إنشاء أول حساب مسؤول الموقع</p>
-  <button id="initBtn">إنشاء حساب المسؤول</button>
-  <p id="statusMsg"></p>
+<div class="container">
+  <h2>تهيئة Super Admin</h2>
+  <button id="setupBtn">إنشاء حساب المسؤول</button>
+  <p id="status"></p>
 </div>
 
 <script type="module">
@@ -26,7 +24,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// 🔹 إعداد Firebase
+// 🔹 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -41,41 +39,38 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const initBtn = document.getElementById("initBtn");
-const statusMsg = document.getElementById("statusMsg");
+const setupBtn = document.getElementById("setupBtn");
+const status = document.getElementById("status");
 
-initBtn.addEventListener("click", async () => {
-  initBtn.disabled = true;
-  statusMsg.textContent = "جاري إنشاء الحساب...";
-  
-  const email = "Salahalkaleefa@gmail.com";
-  const password = "123456salah";
-  const name = "مسؤول الموقع";
+// بيانات Super Admin
+const superAdminEmail = "Salahalkaleefa@gmail.com";
+const superAdminPassword = "123456salah";
 
+setupBtn.addEventListener("click", async () => {
+  status.textContent = "جاري إنشاء الحساب...";
   try {
-    // إنشاء المستخدم على Firebase Auth
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    // إنشاء حساب في Firebase Auth
+    const userCred = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPassword);
     const uid = userCred.user.uid;
 
-    // إنشاء مستند المسؤول في Firestore
+    // إنشاء مستند في Firestore
     await setDoc(doc(db, "users", uid), {
-      name: name,
-      email: email,
-      type: "admin",
+      name: "مسؤول الموقع",
+      email: superAdminEmail,
+      type: "superAdmin",
       createdAt: serverTimestamp()
     });
 
-    statusMsg.style.color = "green";
-    statusMsg.textContent = "تم إنشاء حساب المسؤول بنجاح!";
-  } catch (error) {
-    console.error(error);
-    statusMsg.style.color = "red";
-    if (error.code === "auth/email-already-in-use") {
-      statusMsg.textContent = "البريد الإلكتروني مستخدم بالفعل!";
+    status.style.color = "green";
+    status.textContent = "تم إنشاء Super Admin بنجاح! يمكنك الآن تسجيل الدخول.";
+  } catch(err) {
+    status.style.color = "red";
+    if(err.code === "auth/email-already-in-use") {
+      status.textContent = "الحساب موجود بالفعل.";
     } else {
-      statusMsg.textContent = "حدث خطأ أثناء إنشاء الحساب.";
+      console.error(err);
+      status.textContent = "حدث خطأ أثناء إنشاء الحساب.";
     }
-    initBtn.disabled = false;
   }
 });
 </script>
