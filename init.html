@@ -17,11 +17,14 @@ button {
   font-size: 16px;
   border: none;
   border-radius: 8px;
-  background: #004aad;
-  color: white;
+  margin: 10px;
   cursor: pointer;
+  transition: 0.3s;
 }
-button:hover { background: #003a8c; }
+#initBtn { background: #004aad; color: white; }
+#initBtn:hover { background: #003a8c; }
+#resetBtn { background: #e63946; color: white; }
+#resetBtn:hover { background: #c1121f; }
 #log {
   margin-top: 20px;
   white-space: pre-wrap;
@@ -37,14 +40,15 @@ button:hover { background: #003a8c; }
 </head>
 <body>
 <h2>🔧 تهيئة نظام OMA</h2>
-<p>اضغط الزر أدناه لإنشاء المستخدم والمعهد التجريبي.</p>
+<p>اختر العملية التي ترغب بها:</p>
 <button id="initBtn">بدء التهيئة</button>
+<button id="resetBtn">⚠️ إعادة التهيئة الكاملة</button>
 <div id="log"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -61,85 +65,98 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const log = document.getElementById("log");
-const btn = document.getElementById("initBtn");
-
 function write(msg){ log.innerHTML += `✅ ${msg}\n`; }
 
-btn.addEventListener("click", async()=>{
-  btn.disabled = true;
-  write("🚀 جاري تهيئة النظام...");
+async function initializeSystem(){
+  write("🔄 بدء التهيئة...");
+
+  const emailAdmin = "Salahalkaleefa@gmail.com";
+  const passwordAdmin = "123456salah";
+  const emailManager = "demo@oma.edu";
+  const passwordManager = "123456demo";
 
   try {
-    // إنشاء المستخدم الأساسي (superAdmin)
-    const email = "Salahalkaleefa@gmail.com";
-    const password = "123456salah";
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-
-    await setDoc(doc(db,"users",uid),{
+    // إنشاء superAdmin
+    const superAdmin = await createUserWithEmailAndPassword(auth, emailAdmin, passwordAdmin);
+    await setDoc(doc(db,"users",superAdmin.user.uid),{
       name:"مسؤول النظام",
-      email,
+      email:emailAdmin,
       type:"superAdmin",
       createdAt:serverTimestamp()
     });
-    write("تم إنشاء مستخدم superAdmin بنجاح.");
+    write("تم إنشاء مستخدم superAdmin.");
 
-    // إنشاء معهد تجريبي افتراضي
+    // إنشاء معهد تجريبي
     const instituteId = "demo-institute";
     await setDoc(doc(db,"institutes",instituteId),{
       name:"معهد OMA التجريبي",
       email:"oma-demo@oma.edu",
       logo:"https://i.ibb.co/vqC4ZP6/institute-logo.png",
-      colors:{ // ✅ الحقل الصحيح المتوافق مع manage-institutes.html
+      colors:{
         primary:"#004aad",
-        bg:"#f5f9ff",
-        card:"#ffffff",
-        accent:"#ffcc33"
+        accent:"#ffcc33",
+        background:"#f5f9ff"
       },
+      plan:{ type:"تجريبي", expiresAt:"مدى الحياة" },
       createdAt:serverTimestamp(),
-      plan:{
-        type:"تجريبي",
-        expiresAt:"مدى الحياة"
-      },
-      createdBy:uid
+      createdBy:superAdmin.user.uid
     });
-    write("تم إنشاء المعهد التجريبي بنجاح.");
+    write("تم إنشاء المعهد التجريبي.");
 
-    // إنشاء مدير المعهد التجريبي
-    const managerEmail = "demo@oma.edu";
-    const managerPassword = "123456demo";
-    const managerCred = await createUserWithEmailAndPassword(auth, managerEmail, managerPassword);
-    const managerUid = managerCred.user.uid;
-
-    await setDoc(doc(db,"users",managerUid),{
+    // إنشاء مدير المعهد
+    const manager = await createUserWithEmailAndPassword(auth, emailManager, passwordManager);
+    await setDoc(doc(db,"users",manager.user.uid),{
       name:"مدير معهد OMA التجريبي",
-      email:managerEmail,
+      email:emailManager,
       type:"instituteAdmin",
       instituteId:instituteId,
       createdAt:serverTimestamp()
     });
-    write("تم إنشاء مدير المعهد التجريبي بنجاح.");
+    write("تم إنشاء مدير المعهد التجريبي.");
 
-    // إعدادات عامة للمعهد
     await setDoc(doc(db,`institutes/${instituteId}/settings/general`),{
       openHours:"8:00 AM - 5:00 PM",
       contact:"07800000000",
       address:"بغداد - العراق",
       updatedAt:serverTimestamp()
     });
+    write("تم إعداد الإعدادات العامة.");
 
-    write("تم إنشاء الإعدادات العامة للمعهد.");
-    write("🎉 تمت التهيئة بنجاح! يمكنك الآن تسجيل الدخول باستخدام:");
-
-    write("🔹 مسؤول النظام:\n   البريد: Salahalkaleefa@gmail.com\n   كلمة المرور: 123456salah\n");
-    write("🔹 مدير المعهد التجريبي:\n   البريد: demo@oma.edu\n   كلمة المرور: 123456demo\n");
-
-    write("\n✅ يمكنك الآن الذهاب إلى صفحة login.html لتسجيل الدخول.");
+    write("🎉 تمت التهيئة بنجاح!\nيمكنك تسجيل الدخول باستخدام:");
+    write("🔹 مسؤول النظام: " + emailAdmin + " / " + passwordAdmin);
+    write("🔹 مدير المعهد: " + emailManager + " / " + passwordManager);
   } catch (err) {
-    console.error(err);
-    write("❌ حدث خطأ أثناء التهيئة: " + err.message);
+    write("❌ حدث خطأ: " + err.message);
   }
-});
+}
+
+async function resetSystem(){
+  if(!confirm("⚠️ هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع!")) return;
+  log.innerHTML = "🧹 جاري حذف كل البيانات...\n";
+
+  try {
+    // حذف جميع مجموعات Firestore
+    const collections = ["users", "institutes"];
+    for(const col of collections){
+      const snapshot = await getDocs(collection(db, col));
+      for(const docSnap of snapshot.docs){
+        await deleteDoc(docSnap.ref);
+      }
+      write(`تم حذف مجموعة ${col}.`);
+    }
+
+    // تسجيل الدخول لحذف المستخدمين (غير مدعوم عبر الويب بالكامل لكن نطبع فقط للتوثيق)
+    write("🚫 لا يمكن حذف جميع المستخدمين من Firebase Auth من الواجهة العامة.");
+    write("⚠️ احذفهم يدويًا من قسم Authentication في Firebase Console إن رغبت.");
+
+    write("♻️ الآن يمكنك الضغط على (بدء التهيئة) لإعادة بناء النظام من جديد.");
+  } catch (err) {
+    write("❌ فشل الحذف: " + err.message);
+  }
+}
+
+document.getElementById("initBtn").addEventListener("click", initializeSystem);
+document.getElementById("resetBtn").addEventListener("click", resetSystem);
 </script>
 </body>
 </html>
