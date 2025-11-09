@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة نظام OMA</title>
+<title>تهيئة النظام - OMA</title>
 <style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; text-align:center; padding:20px; color:#004aad; }
-button { padding:12px 25px; font-size:16px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; margin:8px; }
+body { font-family:'Cairo',sans-serif; background:#f5f9ff; text-align:center; padding:30px; color:#004aad; }
+button { padding:12px 25px; font-size:16px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; margin-top:15px; }
 button:hover { background:#003a8c; }
-#log { margin-top:20px; white-space:pre-wrap; text-align:right; background:#fff; border-radius:10px; padding:20px; max-width:600px; margin:auto; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+#log { margin-top:20px; white-space:pre-wrap; text-align:right; background:#fff; border-radius:10px; padding:20px; max-width:600px; margin:auto; box-shadow:0 0 10px rgba(0,0,0,0.1);}
 </style>
 </head>
 <body>
 <h2>🔧 تهيئة نظام OMA</h2>
-<p>اضغط الزر أدناه لإنشاء المستخدم والمعاهد التجريبية.</p>
+<p>اضغط الزر أدناه لمسح البيانات السابقة وإنشاء superAdmin ومعهدين تجريبيين.</p>
 <button id="initBtn">بدء التهيئة</button>
 <div id="log"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -35,84 +35,85 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 const logEl = document.getElementById("log");
 const btn = document.getElementById("initBtn");
-
-function log(msg){ logEl.innerHTML += "✅ "+msg+"\n"; }
+function log(msg){ logEl.innerHTML += `✅ ${msg}\n`; }
 
 btn.addEventListener("click", async()=>{
-  btn.disabled = true;
-  log("جاري التهيئة...");
+  btn.disabled=true;
+  log("🔄 جاري مسح البيانات السابقة...");
+  
+  // حذف مستندات users
+  try{
+    const usersSnap = await getDocs(collection(db,"users"));
+    for(const u of usersSnap.docs) await deleteDoc(doc(db,"users",u.id));
+    log("✅ تم حذف مجموعة users.");
+  }catch(err){ log("⚠️ لم يتم حذف بعض المستخدمين: "+err.message); }
 
-  try {
-    // إنشاء superAdmin
-    const superEmail = "Salahalkaleefa@gmail.com";
-    const superPass = "123456salah";
-    const superUser = await createUserWithEmailAndPassword(auth, superEmail, superPass);
-    const superUid = superUser.user.uid;
-    await setDoc(doc(db,"users",superUid),{
+  // حذف مستندات institutes
+  try{
+    const instSnap = await getDocs(collection(db,"institutes"));
+    for(const i of instSnap.docs) await deleteDoc(doc(db,"institutes",i.id));
+    log("✅ تم حذف مجموعة institutes.");
+  }catch(err){ log("⚠️ لم يتم حذف بعض المعاهد: "+err.message); }
+
+  // إنشاء superAdmin
+  try{
+    const email="Salahalkaleefa@gmail.com";
+    const password="123456salah";
+    let userCred;
+    try{ userCred = await createUserWithEmailAndPassword(auth,email,password); }
+    catch(e){ 
+      log("⚠️ مستخدم superAdmin موجود، سيتم استخدام الحساب الحالي."); 
+      await signInWithEmailAndPassword(auth,email,password); 
+    }
+    const uid = userCred?.user?.uid || auth.currentUser.uid;
+    await setDoc(doc(db,"users",uid),{
       name:"مسؤول النظام",
-      email:superEmail,
+      email,
       type:"superAdmin",
       createdAt:serverTimestamp()
     });
-    log("تم إنشاء مستخدم superAdmin.");
+    log("✅ تم إنشاء superAdmin.");
+  }catch(err){ log("❌ خطأ في إنشاء superAdmin: "+err.message); }
 
-    // إنشاء المعهد الأول
-    const inst1Id = "institute1";
-    const inst1AdminEmail = "admin1@oma.edu";
-    const inst1AdminPass = "123456inst1";
-    const inst1User = await createUserWithEmailAndPassword(auth, inst1AdminEmail, inst1AdminPass);
-    const inst1AdminUid = inst1User.user.uid;
-    await setDoc(doc(db,"users",inst1AdminUid),{
-      name:"مدير المعهد 1",
-      email:inst1AdminEmail,
-      type:"instituteAdmin",
-      instituteId:inst1Id,
-      createdAt:serverTimestamp()
-    });
-    await setDoc(doc(db,"institutes",inst1Id),{
-      name:"معهد OMA - بغداد",
-      adminId:inst1AdminUid,
-      adminEmail:inst1AdminEmail,
-      colors:{ primary:"#004aad", bg:"#f5f9ff", card:"#ffffff", accent:"#ffcc33" },
-      plan:"trial",
-      createdAt:serverTimestamp()
-    });
-    log("تم إنشاء المعهد الأول مع مديره.");
-
-    // إنشاء المعهد الثاني
-    const inst2Id = "institute2";
-    const inst2AdminEmail = "admin2@oma.edu";
-    const inst2AdminPass = "123456inst2";
-    const inst2User = await createUserWithEmailAndPassword(auth, inst2AdminEmail, inst2AdminPass);
-    const inst2AdminUid = inst2User.user.uid;
-    await setDoc(doc(db,"users",inst2AdminUid),{
-      name:"مدير المعهد 2",
-      email:inst2AdminEmail,
-      type:"instituteAdmin",
-      instituteId:inst2Id,
-      createdAt:serverTimestamp()
-    });
-    await setDoc(doc(db,"institutes",inst2Id),{
-      name:"معهد OMA - البصرة",
-      adminId:inst2AdminUid,
-      adminEmail:inst2AdminEmail,
-      colors:{ primary:"#ff6600", bg:"#fff5e6", card:"#ffffff", accent:"#33cc33" },
-      plan:"yearly",
-      createdAt:serverTimestamp()
-    });
-    log("تم إنشاء المعهد الثاني مع مديره.");
-
-    log("🎉 تمت التهيئة بنجاح! يمكن تسجيل الدخول الآن.");
-    log(`🔹 superAdmin: ${superEmail} / ${superPass}`);
-    log(`🔹 مدير المعهد 1: ${inst1AdminEmail} / ${inst1AdminPass}`);
-    log(`🔹 مدير المعهد 2: ${inst2AdminEmail} / ${inst2AdminPass}`);
-
-  } catch(err){
-    console.error(err);
-    log("❌ حدث خطأ أثناء التهيئة: " + err.message);
+  // إنشاء معهدين
+  const institutesData = [
+    {name:"معهد OMA التجريبي 1", email:"demo1@oma.edu", password:"123456demo1", colors:{primary:"#004aad",bg:"#f5f9ff",card:"#fff",accent:"#ffcc33"}, plan:"trial"},
+    {name:"معهد OMA التجريبي 2", email:"demo2@oma.edu", password:"123456demo2", colors:{primary:"#880e4f",bg:"#fff0f5",card:"#ffe6f0",accent:"#f48fb1"}, plan:"yearly"}
+  ];
+  for(const inst of institutesData){
+    try{
+      let adminCred;
+      try{ adminCred = await createUserWithEmailAndPassword(auth,inst.email,inst.password); }
+      catch(e){ 
+        log(`⚠️ مستخدم ${inst.email} موجود، سيتم استخدام الحساب الحالي.`); 
+        await signInWithEmailAndPassword(auth,inst.email,inst.password);
+        adminCred={user:{uid:auth.currentUser.uid}};
+      }
+      const adminId = adminCred.user.uid;
+      const docRef = doc(db,"institutes",inst.name.replace(/\s+/g,'_'));
+      await setDoc(docRef,{
+        name:inst.name,
+        adminId,
+        adminEmail:inst.email,
+        colors:inst.colors,
+        plan:inst.plan,
+        createdAt:serverTimestamp()
+      });
+      await setDoc(doc(db,"users",adminId),{
+        uid:adminId,
+        type:"instituteAdmin",
+        instituteId:docRef.id,
+        email:inst.email,
+        createdAt:serverTimestamp()
+      });
+      log(`✅ تم إنشاء المعهد ${inst.name} بنجاح.`);
+    }catch(err){ log(`❌ خطأ في إنشاء ${inst.name}: `+err.message); }
   }
+
+  log("🎉 تمت التهيئة بنجاح! يمكنك تسجيل الدخول الآن.");
 });
 </script>
 </body>
