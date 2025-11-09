@@ -91,6 +91,25 @@ button:hover { background:#003a8c; }
   margin:30px auto;
   width:200px;
 }
+
+/* شريط التحميل */
+#progressContainer {
+  display:none;
+  width:100%;
+  background:#ccc;
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:15px;
+}
+
+#progressBar {
+  width:0%;
+  height:20px;
+  background:#004aad;
+  text-align:center;
+  color:white;
+  font-weight:bold;
+}
 </style>
 </head>
 <body>
@@ -98,6 +117,8 @@ button:hover { background:#003a8c; }
 <h2>إنشاء وإدارة المعاهد</h2>
 
 <div class="form-container">
+  <div id="progressContainer"><div id="progressBar">0%</div></div>
+
   <label class="label">اسم المعهد</label>
   <input type="text" id="instituteName" placeholder="أدخل اسم المعهد">
 
@@ -143,8 +164,8 @@ button:hover { background:#003a8c; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, updatePassword, updateEmail, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
 // Firebase Config
 const firebaseConfig = {
@@ -176,6 +197,8 @@ const updateBtn = document.getElementById("updateBtn");
 const statusMsg = document.getElementById("statusMsg");
 const listContainer = document.getElementById("listContainer");
 const logoutBtn = document.getElementById("logoutBtn");
+const progressContainer = document.getElementById("progressContainer");
+const progressBar = document.getElementById("progressBar");
 
 let editingDocId = null;
 let editingAdminId = null;
@@ -232,14 +255,28 @@ async function saveInstitute(docId=null){
 
   statusMsg.style.color="black";
   statusMsg.textContent= docId ? "جاري تحديث المعهد..." : "جاري إنشاء المعهد...";
+  progressContainer.style.display="block";
+  progressBar.style.width="0%";
+  progressBar.textContent="0%";
 
   try{
     let logoUrl = "";
     if(instituteLogo.files.length>0){
       const file = instituteLogo.files[0];
       const logoRef = ref(storage, `instituteLogos/${Date.now()}_${file.name}`);
-      await uploadBytes(logoRef, file);
-      logoUrl = await getDownloadURL(logoRef);
+      const uploadTask = uploadBytesResumable(logoRef, file);
+      await new Promise((resolve, reject)=>{
+        uploadTask.on('state_changed',
+          (snapshot)=>{
+            const progress = Math.floor((snapshot.bytesTransferred / snapshot.totalBytes)*100);
+            progressBar.style.width = progress+"%";
+            progressBar.textContent = progress+"%";
+          },
+          (error)=>{ reject(error); },
+          ()=>{ resolve(); }
+        );
+      });
+      logoUrl = await getDownloadURL(ref(storage, `instituteLogos/${Date.now()}_${file.name}`));
     }
 
     if(docId){ // تحديث المعهد
@@ -255,21 +292,6 @@ async function saveInstitute(docId=null){
         subscriptionType: subscriptionType.value,
         logoUrl: logoUrl || undefined
       });
-
-      // تحديث البريد وكلمة المرور في Auth إذا تم إدخال كلمة مرور جديدة أو تغيير البريد
-      if(editingAdminId){
-        const userRef = doc(db,"users",editingAdminId);
-        const userSnap = await getDoc(userRef);
-        if(userSnap.exists()){
-          const userData = userSnap.data();
-          const user = await auth.getUser ? await auth.getUser(editingAdminId) : null;
-          // ملاحظة: التحديث المباشر في Auth يحتاج Admin SDK على الخادم
-          // لذلك سنكتفي بتحديث Firestore هنا لتبقى البيانات متوافقة
-          await updateDoc(userRef,{
-            email: email
-          });
-        }
-      }
 
       statusMsg.style.color="green";
       statusMsg.textContent="تم تحديث المعهد بنجاح!";
@@ -301,7 +323,6 @@ async function saveInstitute(docId=null){
       statusMsg.textContent="تم إنشاء المعهد بنجاح!";
     }
 
-    // إعادة ضبط النموذج
     instituteName.value="";
     adminEmail.value="";
     adminPassword.value="";
@@ -310,11 +331,13 @@ async function saveInstitute(docId=null){
     updateBtn.style.display="none";
     editingDocId=null;
     editingAdminId=null;
+    progressContainer.style.display="none";
     loadInstitutes();
   }catch(err){
     console.error(err);
     statusMsg.style.color="red";
     statusMsg.textContent="حدث خطأ: "+err.message;
+    progressContainer.style.display="none";
   }
 }
 
