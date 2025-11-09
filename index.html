@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>تهيئة نظام OMA</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getFirestore, doc, setDoc, collection, deleteDoc, getDocs, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+// 🔹 ضع إعدادات Firebase الخاصة بمشروعك
+const firebaseConfig = {
+  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
+  authDomain: "oma0-33cc0.firebaseapp.com",
+  projectId: "oma0-33cc0",
+  storageBucket: "oma0-33cc0.appspot.com",
+  messagingSenderId: "899300774863",
+  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+async function resetSystem() {
+  const confirmReset = confirm("⚠️ سيتم حذف جميع البيانات وإعادة تهيئة النظام. هل أنت متأكد؟");
+  if (!confirmReset) return;
+
+  const status = document.getElementById('status');
+  status.textContent = "🔄 جاري حذف البيانات السابقة...";
+
+  try {
+    // حذف مجموعات users و institutes
+    const collections = ['users', 'institutes'];
+    for (const col of collections) {
+      const snap = await getDocs(collection(db, col));
+      for (const d of snap.docs) await deleteDoc(doc(db, col, d.id));
+    }
+
+    status.textContent = "✅ تم الحذف، جاري إنشاء حساب المدير العام...";
+
+    // إنشاء superAdmin
+    const superAdminEmail = "admin@oma.com";
+    const superAdminPass = "123456";
+    const superCred = await createUserWithEmailAndPassword(auth, superAdminEmail, superAdminPass);
+
+    await setDoc(doc(db, "users", superCred.user.uid), {
+      name: "المدير العام",
+      email: superAdminEmail,
+      type: "superAdmin",
+      createdAt: serverTimestamp()
+    });
+
+    status.textContent = "✅ تم إنشاء المدير العام، جاري إنشاء المعاهد التجريبية...";
+
+    // إنشاء معهدين تجريبيين
+    const demoInstitutes = [
+      { name: "معهد تجريبي 1", email: "demo1@oma.edu", password: "123456demo1", plan: "trial" },
+      { name: "معهد تجريبي 2", email: "demo2@oma.edu", password: "123456demo2", plan: "trial" }
+    ];
+
+    for (const ins of demoInstitutes) {
+      // إنشاء مستخدم المدير في Auth
+      const cred = await createUserWithEmailAndPassword(auth, ins.email, ins.password);
+      const adminId = cred.user.uid;
+
+      // إنشاء مستند المعهد في Firestore
+      const docRef = await addDoc(collection(db, "institutes"), {
+        name: ins.name,
+        adminId,
+        adminEmail: ins.email,
+        colors: { primary: "#004aad", bg: "#f5f9ff", card: "#fff", accent: "#ffcc33" },
+        subscriptionType: ins.plan,
+        createdAt: serverTimestamp()
+      });
+
+      // إنشاء مستند المستخدم المرتبط
+      await setDoc(doc(db, "users", adminId), {
+        uid: adminId,
+        type: "instituteAdmin",
+        instituteId: docRef.id,
+        email: ins.email,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    status.textContent = "🎉 تم إنشاء المعاهد التجريبية بنجاح! يمكنك الآن تسجيل الدخول لكل مدير.";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "❌ حدث خطأ أثناء التهيئة: " + err.message;
+  }
+}
+</script>
+</head>
+<body style="font-family:'Cairo',sans-serif;direction:rtl;text-align:center;margin-top:100px">
+  <h2>تهيئة نظام OMA</h2>
+  <p>سيتم حذف جميع المعاهد والمستخدمين وإعادة بناء النظام من جديد.</p>
+  <button onclick="resetSystem()" style="padding:10px 20px;font-size:18px;background:#004aad;color:white;border:none;border-radius:6px;">🚀 تهيئة النظام الآن</button>
+  <p id="status" style="margin-top:20px;color:#004aad;font-weight:bold"></p>
+</body>
+</html>
