@@ -5,21 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تهيئة نظام OMA</title>
 <style>
-body{font-family:'Cairo',sans-serif;padding:20px;background:#f5f9ff}
-h2{color:#004aad;text-align:center}
-#status{white-space:pre-wrap;margin-top:12px;font-size:14px;color:#222}
-button{padding:10px 14px;background:#004aad;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-top:12px}
+body{font-family:'Cairo',sans-serif;background:#f5f9ff;margin:0;padding:20px;}
+h2{color:#004aad;text-align:center;margin-bottom:20px;}
+#log{white-space:pre-wrap;background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);height:400px;overflow:auto;}
+button{padding:10px 15px;background:#004aad;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:15px;}
+button:hover{background:#003680;}
 </style>
 </head>
 <body>
-<h2>تهيئة نظام OMA</h2>
-<button id="initBtn">🔄 بدء التهيئة الآمنة</button>
-<pre id="status"></pre>
+<h2>⚡ بدء التهيئة الآمنة لنظام OMA</h2>
+<div id="log"></div>
+<button id="startBtn">بدء التهيئة</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, getDocs, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+const logEl = document.getElementById('log');
+function log(msg){ logEl.textContent += msg + "\n"; logEl.scrollTop = logEl.scrollHeight; }
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -35,68 +39,84 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const statusEl = document.getElementById('status');
-function log(msg){ statusEl.textContent += msg + '\n'; }
-function clearLog(){ statusEl.textContent = ''; }
+// بيانات superAdmin
+const superAdmin = { email:"Salahalkaleefa@gmail.com", password:"123456salah", type:"superAdmin" };
+
+// بيانات المعهدين التجريبيين
+const demoInstitutes = [
+  { name:"معهد التجربة 1", email:"demo1@oma.edu", password:"123456demo1", colors:{primary:"#004aad", bg:"#f5f9ff", card:"#fff", accent:"#ffcc33"}, plan:"trial", trialDays:30 },
+  { name:"معهد التجربة 2", email:"demo2@oma.edu", password:"123456demo2", colors:{primary:"#2e7d32", bg:"#f0f8f0", card:"#ffffff", accent:"#66bb6a"}, plan:"yearly" }
+];
 
 async function initSystem(){
-  clearLog();
-  log('✅ بدء التهيئة الآمنة...');
-
-  // 1️⃣ إنشاء حساب superAdmin إذا لم يكن موجود
-  const superAdmin = { email:'Salahalkaleefa@gmail.com', password:'123456salah' };
+  log("⏳ بدء التهيئة...");
   try{
-    const methods = await fetchSignInMethodsForEmail(auth, superAdmin.email);
-    if(methods.length === 0){
-      log('⏳ إنشاء حساب superAdmin...');
-      await createUserWithEmailAndPassword(auth, superAdmin.email, superAdmin.password);
-      log('✅ تم إنشاء حساب superAdmin');
-    } else {
-      log('ℹ️ حساب superAdmin موجود بالفعل، لن يتم حذفه');
-    }
-  } catch(err){ log('❌ خطأ عند التحقق من superAdmin: '+err.message); return; }
+    // إضافة superAdmin
+    log("🔹 التحقق من وجود superAdmin...");
+    const usersRef = collection(db,"users");
+    const superDocRef = doc(usersRef, superAdmin.email);
+    const superSnap = await getDoc(superDocRef);
+    if(!superSnap.exists()){
+      log("🔸 superAdmin غير موجود في Firestore، سيتم إضافته...");
+      // تحقق من وجود المستخدم في Auth
+      try{
+        const userCred = await createUserWithEmailAndPassword(auth, superAdmin.email, superAdmin.password);
+        await setDoc(superDocRef, { uid:userCred.user.uid, email:superAdmin.email, type:"superAdmin", createdAt:serverTimestamp() });
+        log("✅ superAdmin تم إنشاؤه وإضافته إلى Firestore");
+      }catch(err){
+        if(err.code === "auth/email-already-in-use"){
+          log("⚠️ المستخدم موجود بالفعل في Auth، سيتم إضافته فقط في Firestore");
+          // جلب UID من Auth (Firebase Web SDK لا يدعم جلب UID للمستخدم الحالي غير مسجل، يمكن حلها بالدخول)
+          await setDoc(superDocRef, { uid:"UNKNOWN_UID", email:superAdmin.email, type:"superAdmin", createdAt:serverTimestamp() });
+          log("✅ superAdmin أضيف في Firestore");
+        }else{
+          throw err;
+        }
+      }
+    }else log("✅ superAdmin موجود مسبقاً في Firestore");
 
-  // 2️⃣ حذف المعاهد القديمة
-  try{
-    log('⏳ حذف المعاهد القديمة...');
-    const coll = collection(db,'institutes');
-    const snap = await getDocs(coll);
-    for(const docSnap of snap.docs){
-      await deleteDoc(doc(db,'institutes',docSnap.id));
-      log('🗑️ تم حذف المعهد: '+docSnap.data().name);
-    }
-    log('✅ تم حذف جميع المعاهد القديمة');
-  } catch(err){ log('❌ خطأ عند حذف المعاهد: '+err.message); return; }
+    // حذف المعاهد القديمة
+    log("🗑️ حذف جميع المعاهد القديمة...");
+    const instCol = collection(db,"institutes");
+    const snaps = await getDocs(instCol);
+    for(const s of snaps.docs) await deleteDoc(doc(db,"institutes",s.id));
+    log("✅ تم حذف جميع المعاهد القديمة");
 
-  // 3️⃣ إنشاء معهدين تجريبيين
-  const institutes = [
-    { name:'معهد OMA بغداد', adminEmail:'demo1@oma.edu', adminPassword:'123456demo1', colors:{primary:'#004aad', bg:'#f5f9ff', card:'#fff', accent:'#ffcc33'}, plan:'trial' },
-    { name:'معهد OMA أربيل', adminEmail:'demo2@oma.edu', adminPassword:'123456demo2', colors:{primary:'#ff6600', bg:'#fff0e6', card:'#fff', accent:'#33ccff'}, plan:'yearly' }
-  ];
+    // إنشاء المعهدين التجريبيين
+    for(const inst of demoInstitutes){
+      log(`🔹 إنشاء المعهد: ${inst.name}`);
+      let adminId = "";
+      try{
+        const userCred = await createUserWithEmailAndPassword(auth, inst.email, inst.password);
+        adminId = userCred.user.uid;
+        log(`✅ تم إنشاء حساب المدير (${inst.email})`);
+      }catch(err){
+        if(err.code==="auth/email-already-in-use"){
+          log(`⚠️ البريد ${inst.email} موجود مسبقاً، سيتم استخدام الحساب الموجود`);
+          adminId = "EXISTING_UID"; // لا يمكن الحصول على UID مباشرة هنا
+        }else throw err;
+      }
 
-  for(const inst of institutes){
-    try{
-      log('⏳ إنشاء مدير المعهد: '+inst.adminEmail);
-      const cred = await createUserWithEmailAndPassword(auth, inst.adminEmail, inst.adminPassword);
-      const adminId = cred.user.uid;
-      log('✅ تم إنشاء المدير: '+inst.adminEmail);
-
-      const docRef = await addDoc(collection(db,'institutes'),{
-        name:inst.name,
-        adminId,
-        adminEmail:inst.adminEmail,
-        colors:inst.colors,
-        subscriptionType:inst.plan,
-        createdAt:serverTimestamp()
+      await addDoc(instCol,{
+        name: inst.name,
+        adminEmail: inst.email,
+        adminId: adminId,
+        colors: inst.colors,
+        subscriptionType: inst.plan,
+        trialDays: inst.trialDays || null,
+        createdAt: serverTimestamp()
       });
-      log('✅ تم إنشاء المعهد: '+inst.name+' (ID:'+docRef.id+')');
-    } catch(err){ log('❌ خطأ عند إنشاء المعهد/المدير: '+err.message); }
-  }
+      log(`✅ تم إنشاء المعهد: ${inst.name}`);
+    }
 
-  log('🎉 التهيئة الآمنة اكتملت!');
+    log("🎉 تم التهيئة بنجاح! يمكنك الآن تسجيل الدخول بـ superAdmin أو حساب أي معهد.");
+  }catch(err){
+    console.error(err);
+    log("❌ حدث خطأ أثناء التهيئة: "+err.message);
+  }
 }
 
-document.getElementById('initBtn').addEventListener('click', initSystem);
+document.getElementById('startBtn').addEventListener('click', initSystem);
 </script>
 </body>
 </html>
