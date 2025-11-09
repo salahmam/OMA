@@ -7,6 +7,7 @@
 <style>
 :root {
   --primary:#004aad;
+  --accent:#ffcc33;
   --bg:#f5f9ff;
   --card:#fff;
 }
@@ -18,7 +19,11 @@ body {
   padding:20px;
 }
 
-h2 { text-align:center; color:var(--primary); margin-bottom:30px; }
+h2 {
+  text-align:center;
+  color:var(--primary);
+  margin-bottom:30px;
+}
 
 .form-container {
   background: var(--card);
@@ -36,6 +41,7 @@ input, select, button {
   border-radius:8px;
   border:1px solid #ccc;
   font-size:15px;
+  box-sizing:border-box;
 }
 
 button {
@@ -46,7 +52,9 @@ button {
   transition:0.3s;
 }
 
-button:hover { background:#003a8c; }
+button:hover {
+  background:#003a8c;
+}
 
 .label { font-weight:bold; margin-bottom:5px; display:block; }
 
@@ -56,8 +64,6 @@ button:hover { background:#003a8c; }
   padding:20px;
   border-radius:10px;
 }
-
-.institutes-list h3 { margin-top:0; color:var(--primary); }
 
 .institute-item {
   padding:10px;
@@ -75,39 +81,15 @@ button:hover { background:#003a8c; }
   font-size:14px;
 }
 
-.color-box {
-  display:inline-block;
-  width:30px;
-  height:30px;
-  border-radius:5px;
-  border:1px solid #ccc;
-  vertical-align:middle;
-  margin-left:10px;
-}
-
 #logoutBtn {
-  background-color: #d32f2f;
+  background-color:#d32f2f;
   display:block;
   margin:30px auto;
   width:200px;
 }
 
-/* شريط التحميل */
-#progressContainer {
-  display:none;
-  width:100%;
-  background:#ccc;
-  border-radius:10px;
-  overflow:hidden;
-  margin-bottom:15px;
-}
-
-#progressBar {
-  width:0%;
-  height:20px;
-  background:#004aad;
+#statusMsg {
   text-align:center;
-  color:white;
   font-weight:bold;
 }
 </style>
@@ -117,8 +99,6 @@ button:hover { background:#003a8c; }
 <h2>إنشاء وإدارة المعاهد</h2>
 
 <div class="form-container">
-  <div id="progressContainer"><div id="progressBar">0%</div></div>
-
   <label class="label">اسم المعهد</label>
   <input type="text" id="instituteName" placeholder="أدخل اسم المعهد">
 
@@ -151,10 +131,10 @@ button:hover { background:#003a8c; }
 
   <button id="createBtn">إنشاء المعهد</button>
   <button id="updateBtn" style="display:none;">تحديث المعهد</button>
-  <p id="statusMsg" style="color:red;"></p>
+  <p id="statusMsg"></p>
 </div>
 
-<div class="institutes-list" id="institutesList">
+<div class="institutes-list">
   <h3>المعاهد الموجودة</h3>
   <div id="listContainer"></div>
 </div>
@@ -163,11 +143,11 @@ button:hover { background:#003a8c; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-storage.js";
 
-// Firebase Config
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -183,6 +163,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// المراجع
 const instituteName = document.getElementById("instituteName");
 const instituteLogo = document.getElementById("instituteLogo");
 const adminEmail = document.getElementById("adminEmail");
@@ -197,11 +178,8 @@ const updateBtn = document.getElementById("updateBtn");
 const statusMsg = document.getElementById("statusMsg");
 const listContainer = document.getElementById("listContainer");
 const logoutBtn = document.getElementById("logoutBtn");
-const progressContainer = document.getElementById("progressContainer");
-const progressBar = document.getElementById("progressBar");
 
 let editingDocId = null;
-let editingAdminId = null;
 
 // تحميل المعاهد
 async function loadInstitutes() {
@@ -212,18 +190,17 @@ async function loadInstitutes() {
     const div = document.createElement("div");
     div.classList.add("institute-item");
     div.innerHTML = `
-      <span>${data.name} - البريد: ${data.adminEmail} - الاشتراك: ${data.subscriptionType}</span>
+      <span>${data.name} - ${data.adminEmail}</span>
       <span>
         <button class="editBtn">تعديل</button>
         <button class="deleteBtn">حذف</button>
       </span>
     `;
+
     div.querySelector(".editBtn").addEventListener("click", ()=>{
       editingDocId = docSnap.id;
-      editingAdminId = data.adminId;
       instituteName.value = data.name;
       adminEmail.value = data.adminEmail;
-      adminPassword.value = "";
       colorPrimary.value = data.colors.primary;
       colorBg.value = data.colors.bg;
       colorCard.value = data.colors.card;
@@ -231,79 +208,73 @@ async function loadInstitutes() {
       subscriptionType.value = data.subscriptionType;
       createBtn.style.display = "none";
       updateBtn.style.display = "block";
+      statusMsg.textContent = "وضع التعديل مُفعل.";
+      statusMsg.style.color = "blue";
     });
+
     div.querySelector(".deleteBtn").addEventListener("click", async()=>{
       if(confirm("هل أنت متأكد من حذف هذا المعهد؟")){
         await deleteDoc(doc(db,"institutes",docSnap.id));
         loadInstitutes();
       }
     });
+
     listContainer.appendChild(div);
   });
 }
 
-// إنشاء أو تحديث المعهد
-async function saveInstitute(docId=null){
+// إنشاء / تحديث المعهد
+async function saveInstitute(docId=null) {
   const name = instituteName.value.trim();
   const email = adminEmail.value.trim();
   const password = adminPassword.value.trim();
+
   if(!name || !email || (!docId && !password)){
-    statusMsg.style.color="red";
-    statusMsg.textContent="الرجاء تعبئة جميع الحقول المطلوبة.";
+    statusMsg.textContent = "⚠️ الرجاء تعبئة جميع الحقول المطلوبة.";
+    statusMsg.style.color = "red";
     return;
   }
 
-  statusMsg.style.color="black";
-  statusMsg.textContent= docId ? "جاري تحديث المعهد..." : "جاري إنشاء المعهد...";
-  progressContainer.style.display="block";
-  progressBar.style.width="0%";
-  progressBar.textContent="0%";
+  statusMsg.textContent = docId ? "⏳ جاري تحديث المعهد..." : "⏳ جاري إنشاء المعهد...";
+  statusMsg.style.color = "black";
 
-  try{
+  try {
     let logoUrl = "";
-    if(instituteLogo.files.length>0){
+    if (instituteLogo.files.length > 0) {
       const file = instituteLogo.files[0];
-      const logoRef = ref(storage, `instituteLogos/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(logoRef, file);
-      await new Promise((resolve, reject)=>{
-        uploadTask.on('state_changed',
-          (snapshot)=>{
-            const progress = Math.floor((snapshot.bytesTransferred / snapshot.totalBytes)*100);
-            progressBar.style.width = progress+"%";
-            progressBar.textContent = progress+"%";
-          },
-          (error)=>{ reject(error); },
-          ()=>{ resolve(); }
-        );
-      });
-      logoUrl = await getDownloadURL(ref(storage, `instituteLogos/${Date.now()}_${file.name}`));
+      const logoRef = ref(storage, `logos/${Date.now()}_${file.name}`);
+      await uploadBytes(logoRef, file);
+      logoUrl = await getDownloadURL(logoRef);
     }
 
-    if(docId){ // تحديث المعهد
-      const instituteRef = doc(db,"institutes",docId);
-      await updateDoc(instituteRef,{
+    if (docId) {
+      const refDoc = doc(db, "institutes", docId);
+      await updateDoc(refDoc, {
         name,
-        colors:{
+        adminEmail: email,
+        colors: {
           primary: colorPrimary.value,
           bg: colorBg.value,
           card: colorCard.value,
           accent: colorAccent.value
         },
         subscriptionType: subscriptionType.value,
-        logoUrl: logoUrl || undefined
+        logoUrl: logoUrl || ""
       });
-
-      statusMsg.style.color="green";
-      statusMsg.textContent="تم تحديث المعهد بنجاح!";
-    } else { // إنشاء جديد
-      const userCred = await createUserWithEmailAndPassword(auth,email,password);
+      statusMsg.textContent = "✅ تم تحديث المعهد بنجاح.";
+      statusMsg.style.color = "green";
+    } else {
+      // إنشاء المستخدم أولاً في Auth
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
       const adminId = userCred.user.uid;
-      const docRef = await addDoc(collection(db,"institutes"),{
+
+      // حفظ بيانات المعهد
+      await addDoc(collection(db, "institutes"), {
         name,
         adminId,
         adminEmail: email,
         logoUrl,
-        colors:{
+        colors: {
           primary: colorPrimary.value,
           bg: colorBg.value,
           card: colorCard.value,
@@ -312,53 +283,54 @@ async function saveInstitute(docId=null){
         subscriptionType: subscriptionType.value,
         createdAt: serverTimestamp()
       });
-      await addDoc(collection(db,"users"),{
+
+      // إنشاء حساب المستخدم في قاعدة البيانات
+      await addDoc(collection(db, "users"), {
         uid: adminId,
-        type:"instituteAdmin",
-        instituteId:docRef.id,
+        type: "instituteAdmin",
         email,
-        createdAt:serverTimestamp()
+        createdAt: serverTimestamp()
       });
-      statusMsg.style.color="green";
-      statusMsg.textContent="تم إنشاء المعهد بنجاح!";
+
+      statusMsg.textContent = "✅ تم إنشاء المعهد والمدير بنجاح!";
+      statusMsg.style.color = "green";
     }
 
-    instituteName.value="";
-    adminEmail.value="";
-    adminPassword.value="";
-    instituteLogo.value="";
-    createBtn.style.display="block";
-    updateBtn.style.display="none";
-    editingDocId=null;
-    editingAdminId=null;
-    progressContainer.style.display="none";
+    // إعادة ضبط
+    instituteName.value = "";
+    adminEmail.value = "";
+    adminPassword.value = "";
+    instituteLogo.value = "";
+    createBtn.style.display = "block";
+    updateBtn.style.display = "none";
+    editingDocId = null;
     loadInstitutes();
-  }catch(err){
+
+  } catch (err) {
     console.error(err);
-    statusMsg.style.color="red";
-    statusMsg.textContent="حدث خطأ: "+err.message;
-    progressContainer.style.display="none";
+    statusMsg.textContent = "❌ حدث خطأ: " + err.message;
+    statusMsg.style.color = "red";
   }
 }
 
-createBtn.addEventListener("click",()=>saveInstitute());
-updateBtn.addEventListener("click",()=>saveInstitute(editingDocId));
+createBtn.addEventListener("click", ()=>saveInstitute());
+updateBtn.addEventListener("click", ()=>saveInstitute(editingDocId));
 
-// عرض الألوان مباشرة
-const colorInputs = document.querySelectorAll('input[type="color"]');
-colorInputs.forEach(input=>{
-  input.style.backgroundColor=input.value;
-  input.addEventListener('input',()=>input.style.backgroundColor=input.value);
+// عرض الألوان بشكل حي
+document.querySelectorAll('input[type="color"]').forEach(input=>{
+  input.style.backgroundColor = input.value;
+  input.addEventListener('input', ()=> input.style.backgroundColor = input.value);
 });
-
-// تحميل القائمة عند بدء الصفحة
-loadInstitutes();
 
 // تسجيل الخروج
 logoutBtn.addEventListener("click", async()=>{
   await signOut(auth);
-  window.location.href="login.html";
+  window.location.href = "login.html"; // ← يرجع إلى صفحة تسجيل الدخول العامة
 });
+
+// تحميل القائمة عند التشغيل
+loadInstitutes();
 </script>
+
 </body>
 </html>
