@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تهيئة النظام - OMA</title>
+<title>تهيئة نظام OMA</title>
 <style>
-body { font-family:'Cairo',sans-serif; background:#f5f9ff; text-align:center; padding:30px; color:#004aad; }
-button { padding:12px 25px; font-size:16px; border:none; border-radius:8px; background:#004aad; color:white; cursor:pointer; margin-top:15px; }
-button:hover { background:#003a8c; }
-#log { margin-top:20px; white-space:pre-wrap; text-align:right; background:#fff; border-radius:10px; padding:20px; max-width:600px; margin:auto; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+body { font-family:'Cairo',sans-serif; background:#f5f9ff; padding:20px; }
+h2 { color:#004aad; }
+pre { background:#fff; padding:15px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.1); overflow:auto; }
+button { background:#004aad; color:white; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; margin-top:10px; }
 </style>
 </head>
 <body>
-<h2>🔧 تهيئة نظام OMA</h2>
-<p>اضغط الزر أدناه لمسح البيانات السابقة وإنشاء superAdmin ومعهدين تجريبيين.</p>
-<button id="initBtn">بدء التهيئة</button>
-<div id="log"></div>
+
+<h2>تهيئة نظام OMA — إنشاء معهدين تجريبيين</h2>
+<pre id="log"></pre>
+<button id="startBtn">بدء التهيئة</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, deleteUser } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
@@ -37,84 +37,94 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const logEl = document.getElementById("log");
-const btn = document.getElementById("initBtn");
-function log(msg){ logEl.innerHTML += `✅ ${msg}\n`; }
+function log(msg){ logEl.textContent += msg + "\n"; }
 
-btn.addEventListener("click", async()=>{
-  btn.disabled=true;
-  log("🔄 جاري مسح البيانات السابقة...");
-  
-  // حذف مستندات users
-  try{
-    const usersSnap = await getDocs(collection(db,"users"));
-    for(const u of usersSnap.docs) await deleteDoc(doc(db,"users",u.id));
-    log("✅ تم حذف مجموعة users.");
-  }catch(err){ log("⚠️ لم يتم حذف بعض المستخدمين: "+err.message); }
+document.getElementById("startBtn").addEventListener("click", async ()=>{
+  logEl.textContent = '';
+  log("✅ جاري التهيئة...");
 
-  // حذف مستندات institutes
   try{
-    const instSnap = await getDocs(collection(db,"institutes"));
-    for(const i of instSnap.docs) await deleteDoc(doc(db,"institutes",i.id));
-    log("✅ تم حذف مجموعة institutes.");
-  }catch(err){ log("⚠️ لم يتم حذف بعض المعاهد: "+err.message); }
-
-  // إنشاء superAdmin
-  try{
-    const email="Salahalkaleefa@gmail.com";
-    const password="123456salah";
-    let userCred;
-    try{ userCred = await createUserWithEmailAndPassword(auth,email,password); }
-    catch(e){ 
-      log("⚠️ مستخدم superAdmin موجود، سيتم استخدام الحساب الحالي."); 
-      await signInWithEmailAndPassword(auth,email,password); 
+    // 🔹 حذف جميع المعاهد السابقة
+    const instSnap = await getDocs(collection(db,'institutes'));
+    for(const docSnap of instSnap.docs){
+      await deleteDoc(doc(db,'institutes',docSnap.id));
+      log(`🗑 تم حذف المعهد: ${docSnap.data().name}`);
     }
-    const uid = userCred?.user?.uid || auth.currentUser.uid;
-    await setDoc(doc(db,"users",uid),{
-      name:"مسؤول النظام",
-      email,
-      type:"superAdmin",
-      createdAt:serverTimestamp()
-    });
-    log("✅ تم إنشاء superAdmin.");
-  }catch(err){ log("❌ خطأ في إنشاء superAdmin: "+err.message); }
 
-  // إنشاء معهدين
-  const institutesData = [
-    {name:"معهد OMA التجريبي 1", email:"demo1@oma.edu", password:"123456demo1", colors:{primary:"#004aad",bg:"#f5f9ff",card:"#fff",accent:"#ffcc33"}, plan:"trial"},
-    {name:"معهد OMA التجريبي 2", email:"demo2@oma.edu", password:"123456demo2", colors:{primary:"#880e4f",bg:"#fff0f5",card:"#ffe6f0",accent:"#f48fb1"}, plan:"yearly"}
-  ];
-  for(const inst of institutesData){
-    try{
-      let adminCred;
-      try{ adminCred = await createUserWithEmailAndPassword(auth,inst.email,inst.password); }
-      catch(e){ 
-        log(`⚠️ مستخدم ${inst.email} موجود، سيتم استخدام الحساب الحالي.`); 
-        await signInWithEmailAndPassword(auth,inst.email,inst.password);
-        adminCred={user:{uid:auth.currentUser.uid}};
+    // 🔹 حذف جميع المستخدمين السابقين (المسؤولين)
+    const usersSnap = await getDocs(collection(db,'users'));
+    for(const uDoc of usersSnap.docs){
+      try{
+        await deleteDoc(doc(db,'users',uDoc.id));
+        log(`🗑 تم حذف المستخدم: ${uDoc.data().email}`);
+      }catch(e){ log(`⚠️ خطأ عند حذف المستخدم: ${uDoc.data().email}`); }
+    }
+
+    // 🔹 إنشاء معهدين تجريبيين
+    const institutes = [
+      {
+        name: "معهد OMA - بغداد",
+        adminEmail: "baghdad.admin@test.com",
+        adminPassword: "Test1234",
+        colors: { primary:'#004aad', bg:'#f5f9ff', card:'#ffffff', accent:'#ffcc33' },
+        subscriptionType: "trial",
+        trialDays: 30
+      },
+      {
+        name: "معهد OMA - البصرة",
+        adminEmail: "basra.admin@test.com",
+        adminPassword: "Test1234",
+        colors: { primary:'#2e7d32', bg:'#e8f5e9', card:'#ffffff', accent:'#ffcc33' },
+        subscriptionType: "trial",
+        trialDays: 30
       }
-      const adminId = adminCred.user.uid;
-      const docRef = doc(db,"institutes",inst.name.replace(/\s+/g,'_'));
-      await setDoc(docRef,{
-        name:inst.name,
-        adminId,
-        adminEmail:inst.email,
-        colors:inst.colors,
-        plan:inst.plan,
-        createdAt:serverTimestamp()
-      });
-      await setDoc(doc(db,"users",adminId),{
-        uid:adminId,
-        type:"instituteAdmin",
-        instituteId:docRef.id,
-        email:inst.email,
-        createdAt:serverTimestamp()
-      });
-      log(`✅ تم إنشاء المعهد ${inst.name} بنجاح.`);
-    }catch(err){ log(`❌ خطأ في إنشاء ${inst.name}: `+err.message); }
-  }
+    ];
 
-  log("🎉 تمت التهيئة بنجاح! يمكنك تسجيل الدخول الآن.");
+    for(const inst of institutes){
+      // إنشاء مستخدم Auth
+      let userCred;
+      try{
+        userCred = await createUserWithEmailAndPassword(auth, inst.adminEmail, inst.adminPassword);
+        log(`✅ تم إنشاء مستخدم: ${inst.adminEmail}`);
+      }catch(err){
+        if(err.code === 'auth/email-already-in-use'){
+          log(`⚠️ البريد موجود مسبقاً: ${inst.adminEmail} - سيتم إعادة استخدامه`);
+          userCred = { user: { uid: inst.adminEmail.replace(/[@.]/g,'_') } }; // معرف افتراضي إذا موجود
+        }else throw err;
+      }
+
+      const adminId = userCred.user.uid;
+
+      // إنشاء مستند المعهد
+      const instRef = doc(collection(db,'institutes'));
+      await setDoc(instRef, {
+        name: inst.name,
+        adminId,
+        adminEmail: inst.adminEmail,
+        colors: inst.colors,
+        subscriptionType: inst.subscriptionType,
+        trialDays: inst.trialDays,
+        createdAt: new Date().toISOString()
+      });
+      log(`✅ تم إنشاء المعهد: ${inst.name} (ID: ${instRef.id})`);
+
+      // ربط المستخدم بالمعهد
+      await setDoc(doc(db,'users',adminId), {
+        email: inst.adminEmail,
+        type: 'instituteAdmin',
+        instituteId: instRef.id
+      });
+      log(`✅ تم ربط المستخدم بالمعهد`);
+    }
+
+    log("\n🎉 انتهت التهيئة بنجاح! يمكنك الآن تسجيل الدخول باستخدام المعاهد الجديدة.");
+
+  }catch(err){
+    log("❌ حدث خطأ أثناء التهيئة: " + err.message);
+    console.error(err);
+  }
 });
 </script>
+
 </body>
 </html>
