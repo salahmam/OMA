@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>تطبيق شجرة العائلة — بدون حفظ</title>
+<style>
+  :root{
+    --bg:#f3f6fa;
+    --card:#ffffff;
+    --accent:#004aad;
+    --muted:#6b7280;
+    --node-border:#d1e4ff;
+  }
+  html,body{height:100%;margin:0;font-family: "Cairo", "Segoe UI", Tahoma, sans-serif;background:var(--bg);color:#0b1630}
+  header{background:linear-gradient(90deg,var(--accent),#0066d6);color:white;padding:12px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  header h1{font-size:18px;margin:0}
+  .container{display:flex;height:calc(100% - 60px)}
+  .panel{width:320px;background:var(--card);box-shadow:0 2px 6px rgba(2,6,23,0.08);padding:14px;overflow:auto;border-left:4px solid var(--accent)}
+  .panel h2{margin:0 0 8px 0;font-size:16px}
+  .panel p.small{color:var(--muted);font-size:13px;margin:6px 0}
+  .workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px}
+  .canvas-wrap{flex:1;background:linear-gradient(180deg,#eef6ff,transparent);border-radius:8px;overflow:hidden;position:relative;border:1px dashed rgba(0,0,0,0.04)}
+  /* toolbar */
+  .toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+  .toolbar button, .panel button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+  .toolbar .muted{background:#e6eefb;color:var(--accent)}
+  .input-row{display:flex;gap:8px;margin:8px 0}
+  .input-row input[type="text"], .input-row input[type="number"]{flex:1;padding:8px;border:1px solid #d6e4ff;border-radius:6px}
+  .small-btn{padding:6px 8px;font-size:14px}
+  .muted-plain{background:#f1f5f9;color:#0b1630;border:1px solid #e6eefb}
+  /* tree style: center horizontally */
+  #tree-container{width:2000px;height:1600px;transform-origin:0 0;transition:transform .08s linear}
+  .tree-root{display:flex;justify-content:center;padding:20px 0}
+  .node{display:flex;flex-direction:column;align-items:center;min-width:120px;position:relative}
+  .node-card{
+    background:var(--card);border:1px solid var(--node-border);padding:8px 10px;border-radius:10px;box-shadow:0 2px 6px rgba(2,6,23,0.04);min-width:100px;text-align:center
+  }
+  .node-card .name{font-weight:700;margin-bottom:6px}
+  .node-actions{display:flex;gap:6px;font-size:13px}
+  .node-actions button{background:#fff;border:1px solid #e6eefb;padding:4px 6px;border-radius:6px;cursor:pointer}
+  .children{display:flex;gap:18px;margin-top:18px;align-items:flex-start;justify-content:center}
+  /* lines between parent and children */
+  .children::before{
+    content:"";position:absolute;left:50%;top:calc(50% + 28px);transform:translateX(-50%);width:2px;height:18px;background:transparent;
+  }
+  /* connecting lines */
+  .connector-vertical{position:absolute;height:18px;width:2px;background:rgba(0,74,173,0.12);left:50%;top:calc(100% + 6px);transform:translateX(-50%);z-index:0}
+  .connector-horizontal{position:absolute;height:2px;background:rgba(0,74,173,0.12);top:-6px;left:0;right:0;margin:auto;width:80%;z-index:0}
+  /* responsive */
+  @media (max-width:900px){
+    .panel{display:none}
+  }
+  /* small tips */
+  .hint{font-size:13px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>تطبيق شجرة العائلة — تفاعلي (بدون حفظ)</h1>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div style="font-size:13px;color:#e6f0ff">افتح الملف وابدأ التعديل — يمكنك رفعه على GitHub كما هو</div>
+  </div>
+</header>
+
+<div class="container">
+  <aside class="panel" role="region" aria-label="لوحة الأدوات">
+    <h2>أدوات سريعة</h2>
+    <div class="input-row">
+      <input id="rootName" type="text" placeholder="اسم الجذْر (مثال: جدي)" value="الجد">
+      <button id="createRoot" class="small-btn">إنشاء</button>
+    </div>
+
+    <p class="small">توليد تلقائي: أدخل عدد الأبناء لكل فرع ثم اضغط توليد.</p>
+    <div class="input-row">
+      <input id="childrenCount" type="number" min="0" value="11">
+      <input id="grandChildrenCount" type="number" min="0" value="5">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="generateBtn">توليد (مثال 11 × 5)</button>
+      <button id="clearBtn" class="muted-plain">مسح الشجرة</button>
+    </div>
+
+    <hr style="margin:12px 0;border:none;border-top:1px dashed #e6eefb">
+
+    <h2>تعليمات سريعة</h2>
+    <ul style="padding-left:18px;">
+      <li>اضغط <strong>➕</strong> لإضافة فرع لآخر.</li>
+      <li>اضغط <strong>✏️</strong> لتعديل الاسم.</li>
+      <li>اضغط <strong>🗑️</strong> لحذف العقدة (سيطالبك إذا كان لديها أبناء).</li>
+      <li>يمكن سحب مساحة الرسم بالماوس، واستخدام عجلة الماوس للتكبير/التصغير.</li>
+    </ul>
+    <p class="hint">مناسب للرفع على GitHub: فقط ارفع هذا الملف أو اربطه بصفحة GitHub Pages.</p>
+  </aside>
+
+  <main class="workspace">
+    <div class="toolbar">
+      <button id="zoomOut" class="muted small-btn">-</button>
+      <button id="resetZoom" class="muted small-btn">100%</button>
+      <button id="zoomIn" class="muted small-btn">+</button>
+      <div style="flex:1"></div>
+      <button id="exportPng" class="small-btn">تصدير صورة PNG</button>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <!-- pan & zoom area -->
+      <div id="tree-container" style="transform:translate(0px,0px) scale(1);">
+        <!-- سيتم توليد الشجرة هنا -->
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- modal for prompt simple -->
+<div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.4);align-items:center;justify-content:center">
+  <div style="background:white;padding:14px;border-radius:8px;min-width:320px;direction:rtl">
+    <div style="font-weight:700;margin-bottom:8px">أدخل الاسم</div>
+    <input id="promptInput" style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:6px" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button id="promptCancel" class="muted-plain">إلغاء</button>
+      <button id="promptOk" class="small-btn">موافق</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  شجرة تفاعلية بسيطة بدون حفظ.
+  بنيت كمهيكل بيانات شجري (كائنات مع children[]) ثم رندر DOM بشكل متكرر.
+  الميزات: إضافة، تعديل، حذف، طي/فرد، pan & zoom، توليد أوتوماتيكي.
+*/
+
+// Model: node = { id, name, children: [] }
+let root = null;
+let idCounter = 1;
+
+// helpers
+function makeNode(name){
+  return { id: 'n' + (idCounter++), name: name || 'شخص', children: [] };
+}
+
+function clearTree(){
+  root = null;
+  render();
+}
+
+// Render
+const container = document.getElementById('tree-container');
+
+function render(){
+  container.innerHTML = '';
+  if(!root) return;
+  const rootWrap = document.createElement('div');
+  rootWrap.className = 'tree-root';
+  rootWrap.appendChild(renderNode(root));
+  container.appendChild(rootWrap);
+}
+
+// render node recursively
+function renderNode(node){
+  const nodeEl = document.createElement('div');
+  nodeEl.className = 'node';
+  nodeEl.dataset.id = node.id;
+
+  // card
+  const card = document.createElement('div');
+  card.className = 'node-card';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'name';
+  nameEl.textContent = node.name;
+  card.appendChild(nameEl);
+
+  // actions
+  const actions = document.createElement('div');
+  actions.className = 'node-actions';
+  // add
+  const addBtn = document.createElement('button');
+  addBtn.title = 'إضافة فرع';
+  addBtn.textContent = '➕';
+  addBtn.onclick = (e) => { e.stopPropagation(); promptForName('أدخل اسم الابن', (val)=>{ if(val) { node.children.push(makeNode(val)); render(); centerOn(node.id); } }); };
+  actions.appendChild(addBtn);
+
+  // edit
+  const editBtn = document.createElement('button');
+  editBtn.title = 'تعديل الاسم';
+  editBtn.textContent = '✏️';
+  editBtn.onclick = (e) => { e.stopPropagation(); promptForName('تعديل الاسم', (val)=>{ if(val!==null){ node.name = val||node.name; render(); centerOn(node.id); } }, node.name); };
+  actions.appendChild(editBtn);
+
+  // collapse / expand
+  const toggleBtn = document.createElement('button');
+  toggleBtn.title = 'طي / فرد';
+  toggleBtn.textContent = node._collapsed ? '🔽' : '🔼';
+  toggleBtn.onclick = (e) => { e.stopPropagation(); node._collapsed = !node._collapsed; render(); centerOn(node.id); };
+  actions.appendChild(toggleBtn);
+
+  // delete
+  const delBtn = document.createElement('button');
+  delBtn.title = 'حذف';
+  delBtn.textContent = '🗑️';
+  delBtn.onclick = (e) => {
+    e.stopPropagation();
+    if(node === root){
+      if(confirm('ستحذف الجذر وكل الشجرة. تأكد؟')) { clearTree(); }
+      return;
+    }
+    if(node.children && node.children.length){
+      if(!confirm('هذه العقدة لديها أبناء. حذفها سيحذف كل أبناءها. هل تريد المتابعة؟')) return;
+    }
+    removeNodeById(root, node.id);
+    render();
+  };
+  actions.appendChild(delBtn);
+
+  card.appendChild(actions);
+  nodeEl.appendChild(card);
+
+  // connector vertical line
+  const vconn = document.createElement('div');
+  vconn.className = 'connector-vertical';
+  nodeEl.appendChild(vconn);
+
+  // children
+  if(node.children && node.children.length && !node._collapsed){
+    const childrenWrap = document.createElement('div');
+    childrenWrap.className = 'children';
+    node.children.forEach(child => {
+      const childNodeEl = renderNode(child);
+      // horizontal connector line
+      const hline = document.createElement('div');
+      hline.className = 'connector-horizontal';
+      // attach hline to child wrapper relative to parent
+      childNodeEl.appendChild(hline);
+      childrenWrap.appendChild(childNodeEl);
+    });
+    nodeEl.appendChild(childrenWrap);
+  }
+
+  return nodeEl;
+}
+
+// remove node by id
+function removeNodeById(parent, id){
+  if(!parent || !parent.children) return false;
+  for(let i=0;i<parent.children.length;i++){
+    if(parent.children[i].id === id){
+      parent.children.splice(i,1);
+      return true;
+    } else {
+      if(removeNodeById(parent.children[i], id)) return true;
+    }
+  }
+  return false;
+}
+
+// simple prompt modal
+const promptModal = document.getElementById('promptModal');
+const promptInput = document.getElementById('promptInput');
+let promptCallback = null;
+function promptForName(title, callback, defaultVal=''){
+  promptCallback = callback;
+  promptInput.value = defaultVal||'';
+  promptModal.style.display = 'flex';
+  setTimeout(()=>promptInput.focus(),50);
+}
+document.getElementById('promptOk').onclick = ()=>{ promptModal.style.display='none'; if(promptCallback) promptCallback(promptInput.value); promptCallback = null; };
+document.getElementById('promptCancel').onclick = ()=>{ promptModal.style.display='none'; if(promptCallback) promptCallback(null); promptCallback = null; };
+
+// center on node (attempt)
+function centerOn(nodeId){
+  // find element
+  const el = container.querySelector(`[data-id="${nodeId}"]`);
+  if(!el) return;
+  // compute position relative to container wrap
+  const wrap = document.getElementById('canvasWrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const treeRect = container.getBoundingClientRect();
+
+  // current transform
+  const style = container.style.transform;
+  const m = /translate\((-?\d+(?:\.\d+)?)px,(-?\d+(?:\.\d+)?)px\)\s*scale\((\d+(?:\.\d+)?)\)/.exec(style);
+  let tx=0, ty=0, scale=1;
+  if(m){ tx = parseFloat(m[1]); ty = parseFloat(m[2]); scale = parseFloat(m[3]); }
+
+  // target center
+  const elCenterX = (elRect.left + elRect.right)/2 - treeRect.left;
+  const elCenterY = (elRect.top + elRect.bottom)/2 - treeRect.top;
+
+  const wrapCenterX = wrapRect.width / 2;
+  const wrapCenterY = wrapRect.height / 2;
+
+  // new translate to center that element
+  const newTx = wrapCenterX - elCenterX * scale;
+  const newTy = wrapCenterY - elCenterY * scale;
+  container.style.transform = `translate(${newTx}px,${newTy}px) scale(${scale})`;
+}
+
+// create root
+document.getElementById('createRoot').onclick = ()=>{
+  const name = document.getElementById('rootName').value.trim() || 'الجد';
+  root = makeNode(name);
+  render();
+  centerOn(root.id);
+};
+
+// generate automatic
+document.getElementById('generateBtn').onclick = ()=>{
+  const rootName = document.getElementById('rootName').value.trim() || 'الجد';
+  const c = Math.max(0, parseInt(document.getElementById('childrenCount').value || 0));
+  const g = Math.max(0, parseInt(document.getElementById('grandChildrenCount').value || 0));
+  root = makeNode(rootName);
+  // create c children
+  for(let i=1;i<=c;i++){
+    const child = makeNode('ابن ' + i);
+    for(let j=1;j<=g;j++){
+      child.children.push(makeNode('حفيد ' + i + '.' + j));
+    }
+    root.children.push(child);
+  }
+  render();
+  centerOn(root.id);
+};
+
+document.getElementById('clearBtn').onclick = ()=>{
+  if(confirm('مسح كامل للشجرة؟')) clearTree();
+};
+
+// initial: create a root by default
+root = makeNode(document.getElementById('rootName').value || 'الجد');
+render();
+centerOn(root.id);
+
+// Pan & Zoom
+const canvasWrap = document.getElementById('canvasWrap');
+let isPanning = false, startX=0, startY=0, translateX=0, translateY=0, scale=1;
+
+function updateTransform(){
+  container.style.transform = `translate(${translateX}px,${translateY}px) scale(${scale})`;
+}
+canvasWrap.addEventListener('pointerdown', (e)=>{
+  isPanning = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  canvasWrap.setPointerCapture(e.pointerId);
+});
+window.addEventListener('pointermove', (e)=>{
+  if(!isPanning) return;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  startX = e.clientX;
+  startY = e.clientY;
+  translateX += dx;
+  translateY += dy;
+  updateTransform();
+});
+window.addEventListener('pointerup', (e)=>{
+  isPanning = false;
+});
+
+// wheel zoom
+canvasWrap.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const zoomIntensity = 0.0015;
+  const delta = -e.deltaY;
+  const zoom = Math.exp(delta * zoomIntensity);
+
+  // compute mouse point relative to container
+  const rect = container.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  // zoom around mouse: translate so that mouse remains in place
+  const newScale = Math.min(3, Math.max(0.2, scale * zoom));
+  const ratio = newScale / scale;
+
+  translateX = (translateX - mx) * ratio + mx;
+  translateY = (translateY - my) * ratio + my;
+  scale = newScale;
+  updateTransform();
+}, { passive:false });
+
+// toolbar buttons
+document.getElementById('zoomIn').onclick = ()=>{ scale = Math.min(3, scale + 0.1); updateTransform(); };
+document.getElementById('zoomOut').onclick = ()=>{ scale = Math.max(0.2, scale - 0.1); updateTransform(); };
+document.getElementById('resetZoom').onclick = ()=>{ scale = 1; translateX = 0; translateY = 0; updateTransform(); };
+
+// Export PNG (simple approach using svg + foreignObject wrapper)
+document.getElementById('exportPng').onclick = async ()=>{
+  // temporarily render tree inside an SVG foreignObject and export as PNG
+  try{
+    // clone container
+    const clone = container.cloneNode(true);
+    // remove transform to get full size
+    clone.style.transform = 'translate(0px,0px) scale(1)';
+    // compute bounds
+    const bbox = clone.getBoundingClientRect();
+    // create SVG
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${Math.max(800,bbox.width)}' height='${Math.max(600,bbox.height)}'>
+      <foreignObject width='100%' height='100%'>${new XMLSerializer().serializeToString(clone)}</foreignObject></svg>`;
+    const blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(800, Math.ceil(bbox.width));
+      canvas.height = Math.max(600, Math.ceil(bbox.height));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob2)=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob2);
+        a.download = 'family-tree.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, 'image/png');
+    };
+    img.onerror = ()=>{ alert('حدث خطأ أثناء استخراج الصورة. حاول تقليل حجم الشجرة.'); URL.revokeObjectURL(url); };
+    img.src = url;
+  } catch(err){
+    console.error(err);
+    alert('تعذر التصدير: ' + err.message);
+  }
+};
+
+/* small UX: click node to center */
+container.addEventListener('click', (e)=>{
+  const node = e.target.closest('.node');
+  if(node && node.dataset.id){
+    centerOn(node.dataset.id);
+  }
+});
+</script>
+</body>
+</html>
