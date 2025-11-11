@@ -2,438 +2,573 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>تطبيق شجرة العائلة — بدون حفظ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>شجرة العائلة — رسمية (رسومية)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f3f6fa;
-    --card:#ffffff;
-    --accent:#004aad;
-    --muted:#6b7280;
-    --node-border:#d1e4ff;
+    --bg:#eaf6ee;
+    --panel:#ffffff;
+    --accent:#0b6b2e;
+    --leaf:#2fa34a;
+    --trunk:#7b4f2a;
+    --muted:#40514e;
   }
-  html,body{height:100%;margin:0;font-family: "Cairo", "Segoe UI", Tahoma, sans-serif;background:var(--bg);color:#0b1630}
-  header{background:linear-gradient(90deg,var(--accent),#0066d6);color:white;padding:12px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between}
-  header h1{font-size:18px;margin:0}
-  .container{display:flex;height:calc(100% - 60px)}
-  .panel{width:320px;background:var(--card);box-shadow:0 2px 6px rgba(2,6,23,0.08);padding:14px;overflow:auto;border-left:4px solid var(--accent)}
-  .panel h2{margin:0 0 8px 0;font-size:16px}
-  .panel p.small{color:var(--muted);font-size:13px;margin:6px 0}
-  .workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:12px}
-  .canvas-wrap{flex:1;background:linear-gradient(180deg,#eef6ff,transparent);border-radius:8px;overflow:hidden;position:relative;border:1px dashed rgba(0,0,0,0.04)}
-  /* toolbar */
-  .toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-  .toolbar button, .panel button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer}
-  .toolbar .muted{background:#e6eefb;color:var(--accent)}
-  .input-row{display:flex;gap:8px;margin:8px 0}
-  .input-row input[type="text"], .input-row input[type="number"]{flex:1;padding:8px;border:1px solid #d6e4ff;border-radius:6px}
-  .small-btn{padding:6px 8px;font-size:14px}
-  .muted-plain{background:#f1f5f9;color:#0b1630;border:1px solid #e6eefb}
-  /* tree style: center horizontally */
-  #tree-container{width:2000px;height:1600px;transform-origin:0 0;transition:transform .08s linear}
-  .tree-root{display:flex;justify-content:center;padding:20px 0}
-  .node{display:flex;flex-direction:column;align-items:center;min-width:120px;position:relative}
-  .node-card{
-    background:var(--card);border:1px solid var(--node-border);padding:8px 10px;border-radius:10px;box-shadow:0 2px 6px rgba(2,6,23,0.04);min-width:100px;text-align:center
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
+  header{height:64px;background:linear-gradient(90deg,var(--accent),#1f8b3a);color:white;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}
+  header h1{margin:0;font-size:18px}
+  .app{display:flex;height:calc(100% - 64px)}
+  .panel{width:320px;padding:14px;background:var(--panel);border-left:6px solid var(--accent);box-shadow:0 6px 18px rgba(11,107,46,0.08);overflow:auto}
+  .main{flex:1;display:flex;flex-direction:column;gap:8px;padding:10px}
+  .toolbar{display:flex;gap:8px;align-items:center}
+  .toolbar button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .toolbar .alt{background:#fff;color:var(--accent);border:1px solid rgba(11,107,46,0.12)}
+  .row{display:flex;gap:8px;margin:8px 0}
+  input[type="text"], input[type="number"]{padding:8px;border-radius:8px;border:1px solid #e6f1ea;flex:1}
+  .canvas-area{flex:1;background:linear-gradient(180deg,#f7fffb,transparent);border-radius:12px;overflow:hidden;position:relative;border:1px dashed rgba(11,107,46,0.06)}
+  /* modal */
+  .modal{display:none;position:fixed;inset:0;background:rgba(2,6,23,0.45);align-items:center;justify-content:center;padding:12px;z-index:80}
+  .dialog{background:white;border-radius:10px;padding:12px;min-width:260px;max-width:90%}
+  .dialog h3{margin:0 0 8px 0;font-size:16px}
+  .node-card{font-weight:700;padding:6px 10px;border-radius:14px;background:linear-gradient(180deg,#ffffff,#ecffef);border:2px solid rgba(47,163,74,0.12);display:inline-block}
+  /* small-mobile: panel full width toggle */
+  @media (max-width:880px){
+    .panel{width:100%;position:relative;z-index:10}
+    .app{flex-direction:column}
   }
-  .node-card .name{font-weight:700;margin-bottom:6px}
-  .node-actions{display:flex;gap:6px;font-size:13px}
-  .node-actions button{background:#fff;border:1px solid #e6eefb;padding:4px 6px;border-radius:6px;cursor:pointer}
-  .children{display:flex;gap:18px;margin-top:18px;align-items:flex-start;justify-content:center}
-  /* lines between parent and children */
-  .children::before{
-    content:"";position:absolute;left:50%;top:calc(50% + 28px);transform:translateX(-50%);width:2px;height:18px;background:transparent;
-  }
-  /* connecting lines */
-  .connector-vertical{position:absolute;height:18px;width:2px;background:rgba(0,74,173,0.12);left:50%;top:calc(100% + 6px);transform:translateX(-50%);z-index:0}
-  .connector-horizontal{position:absolute;height:2px;background:rgba(0,74,173,0.12);top:-6px;left:0;right:0;margin:auto;width:80%;z-index:0}
-  /* responsive */
-  @media (max-width:900px){
-    .panel{display:none}
-  }
-  /* small tips */
-  .hint{font-size:13px;color:var(--muted);margin-top:8px}
+  /* tips */
+  .hint{font-size:13px;color:#406b57;margin-top:8px}
+  /* footer small */
+  footer{font-size:12px;color:#2e5745;margin-top:6px}
+  /* draggable cursor */
+  .canvas-area.grabbing{cursor:grabbing}
 </style>
 </head>
 <body>
 <header>
-  <h1>تطبيق شجرة العائلة — تفاعلي (بدون حفظ)</h1>
-  <div style="display:flex;gap:10px;align-items:center">
-    <div style="font-size:13px;color:#e6f0ff">افتح الملف وابدأ التعديل — يمكنك رفعه على GitHub كما هو</div>
-  </div>
+  <h1>شجرة العائلة — رسومية 🌳</h1>
+  <div style="font-size:13px;opacity:.95">اضغط ➕ لإضافة فرع — اسحب للتنقل — قم بالتكبير بعجلة الماوس أو القرص</div>
 </header>
 
-<div class="container">
-  <aside class="panel" role="region" aria-label="لوحة الأدوات">
-    <h2>أدوات سريعة</h2>
-    <div class="input-row">
-      <input id="rootName" type="text" placeholder="اسم الجذْر (مثال: جدي)" value="الجد">
-      <button id="createRoot" class="small-btn">إنشاء</button>
+<div class="app">
+  <aside class="panel" aria-label="أدوات">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:700;margin-bottom:6px">أدوات الشجرة</div>
+        <div style="font-size:13px;color:#2b6b45">بدون حفظ — مناسب للرفع على GitHub</div>
+      </div>
     </div>
 
-    <p class="small">توليد تلقائي: أدخل عدد الأبناء لكل فرع ثم اضغط توليد.</p>
-    <div class="input-row">
-      <input id="childrenCount" type="number" min="0" value="11">
-      <input id="grandChildrenCount" type="number" min="0" value="5">
-    </div>
-    <div style="display:flex;gap:8px">
-      <button id="generateBtn">توليد (مثال 11 × 5)</button>
-      <button id="clearBtn" class="muted-plain">مسح الشجرة</button>
+    <div class="row" style="margin-top:12px">
+      <input id="rootName" type="text" placeholder="اسم الأصل (مثال: جدي)" value="الجد">
+      <button id="createRoot">إنشاء</button>
     </div>
 
-    <hr style="margin:12px 0;border:none;border-top:1px dashed #e6eefb">
+    <div style="margin-top:10px;font-weight:600">توليد تلقائي</div>
+    <div class="row">
+      <input id="lvl1count" type="number" min="0" value="11" />
+      <input id="lvl2count" type="number" min="0" value="5" />
+    </div>
+    <div class="row">
+      <button id="generate" class="">توليد (مثال 11 × 5)</button>
+      <button id="clear" class="alt">مسح</button>
+    </div>
 
-    <h2>تعليمات سريعة</h2>
-    <ul style="padding-left:18px;">
-      <li>اضغط <strong>➕</strong> لإضافة فرع لآخر.</li>
-      <li>اضغط <strong>✏️</strong> لتعديل الاسم.</li>
-      <li>اضغط <strong>🗑️</strong> لحذف العقدة (سيطالبك إذا كان لديها أبناء).</li>
-      <li>يمكن سحب مساحة الرسم بالماوس، واستخدام عجلة الماوس للتكبير/التصغير.</li>
+    <hr style="border:none;border-top:1px dashed #e6f1ea;margin:12px 0">
+
+    <div style="font-weight:600;margin-bottom:6px">تعليمات</div>
+    <ul style="padding-left:18px">
+      <li>اضغط <strong>➕</strong> بجانب أي ورقة لإضافة فرع جديد.</li>
+      <li>اضغط على الاسم لتعديله.</li>
+      <li>اسحب المساحة لتتحرك، واستخدم عجلة الماوس للتكبير/التصغير.</li>
     </ul>
-    <p class="hint">مناسب للرفع على GitHub: فقط ارفع هذا الملف أو اربطه بصفحة GitHub Pages.</p>
+    <div class="hint">يناسب الموبايل والكمبيوتر. جاهز للرفع على GitHub Pages.</div>
+    <footer>صنع لك — يمكنك طلب ربط Firebase لاحقًا</footer>
   </aside>
 
-  <main class="workspace">
+  <main class="main">
     <div class="toolbar">
-      <button id="zoomOut" class="muted small-btn">-</button>
-      <button id="resetZoom" class="muted small-btn">100%</button>
-      <button id="zoomIn" class="muted small-btn">+</button>
+      <button id="zoomIn">تكبير +</button>
+      <button id="zoomOut" class="alt">تصغير -</button>
+      <button id="reset" class="alt">إعادة</button>
       <div style="flex:1"></div>
-      <button id="exportPng" class="small-btn">تصدير صورة PNG</button>
+      <button id="export" class="">حفظ صورة PNG</button>
     </div>
 
-    <div class="canvas-wrap" id="canvasWrap">
-      <!-- pan & zoom area -->
-      <div id="tree-container" style="transform:translate(0px,0px) scale(1);">
-        <!-- سيتم توليد الشجرة هنا -->
-      </div>
+    <div class="canvas-area" id="canvasArea" tabindex="0" aria-label="منطقة الشجرة">
+      <!-- SVG will be injected here -->
+      <svg id="svgRoot" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="touch-action:none">
+        <!-- defs for leaf shape -->
+        <defs>
+          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#2a6b2a" flood-opacity="0.12"/>
+          </filter>
+        </defs>
+        <g id="panzoom">
+          <!-- trunk background -->
+        </g>
+      </svg>
     </div>
   </main>
 </div>
 
-<!-- modal for prompt simple -->
-<div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.4);align-items:center;justify-content:center">
-  <div style="background:white;padding:14px;border-radius:8px;min-width:320px;direction:rtl">
-    <div style="font-weight:700;margin-bottom:8px">أدخل الاسم</div>
-    <input id="promptInput" style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:6px" />
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button id="promptCancel" class="muted-plain">إلغاء</button>
-      <button id="promptOk" class="small-btn">موافق</button>
+<!-- modal for name input -->
+<div class="modal" id="modal">
+  <div class="dialog" role="dialog" aria-modal="true">
+    <h3 id="modalTitle">إضافة اسم</h3>
+    <input id="modalInput" type="text" placeholder="اكتب الاسم هنا" style="width:100%;padding:8px;border-radius:8px;border:1px solid #eef6ee;margin-top:6px" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button id="modalCancel" class="alt">إلغاء</button>
+      <button id="modalOk" style="background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px">موافق</button>
     </div>
   </div>
 </div>
 
 <script>
 /*
-  شجرة تفاعلية بسيطة بدون حفظ.
-  بنيت كمهيكل بيانات شجري (كائنات مع children[]) ثم رندر DOM بشكل متكرر.
-  الميزات: إضافة، تعديل، حذف، طي/فرد، pan & zoom، توليد أوتوماتيكي.
+  شجرة رسومية: يستخدم SVG لرسم جذع ومن ثم أغصان (مسارات) وعقد (دوائر / بطاقات أوراق).
+  Layout: حساب عرض الشجرة بالاعتماد على عدد الأوراق (leaf count) ثم توزيع X لكل عقدة مركزياً.
+  Features: add child (modal), edit name (dblclick), delete (right-click menu via confirm), pan & zoom, generate.
 */
 
-// Model: node = { id, name, children: [] }
-let root = null;
+// Model
 let idCounter = 1;
+function makeNode(name){ return { id: 'n' + (idCounter++), name: name || 'شخص', children: [], collapsed:false }; }
+let root = null;
 
-// helpers
-function makeNode(name){
-  return { id: 'n' + (idCounter++), name: name || 'شخص', children: [] };
-}
+// SVG elements
+const svg = document.getElementById('svgRoot');
+const panzoom = document.getElementById('panzoom');
+const canvasArea = document.getElementById('canvasArea');
 
-function clearTree(){
-  root = null;
+// modal
+const modal = document.getElementById('modal');
+const modalInput = document.getElementById('modalInput');
+const modalTitle = document.getElementById('modalTitle');
+let modalCallback = null;
+
+// constants for layout
+const NODE_W = 120;
+const NODE_H = 40;
+const LEVEL_VSPACE = 110;
+const SIBLING_HSPACE = 28;
+
+// create root and render initial
+function createRoot(name){
+  root = makeNode(name || 'الجد');
   render();
+  fitToView();
 }
 
-// Render
-const container = document.getElementById('tree-container');
+// tree utilities: compute subtree leaf counts and x positions
+function computeLayout(node, depth=0){
+  // returns {minX, maxX}
+  if(!node) return {min:0,max:0};
+  node._depth = depth;
+  if(!node.children || node.children.length===0){
+    node._leafCount = 1;
+    node._minX = 0;
+    node._maxX = NODE_W;
+    return {min:0,max:NODE_W};
+  }
+  // compute children ranges
+  let curX = 0;
+  let min = Infinity, max = -Infinity;
+  for(const ch of node.children){
+    const r = computeLayout(ch, depth+1);
+    ch._offsetX = curX;
+    curX += (r.max - r.min) + SIBLING_HSPACE;
+    min = Math.min(min, r.min + ch._offsetX);
+    max = Math.max(max, r.max + ch._offsetX);
+  }
+  // remove last sibling spacing
+  curX -= SIBLING_HSPACE;
+  // center current node over children
+  const width = curX>0?curX:NODE_W;
+  node._leafCount = node.children.reduce((s,c)=>s + (c._leafCount||1), 0);
+  node._minX = 0;
+  node._maxX = width;
+  return {min:node._minX, max:node._maxX};
+}
 
+// assign final absolute positions
+function assignPositions(node, originX=0, originY=0){
+  // node._x center relative to originX
+  const boxW = node._maxX - node._minX || NODE_W;
+  // center this node in its box
+  node._x = originX + boxW / 2;
+  node._y = originY;
+  // children
+  if(node.children && node.children.length && !node.collapsed){
+    for(const ch of node.children){
+      const childOriginX = originX + (ch._offsetX || 0);
+      const childOriginY = originY + LEVEL_VSPACE;
+      assignPositions(ch, childOriginX, childOriginY);
+    }
+  }
+}
+
+// clear svg group
+function clearSVG(){
+  while(panzoom.firstChild) panzoom.removeChild(panzoom.firstChild);
+}
+
+// draw trunk (simple vertical trunk starting near top center)
+function drawTrunk(){
+  // optional aesthetic trunk path behind everything
+  const w = svg.clientWidth;
+  const trunk = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  trunk.setAttribute('x', (w/2 - 12));
+  trunk.setAttribute('y', 20);
+  trunk.setAttribute('width', 24);
+  trunk.setAttribute('height', 120);
+  trunk.setAttribute('rx',12);
+  trunk.setAttribute('fill', 'url(#trunkGrad)');
+  trunk.setAttribute('fill', '#935f3a');
+  trunk.setAttribute('opacity', '0.12');
+  panzoom.appendChild(trunk);
+}
+
+// render tree nodes and branches
 function render(){
-  container.innerHTML = '';
+  clearSVG();
   if(!root) return;
-  const rootWrap = document.createElement('div');
-  rootWrap.className = 'tree-root';
-  rootWrap.appendChild(renderNode(root));
-  container.appendChild(rootWrap);
+  // compute layout
+  computeLayout(root);
+  // set large svg group to have enough space
+  const totalW = Math.max(1000, root._maxX - root._minX + 200);
+  const totalH = Math.max(600, (maxDepth(root)+1) * LEVEL_VSPACE + 200);
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+  // assign positions starting from top center offset
+  const startX = 80;
+  assignPositions(root, startX, 60);
+  // draw soft trunk background
+  // draw branches recursively
+  drawBranchesAndNodes(root);
 }
 
-// render node recursively
-function renderNode(node){
-  const nodeEl = document.createElement('div');
-  nodeEl.className = 'node';
-  nodeEl.dataset.id = node.id;
+// compute max depth
+function maxDepth(node){
+  if(!node || !node.children || node.children.length===0) return 0;
+  let m=0;
+  for(const c of node.children) m = Math.max(m, 1+maxDepth(c));
+  return m;
+}
 
-  // card
-  const card = document.createElement('div');
-  card.className = 'node-card';
-  const nameEl = document.createElement('div');
-  nameEl.className = 'name';
-  nameEl.textContent = node.name;
-  card.appendChild(nameEl);
+// draw branches and nodes recursively
+function drawBranchesAndNodes(node){
+  // draw branch from node to each child
+  if(node.children && node.children.length && !node.collapsed){
+    for(const ch of node.children){
+      drawBranch(node, ch);
+      drawBranchesAndNodes(ch);
+    }
+  }
+  // draw node itself on top
+  drawNode(node);
+}
 
-  // actions
-  const actions = document.createElement('div');
-  actions.className = 'node-actions';
-  // add
-  const addBtn = document.createElement('button');
-  addBtn.title = 'إضافة فرع';
-  addBtn.textContent = '➕';
-  addBtn.onclick = (e) => { e.stopPropagation(); promptForName('أدخل اسم الابن', (val)=>{ if(val) { node.children.push(makeNode(val)); render(); centerOn(node.id); } }); };
-  actions.appendChild(addBtn);
+function drawBranch(parent, child){
+  // curved path from parent.x,parent.y+20 to child.x,child.y-10
+  const x1 = parent._x;
+  const y1 = parent._y + NODE_H/2;
+  const x2 = child._x;
+  const y2 = child._y - NODE_H/2 + 6;
 
-  // edit
-  const editBtn = document.createElement('button');
-  editBtn.title = 'تعديل الاسم';
-  editBtn.textContent = '✏️';
-  editBtn.onclick = (e) => { e.stopPropagation(); promptForName('تعديل الاسم', (val)=>{ if(val!==null){ node.name = val||node.name; render(); centerOn(node.id); } }, node.name); };
-  actions.appendChild(editBtn);
+  const dx = (y2 - y1) * 0.6;
+  // path using cubic bezier
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const d = `M ${x1} ${y1} C ${x1} ${y1+dx} ${x2} ${y2-dx} ${x2} ${y2}`;
+  path.setAttribute('d', d);
+  path.setAttribute('fill','none');
+  path.setAttribute('stroke', 'rgba(38, 102, 55, 0.18)');
+  path.setAttribute('stroke-width', 10);
+  path.setAttribute('stroke-linecap','round');
+  path.setAttribute('filter','none');
+  panzoom.appendChild(path);
 
-  // collapse / expand
-  const toggleBtn = document.createElement('button');
-  toggleBtn.title = 'طي / فرد';
-  toggleBtn.textContent = node._collapsed ? '🔽' : '🔼';
-  toggleBtn.onclick = (e) => { e.stopPropagation(); node._collapsed = !node._collapsed; render(); centerOn(node.id); };
-  actions.appendChild(toggleBtn);
+  // thinner green line on top
+  const path2 = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path2.setAttribute('d', d);
+  path2.setAttribute('fill','none');
+  path2.setAttribute('stroke', '#2fa34a');
+  path2.setAttribute('stroke-width', 3);
+  path2.setAttribute('stroke-linecap','round');
+  panzoom.appendChild(path2);
+}
 
-  // delete
-  const delBtn = document.createElement('button');
-  delBtn.title = 'حذف';
-  delBtn.textContent = '🗑️';
-  delBtn.onclick = (e) => {
+function drawNode(node){
+  // create group
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('transform', `translate(${node._x - NODE_W/2}, ${node._y - NODE_H/2})`);
+  g.setAttribute('data-id', node.id);
+
+  // leaf shape (ellipse with slight rotate)
+  const leaf = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  leaf.setAttribute('cx', NODE_W/2);
+  leaf.setAttribute('cy', NODE_H/2);
+  leaf.setAttribute('rx', NODE_W/2 + 12);
+  leaf.setAttribute('ry', NODE_H/2 + 8);
+  leaf.setAttribute('fill', 'url(#leafGrad)');
+  leaf.setAttribute('fill', '#c8f0d0');
+  leaf.setAttribute('stroke', '#2fa34a');
+  leaf.setAttribute('stroke-width', 1);
+  leaf.setAttribute('filter','url(#shadow)');
+  leaf.setAttribute('opacity', 0.95);
+  g.appendChild(leaf);
+
+  // inner white card
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x', 8);
+  rect.setAttribute('y', 6);
+  rect.setAttribute('rx', 14);
+  rect.setAttribute('ry', 14);
+  rect.setAttribute('width', NODE_W - 16);
+  rect.setAttribute('height', NODE_H - 12);
+  rect.setAttribute('fill', '#ffffff');
+  rect.setAttribute('stroke', 'rgba(47,163,74,0.06)');
+  rect.setAttribute('stroke-width', 1.2);
+  g.appendChild(rect);
+
+  // text
+  const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+  text.setAttribute('x', NODE_W/2);
+  text.setAttribute('y', NODE_H/2 + 4);
+  text.setAttribute('text-anchor','middle');
+  text.setAttribute('font-size','14');
+  text.setAttribute('font-weight','700');
+  text.setAttribute('fill','#14472a');
+  text.textContent = node.name;
+  text.style.cursor = 'pointer';
+  // edit name on click
+  text.addEventListener('click', (e)=>{
     e.stopPropagation();
+    openModal('تعديل الاسم', node.name, (val)=>{
+      if(val !== null){
+        node.name = val || node.name;
+        render();
+      }
+    });
+  });
+  g.appendChild(text);
+
+  // add + button (small circle at right)
+  const btnGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+  btnGroup.setAttribute('transform', `translate(${NODE_W - 12}, ${-10})`);
+  btnGroup.style.cursor = 'pointer';
+  const btnCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  btnCircle.setAttribute('r', 12);
+  btnCircle.setAttribute('cx', 0);
+  btnCircle.setAttribute('cy', 0);
+  btnCircle.setAttribute('fill', '#fff');
+  btnCircle.setAttribute('stroke', '#2fa34a');
+  btnCircle.setAttribute('stroke-width', 1.5);
+  btnGroup.appendChild(btnCircle);
+  const plus = document.createElementNS('http://www.w3.org/2000/svg','text');
+  plus.setAttribute('x', 0);
+  plus.setAttribute('y', 4);
+  plus.setAttribute('text-anchor','middle');
+  plus.setAttribute('font-size','14');
+  plus.setAttribute('font-weight','700');
+  plus.setAttribute('fill','#2fa34a');
+  plus.textContent = '+';
+  btnGroup.appendChild(plus);
+  btnGroup.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    openModal('أدخل اسم الفرع الجديد', '', (val)=>{
+      if(val){
+        node.children = node.children || [];
+        node.children.push(makeNode(val));
+        render();
+        // optional: center on new node after a short delay (no auto)
+      }
+    });
+  });
+  g.appendChild(btnGroup);
+
+  // delete on right-click
+  g.addEventListener('contextmenu', (ev)=>{
+    ev.preventDefault();
+    ev.stopPropagation();
     if(node === root){
-      if(confirm('ستحذف الجذر وكل الشجرة. تأكد؟')) { clearTree(); }
+      if(confirm('حذف الجذر سيحذف الشجرة كاملة. تأكد؟')){ root = null; render(); }
       return;
     }
     if(node.children && node.children.length){
-      if(!confirm('هذه العقدة لديها أبناء. حذفها سيحذف كل أبناءها. هل تريد المتابعة؟')) return;
+      if(!confirm('هذه العقدة لديها أبناء. حذفها سيحذف كل أبناءها. موافق؟')) return;
     }
-    removeNodeById(root, node.id);
+    removeNode(root, node.id);
     render();
-  };
-  actions.appendChild(delBtn);
+  });
 
-  card.appendChild(actions);
-  nodeEl.appendChild(card);
-
-  // connector vertical line
-  const vconn = document.createElement('div');
-  vconn.className = 'connector-vertical';
-  nodeEl.appendChild(vconn);
-
-  // children
-  if(node.children && node.children.length && !node._collapsed){
-    const childrenWrap = document.createElement('div');
-    childrenWrap.className = 'children';
-    node.children.forEach(child => {
-      const childNodeEl = renderNode(child);
-      // horizontal connector line
-      const hline = document.createElement('div');
-      hline.className = 'connector-horizontal';
-      // attach hline to child wrapper relative to parent
-      childNodeEl.appendChild(hline);
-      childrenWrap.appendChild(childNodeEl);
-    });
-    nodeEl.appendChild(childrenWrap);
-  }
-
-  return nodeEl;
+  panzoom.appendChild(g);
 }
 
-// remove node by id
-function removeNodeById(parent, id){
+// remove node by id (recursively)
+function removeNode(parent, id){
   if(!parent || !parent.children) return false;
   for(let i=0;i<parent.children.length;i++){
     if(parent.children[i].id === id){
       parent.children.splice(i,1);
       return true;
     } else {
-      if(removeNodeById(parent.children[i], id)) return true;
+      if(removeNode(parent.children[i], id)) return true;
     }
   }
   return false;
 }
 
-// simple prompt modal
-const promptModal = document.getElementById('promptModal');
-const promptInput = document.getElementById('promptInput');
-let promptCallback = null;
-function promptForName(title, callback, defaultVal=''){
-  promptCallback = callback;
-  promptInput.value = defaultVal||'';
-  promptModal.style.display = 'flex';
-  setTimeout(()=>promptInput.focus(),50);
+// modal functions
+function openModal(title, defaultVal, cb){
+  modalTitle.textContent = title || 'أدخل نص';
+  modalInput.value = defaultVal || '';
+  modal.style.display = 'flex';
+  modalInput.focus();
+  modalCallback = cb;
 }
-document.getElementById('promptOk').onclick = ()=>{ promptModal.style.display='none'; if(promptCallback) promptCallback(promptInput.value); promptCallback = null; };
-document.getElementById('promptCancel').onclick = ()=>{ promptModal.style.display='none'; if(promptCallback) promptCallback(null); promptCallback = null; };
+document.getElementById('modalOk').addEventListener('click', ()=>{
+  modal.style.display = 'none';
+  if(modalCallback) modalCallback(modalInput.value.trim());
+  modalCallback = null;
+});
+document.getElementById('modalCancel').addEventListener('click', ()=>{
+  modal.style.display = 'none';
+  if(modalCallback) modalCallback(null);
+  modalCallback = null;
+});
+modal.addEventListener('click', (e)=>{ if(e.target === modal){ modal.style.display='none'; if(modalCallback) modalCallback(null); modalCallback=null;} });
 
-// center on node (attempt)
-function centerOn(nodeId){
-  // find element
-  const el = container.querySelector(`[data-id="${nodeId}"]`);
-  if(!el) return;
-  // compute position relative to container wrap
-  const wrap = document.getElementById('canvasWrap');
-  const wrapRect = wrap.getBoundingClientRect();
-  const elRect = el.getBoundingClientRect();
-  const treeRect = container.getBoundingClientRect();
-
-  // current transform
-  const style = container.style.transform;
-  const m = /translate\((-?\d+(?:\.\d+)?)px,(-?\d+(?:\.\d+)?)px\)\s*scale\((\d+(?:\.\d+)?)\)/.exec(style);
-  let tx=0, ty=0, scale=1;
-  if(m){ tx = parseFloat(m[1]); ty = parseFloat(m[2]); scale = parseFloat(m[3]); }
-
-  // target center
-  const elCenterX = (elRect.left + elRect.right)/2 - treeRect.left;
-  const elCenterY = (elRect.top + elRect.bottom)/2 - treeRect.top;
-
-  const wrapCenterX = wrapRect.width / 2;
-  const wrapCenterY = wrapRect.height / 2;
-
-  // new translate to center that element
-  const newTx = wrapCenterX - elCenterX * scale;
-  const newTy = wrapCenterY - elCenterY * scale;
-  container.style.transform = `translate(${newTx}px,${newTy}px) scale(${scale})`;
-}
-
-// create root
-document.getElementById('createRoot').onclick = ()=>{
-  const name = document.getElementById('rootName').value.trim() || 'الجد';
-  root = makeNode(name);
-  render();
-  centerOn(root.id);
-};
-
-// generate automatic
-document.getElementById('generateBtn').onclick = ()=>{
-  const rootName = document.getElementById('rootName').value.trim() || 'الجد';
-  const c = Math.max(0, parseInt(document.getElementById('childrenCount').value || 0));
-  const g = Math.max(0, parseInt(document.getElementById('grandChildrenCount').value || 0));
-  root = makeNode(rootName);
-  // create c children
-  for(let i=1;i<=c;i++){
-    const child = makeNode('ابن ' + i);
-    for(let j=1;j<=g;j++){
-      child.children.push(makeNode('حفيد ' + i + '.' + j));
-    }
-    root.children.push(child);
-  }
-  render();
-  centerOn(root.id);
-};
-
-document.getElementById('clearBtn').onclick = ()=>{
-  if(confirm('مسح كامل للشجرة؟')) clearTree();
-};
-
-// initial: create a root by default
-root = makeNode(document.getElementById('rootName').value || 'الجد');
-render();
-centerOn(root.id);
-
-// Pan & Zoom
-const canvasWrap = document.getElementById('canvasWrap');
-let isPanning = false, startX=0, startY=0, translateX=0, translateY=0, scale=1;
-
-function updateTransform(){
-  container.style.transform = `translate(${translateX}px,${translateY}px) scale(${scale})`;
-}
-canvasWrap.addEventListener('pointerdown', (e)=>{
-  isPanning = true;
-  startX = e.clientX;
-  startY = e.clientY;
-  canvasWrap.setPointerCapture(e.pointerId);
+// pan & zoom
+let isPanning = false, startX=0, startY=0, curX=0, curY=0, scale=1;
+const panGroup = panzoom;
+function updateTransform(){ panGroup.setAttribute('transform', `translate(${curX},${curY}) scale(${scale})`); }
+canvasArea.addEventListener('pointerdown', (e)=>{
+  isPanning = true; startX = e.clientX; startY = e.clientY; canvasArea.classList.add('grabbing'); canvasArea.setPointerCapture(e.pointerId);
 });
 window.addEventListener('pointermove', (e)=>{
   if(!isPanning) return;
-  const dx = e.clientX - startX;
-  const dy = e.clientY - startY;
-  startX = e.clientX;
-  startY = e.clientY;
-  translateX += dx;
-  translateY += dy;
+  const dx = e.clientX - startX, dy = e.clientY - startY;
+  startX = e.clientX; startY = e.clientY;
+  curX += dx; curY += dy;
   updateTransform();
 });
-window.addEventListener('pointerup', (e)=>{
-  isPanning = false;
-});
+window.addEventListener('pointerup', (e)=>{ isPanning = false; canvasArea.classList.remove('grabbing'); });
 
 // wheel zoom
-canvasWrap.addEventListener('wheel', (e)=>{
+canvasArea.addEventListener('wheel', (e)=>{
   e.preventDefault();
-  const zoomIntensity = 0.0015;
-  const delta = -e.deltaY;
-  const zoom = Math.exp(delta * zoomIntensity);
-
-  // compute mouse point relative to container
-  const rect = container.getBoundingClientRect();
+  const rect = svg.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
-
-  // zoom around mouse: translate so that mouse remains in place
-  const newScale = Math.min(3, Math.max(0.2, scale * zoom));
+  const delta = -e.deltaY * 0.0015;
+  const newScale = Math.max(0.25, Math.min(2.8, scale * (1 + delta)));
+  // zoom around mouse
   const ratio = newScale / scale;
-
-  translateX = (translateX - mx) * ratio + mx;
-  translateY = (translateY - my) * ratio + my;
+  curX = (curX - mx) * ratio + mx;
+  curY = (curY - my) * ratio + my;
   scale = newScale;
   updateTransform();
-}, { passive:false });
+}, {passive:false});
 
 // toolbar buttons
-document.getElementById('zoomIn').onclick = ()=>{ scale = Math.min(3, scale + 0.1); updateTransform(); };
-document.getElementById('zoomOut').onclick = ()=>{ scale = Math.max(0.2, scale - 0.1); updateTransform(); };
-document.getElementById('resetZoom').onclick = ()=>{ scale = 1; translateX = 0; translateY = 0; updateTransform(); };
+document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(2.8, scale + 0.12); updateTransform(); });
+document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.25, scale - 0.12); updateTransform(); });
+document.getElementById('reset').addEventListener('click', ()=>{ curX = 0; curY = 0; scale = 1; updateTransform(); fitToView(); });
 
-// Export PNG (simple approach using svg + foreignObject wrapper)
-document.getElementById('exportPng').onclick = async ()=>{
-  // temporarily render tree inside an SVG foreignObject and export as PNG
+// helpers: find and remove node by id given root is available (already implemented removeNode)
+
+// export PNG (render SVG to canvas)
+document.getElementById('export').addEventListener('click', async ()=>{
   try{
-    // clone container
-    const clone = container.cloneNode(true);
-    // remove transform to get full size
-    clone.style.transform = 'translate(0px,0px) scale(1)';
-    // compute bounds
-    const bbox = clone.getBoundingClientRect();
-    // create SVG
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${Math.max(800,bbox.width)}' height='${Math.max(600,bbox.height)}'>
-      <foreignObject width='100%' height='100%'>${new XMLSerializer().serializeToString(clone)}</foreignObject></svg>`;
-    const blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+    const serializer = new XMLSerializer();
+    // clone svg and inline current transform
+    const clone = svg.cloneNode(true);
+    // set width/height attributes explicitly to client sizes
+    const w = svg.clientWidth || 1200;
+    const h = svg.clientHeight || 800;
+    clone.setAttribute('width', w);
+    clone.setAttribute('height', h);
+    // embed css for fonts to improve rendering
+    const svgStr = serializer.serializeToString(clone);
+    const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = ()=>{
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(800, Math.ceil(bbox.width));
-      canvas.height = Math.max(600, Math.ceil(bbox.height));
+      canvas.width = Math.max(800, img.width);
+      canvas.height = Math.max(600, img.height);
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#fff';
       ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(img,0,0);
       URL.revokeObjectURL(url);
-      canvas.toBlob((blob2)=>{
+      canvas.toBlob((b)=>{
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob2);
+        a.href = URL.createObjectURL(b);
         a.download = 'family-tree.png';
         document.body.appendChild(a);
         a.click();
         a.remove();
-      }, 'image/png');
+      });
     };
-    img.onerror = ()=>{ alert('حدث خطأ أثناء استخراج الصورة. حاول تقليل حجم الشجرة.'); URL.revokeObjectURL(url); };
+    img.onerror = ()=>{ alert('تعذر إنشاء الصورة — حاول تقليل تعقيد الشجرة قبل التصدير.'); URL.revokeObjectURL(url); };
     img.src = url;
-  } catch(err){
-    console.error(err);
-    alert('تعذر التصدير: ' + err.message);
-  }
-};
-
-/* small UX: click node to center */
-container.addEventListener('click', (e)=>{
-  const node = e.target.closest('.node');
-  if(node && node.dataset.id){
-    centerOn(node.dataset.id);
-  }
+  }catch(err){ console.error(err); alert('خطأ أثناء التصدير: ' + (err.message||err)); }
 });
+
+// add / clear / generate buttons
+document.getElementById('createRoot').addEventListener('click', ()=>{
+  const name = document.getElementById('rootName').value.trim() || 'الجد';
+  createRoot(name);
+});
+document.getElementById('clear').addEventListener('click', ()=>{ if(confirm('مسح كامل للشجرة؟')){ root = null; render(); }});
+document.getElementById('generate').addEventListener('click', ()=>{
+  const rootName = (document.getElementById('rootName').value || 'الجد').trim();
+  const c1 = Math.max(0, parseInt(document.getElementById('lvl1count').value||0));
+  const c2 = Math.max(0, parseInt(document.getElementById('lvl2count').value||0));
+  root = makeNode(rootName);
+  for(let i=1;i<=c1;i++){
+    const child = makeNode('ابن ' + i);
+    for(let j=1;j<=c2;j++) child.children.push(makeNode('حفيد ' + i + '.' + j));
+    root.children.push(child);
+  }
+  render();
+  fitToView();
+});
+
+// initial sample root
+createRoot(document.getElementById('rootName').value || 'الجد');
+
+// fit to view (attempts to center top)
+function fitToView(){
+  // simple centering: compute bounding box of content then translate
+  // we approximate by using root bounds.
+  if(!root) return;
+  // place root near top center
+  const vb = svg.getAttribute('viewBox')?.split(' ').map(Number) || [0,0,1000,800];
+  const vbW = vb[2], vbH = vb[3];
+  // center root horizontally
+  const targetX = (vbW/2) - root._x;
+  const targetY = 20 - root._y;
+  curX = targetX;
+  curY = targetY;
+  scale = 1;
+  updateTransform();
+}
+
+// double-tap or double-click behavior: already handled click on name to edit
+
+// Make svg responsive to resize
+window.addEventListener('resize', ()=>{ render(); updateTransform(); });
+
+// Accessibility: keyboard: +/- to zoom
+window.addEventListener('keydown', (e)=>{
+  if(e.key === '+' || e.key === '='){ scale = Math.min(2.8, scale+0.12); updateTransform(); }
+  if(e.key === '-' ){ scale = Math.max(0.25, scale-0.12); updateTransform(); }
+});
+
+// small touch improvement: tap area for add handled by event listeners on svg elements
 </script>
 </body>
 </html>
