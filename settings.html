@@ -7,23 +7,21 @@
 <style>
 :root{--primary:#004aad;--accent:#ffcc33;}
 body { font-family: 'Cairo', sans-serif; background: #f5f9ff; color: #102027; padding: 20px; direction: rtl; }
-.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); position: relative; }
 input, select, button { padding: 10px; margin-bottom: 10px; border-radius: 8px; font-size: 15px; width: 100%; }
 input[readonly]{ background:#e6e6e6; cursor: not-allowed; }
 button { background: var(--primary); color: #fff; border: none; font-weight: bold; cursor: pointer; }
 button:hover { background: #003a8c; }
 label { font-size: 14px; display:block; margin-bottom:5px; }
-.social-icons img { height:28px; margin-left:5px; cursor:pointer; }
-ul { padding:0; list-style:none; }
-ul li { margin-bottom:5px; }
-ul li button { display:inline-block; padding:2px 6px; font-size:12px; margin-left:5px; }
-.small { font-size:12px; padding:4px 6px; }
 .table-container{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;margin-top:12px;}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px;}
 th{background:var(--primary);color:#fff;}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
 .filters select, .filters input{flex:1;}
+.autocomplete-items{border:1px solid #ccc;max-height:150px;overflow-y:auto;position:absolute;background:#fff;z-index:1000;}
+.autocomplete-items div{padding:5px;cursor:pointer;}
+.autocomplete-items div:hover{background:#f1f1f1;}
 </style>
 </head>
 <body>
@@ -64,13 +62,6 @@ th{background:var(--primary);color:#fff;}
 </div>
 
 <div class="card">
-  <strong>الفروع</strong>
-  <label>أضف فرع جديد</label><input type="text" id="newBranch">
-  <button id="addBranchBtn">➕ إضافة فرع</button>
-  <ul id="branchesList"></ul>
-</div>
-
-<div class="card">
   <strong>إنشاء مستخدم جديد</strong>
   <form id="userForm">
     <label>نوع المستخدم</label>
@@ -79,7 +70,14 @@ th{background:var(--primary);color:#fff;}
       <option value="teacher">أستاذ</option>
     </select>
     <label>الاسم</label>
-    <select id="userName"><option value="">اختر الاسم</option></select>
+    <input type="text" id="userNameInput" placeholder="اختر أو ابحث باسم" autocomplete="off">
+    <div id="autocompleteList" class="autocomplete-items"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <select id="sortOrder">
+        <option value="dateDesc">الأحدث أولاً</option>
+        <option value="alphaAsc">أبجدياً A → Z</option>
+      </select>
+    </div>
     <label>البريد الإلكتروني</label>
     <input type="email" id="userEmail" required>
     <button type="submit">✅ إنشاء المستخدم</button>
@@ -102,11 +100,9 @@ th{background:var(--primary);color:#fff;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
-// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -117,14 +113,8 @@ const firebaseConfig = {
   measurementId: "G-5CKWYQT9XZ"
 };
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-// تحقق تسجيل الدخول
-onAuthStateChanged(auth,user=>{
-  if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html";}
-});
 
 // --- عناصر الصفحة ---
 const instituteName = document.getElementById("instituteName");
@@ -144,11 +134,11 @@ const accentColor = document.getElementById("accentColor");
 const teacherPercent = document.getElementById("teacherPercent");
 const institutePercent = document.getElementById("institutePercent");
 
-const newBranch = document.getElementById("newBranch");
-const branchesList = document.getElementById("branchesList");
-
 const userTypeSelect = document.getElementById("userType");
-const userNameSelect = document.getElementById("userName");
+const userNameInput = document.getElementById("userNameInput");
+const autocompleteList = document.getElementById("autocompleteList");
+const sortOrderSelect = document.getElementById("sortOrder");
+const userEmail = document.getElementById("userEmail");
 const userForm = document.getElementById("userForm");
 
 const usersTableBody = document.querySelector("#usersTable tbody");
@@ -156,9 +146,14 @@ const filterType = document.getElementById("filterType");
 const searchUser = document.getElementById("searchUser");
 
 let usersData = [];
-let allNames = {students:[], teachers:[]};
+let allUsers = {students:[], teachers:[]};
 
-// --- دوال الحفظ ---
+// --- Auth Check ---
+onAuthStateChanged(auth,user=>{
+  if(!user){ alert("⚠️ يجب تسجيل الدخول"); window.location.href="login.html";}
+});
+
+// --- حفظ إعدادات المعهد ---
 document.getElementById("saveInstituteBtn").addEventListener("click", async()=>{
   await setDoc(doc(db,"settings","institute"),{
     address: instituteAddress.value,
@@ -196,70 +191,65 @@ document.getElementById("savePercentBtn").addEventListener("click", async()=>{
   alert("✅ تم حفظ النسب");
 });
 
-// --- إدارة الفروع ---
-async function loadBranches(){
-  branchesList.innerHTML="";
-  const docSnap = await getDoc(doc(db,"settings","branches"));
-  if(docSnap.exists() && docSnap.data().list){
-    docSnap.data().list.forEach(b=>{
-      const li = document.createElement("li");
-      li.textContent = b;
-      const btn = document.createElement("button");
-      btn.textContent="🗑️";
-      btn.onclick = async()=>{
-        await updateDoc(doc(db,"settings","branches"),{list:arrayRemove(b)});
-        loadBranches();
-      };
-      li.appendChild(btn);
-      branchesList.appendChild(li);
-    });
-  }
+// --- تحميل الطلاب والأساتذة ---
+async function fetchUsersList(){
+  const studentsSnap = await getDocs(collection(db,"students"));
+  const teachersSnap = await getDocs(collection(db,"teachers"));
+  allUsers.students = studentsSnap.docs.map(d=>({name:d.data().name, addedAt:d.data().addedAt || ''}));
+  allUsers.teachers = teachersSnap.docs.map(d=>({name:d.data().name, addedAt:d.data().addedAt || ''}));
+  updateAutocomplete();
 }
-document.getElementById("addBranchBtn").addEventListener("click", async()=>{
-  const name = newBranch.value.trim();
-  if(!name) return;
-  await updateDoc(doc(db,"settings","branches"),{list:arrayUnion(name)}).catch(async()=>{
-    await setDoc(doc(db,"settings","branches"),{list:[name]});
+
+function updateAutocomplete(){
+  filterAndShowAutocomplete(userNameInput.value);
+}
+
+function filterAndShowAutocomplete(value){
+  const type = userTypeSelect.value;
+  let list = type==="student"? allUsers.students : allUsers.teachers;
+  const order = sortOrderSelect.value;
+  if(order==="dateDesc") list.sort((a,b)=> b.addedAt.localeCompare(a.addedAt));
+  else list.sort((a,b)=> a.name.localeCompare(b.name));
+
+  autocompleteList.innerHTML = "";
+  if(!value) return;
+  const filtered = list.filter(u=>u.name.toLowerCase().includes(value.toLowerCase()));
+  filtered.forEach(u=>{
+    const item = document.createElement("div");
+    item.textContent = u.name;
+    item.addEventListener("click", ()=>{
+      userNameInput.value = u.name;
+      autocompleteList.innerHTML = "";
+    });
+    autocompleteList.appendChild(item);
   });
-  newBranch.value="";
-  loadBranches();
-});
+}
+
+userNameInput.addEventListener("input", e=>filterAndShowAutocomplete(e.target.value));
+document.addEventListener("click", e=>{if(e.target!==userNameInput) autocompleteList.innerHTML="";});
+userTypeSelect.addEventListener("change", ()=>filterAndShowAutocomplete(userNameInput.value));
+sortOrderSelect.addEventListener("change", ()=>filterAndShowAutocomplete(userNameInput.value));
 
 // --- إنشاء مستخدم جديد ---
-async function fetchNames(){
-  const studentsSnapshot = await getDocs(collection(db,"students"));
-  const teachersSnapshot = await getDocs(collection(db,"teachers"));
-  allNames.students = studentsSnapshot.docs.map(d=>d.data().name);
-  allNames.teachers = teachersSnapshot.docs.map(d=>d.data().name);
-  updateNames();
-}
-function updateNames(){
-  const type = userTypeSelect.value;
-  userNameSelect.innerHTML="<option value=''>اختر الاسم</option>";
-  let names = type==="student"?allNames.students:allNames.teachers;
-  names.forEach(n=> userNameSelect.innerHTML+=`<option value="${n}">${n}</option>`);
-}
-userTypeSelect.addEventListener("change", updateNames);
-
 userForm.addEventListener("submit", async e=>{
   e.preventDefault();
   const type = userTypeSelect.value;
-  const name = userNameSelect.value;
-  const email = document.getElementById("userEmail").value.trim();
-  if(!type || !name || !email){alert("اكمل جميع الحقول"); return;}
+  const name = userNameInput.value.trim();
+  const emailVal = userEmail.value.trim();
+  if(!type || !name || !emailVal){alert("اكمل جميع الحقول"); return;}
   try{
-    const userCred = await createUserWithEmailAndPassword(auth,email,"temporary123"); // كلمة مرور مؤقتة
+    const userCred = await createUserWithEmailAndPassword(auth,emailVal,"temporary123");
     const uid = userCred.user.uid;
-    await setDoc(doc(db,"users",uid), {name,type,email,createdAt:new Date().toISOString()});
-    usersData.push({id:uid,type,name,email});
+    await setDoc(doc(db,"users",uid), {name,type,email:emailVal,createdAt:new Date().toISOString()});
+    usersData.push({id:uid,type,name,email:emailVal});
     renderUsers();
     userForm.reset();
-    updateNames();
+    fetchUsersList();
     alert("✅ تم إنشاء المستخدم بنجاح!");
   }catch(err){console.error(err); alert("❌ حدث خطأ: "+err.message);}
 });
 
-// --- عرض وتعديل وحذف المستخدمين ---
+// --- عرض المستخدمين ---
 function renderUsers(){
   const filter = filterType.value;
   const search = searchUser.value.toLowerCase();
@@ -269,75 +259,61 @@ function renderUsers(){
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${u.name}</td><td>${u.type}</td><td>${u.email}</td>
     <td>
-      <button class="small" onclick="editUser('${u.id}')">✏️ تعديل</button>
-      <button class="small" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+      <button onclick="editUser('${u.id}')">✏️ تعديل</button>
+      <button onclick="deleteUser('${u.id}')">🗑️ حذف</button>
     </td>`;
     usersTableBody.appendChild(tr);
   });
 }
-
-window.editUser = function(id){
-  const user = usersData.find(u=>u.id===id);
-  if(!user) return;
-  userTypeSelect.value = user.type;
-  updateNames();
-  userNameSelect.value = user.name;
-  document.getElementById("userEmail").value = user.email;
+window.editUser = function(id){ 
+  const u = usersData.find(x=>x.id===id); 
+  if(!u) return; 
+  userTypeSelect.value=u.type; 
+  userNameInput.value=u.name; 
+  userEmail.value=u.email; 
+  filterAndShowAutocomplete(userNameInput.value);
 };
-
 window.deleteUser = async function(id){
   if(confirm("هل تريد حذف المستخدم؟")){
-    await doc(db,"users",id);
+    await setDoc(doc(db,"users",id),{}); 
     usersData = usersData.filter(u=>u.id!==id);
     renderUsers();
   }
 };
 
-const defaultUserFormSubmit = userForm.onsubmit;
-
-// --- تحميل البيانات عند البداية ---
-async function loadSettings(){
-  // جلب بيانات المعهد من صفحة مدير الموقع
-  const instDoc = await getDoc(doc(db,"institutes","INSTITUTE_ID")); // ضع هنا معرف المعهد أو اجلبه ديناميكي
-  if(instDoc.exists()){
-    instituteName.value = instDoc.data().name;
-    instituteEmail.value = instDoc.data().adminEmail;
-    primaryColor.value = (instDoc.data().colors && instDoc.data().colors.primary) || "#004aad";
-    accentColor.value = (instDoc.data().colors && instDoc.data().colors.accent) || "#ffcc33";
-    document.documentElement.style.setProperty("--primary",primaryColor.value);
-    document.documentElement.style.setProperty("--accent",accentColor.value);
-  }
-
-  // جلب بقية الإعدادات من settings
-  const inst = await getDoc(doc(db,"settings","institute"));
-  if(inst.exists()){ 
-    instituteAddress.value=inst.data().address; 
-    institutePhone.value=inst.data().phone; 
-    instituteLogo.value=inst.data().logo;
-  }
-  const social = await getDoc(doc(db,"settings","social"));
-  if(social.exists()){ 
-    facebookLink.value=social.data().facebook; 
-    instagramLink.value=social.data().instagram; 
-    tiktokLink.value=social.data().tiktok; 
-    telegramLink.value=social.data().telegram; 
-  }
-  const perc = await getDoc(doc(db,"settings","percentages"));
-  if(perc.exists()){ 
-    teacherPercent.value=perc.data().teacher; 
-    institutePercent.value=perc.data().institute; 
-  }
-  loadBranches();
-  fetchNames();
-  const usersSnap = await getDocs(collection(db,"users"));
-  usersData = usersSnap.docs.map(d=>({id:d.id, ...d.data()}));
-  renderUsers();
-}
-
 filterType.addEventListener("change", renderUsers);
 searchUser.addEventListener("input", renderUsers);
 
+// --- تحميل بيانات الإعدادات عند البداية ---
+async function loadSettings(){
+  const inst = await getDoc(doc(db,"settings","institute"));
+  if(inst.exists()){ 
+    instituteName.value=inst.data().name || '';
+    instituteEmail.value=inst.data().adminEmail || '';
+    instituteAddress.value=inst.data().address || '';
+    institutePhone.value=inst.data().phone || '';
+    instituteLogo.value=inst.data().logo || '';
+  }
+  const social = await getDoc(doc(db,"settings","social"));
+  if(social.exists()){ 
+    facebookLink.value=social.data().facebook || ''; 
+    instagramLink.value=social.data().instagram || ''; 
+    tiktokLink.value=social.data().tiktok || ''; 
+    telegramLink.value=social.data().telegram || ''; 
+  }
+  const perc = await getDoc(doc(db,"settings","percentages"));
+  if(perc.exists()){ 
+    teacherPercent.value=perc.data().teacher || 0; 
+    institutePercent.value=perc.data().institute || 0; 
+  }
+  const usersSnap = await getDocs(collection(db,"users"));
+  usersData = usersSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderUsers();
+  await fetchUsersList();
+}
+
 loadSettings();
+
 </script>
 
 </body>
