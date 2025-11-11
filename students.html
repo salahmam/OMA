@@ -44,7 +44,7 @@ th{background:var(--primary);color:#fff}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
       <div>
-        <strong>أضف طالب جديد</strong>
+        <strong>أضف / عدل طالب</strong>
         <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center" class="no-print">
@@ -199,6 +199,7 @@ const instituteNameHeader = document.getElementById('instituteName');
 let teachers = [];
 let studentsCache = [];
 let settingsData = {};
+let editingStudentId = null;
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
 
@@ -316,236 +317,96 @@ studentForm.addEventListener('submit',async e=>{
   if(!name||!phone){alert('الاسم ورقم الهاتف مطلوبان');return;}
   if(subjects.length===0){alert('أضف مادة واحدة على الأقل');return;}
   try{
-    await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
-    alert('تم حفظ الطالب بنجاح');
+    if(editingStudentId){
+      await updateDoc(doc(db,'students',editingStudentId),{name,phone,address,school,stage,group,totalFees,note,subjects});
+      alert('تم تعديل الطالب بنجاح'); editingStudentId=null;
+    } else {
+      await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
+      alert('تم حفظ الطالب بنجاح');
+    }
     studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees();
     loadStudents();
-  }catch(e){console.error(e);alert('خطأ أثناء الحفظ');}
+  }catch(e){console.error(e); alert('خطأ بالحفظ'); }
 });
 
 /* --- Load students --- */
-async function loadStudents(filter={}){
+async function loadStudents(){
+  studentsTableBody.innerHTML=''; studentsCache=[];
   try{
-    const q=query(collection(db,'students'),orderBy('createdAt','desc'));
+    const q=query(collection(db,'students'),orderBy('name'));
     const snap=await getDocs(q);
-    studentsCache=[]; studentsTableBody.innerHTML='';
-    snap.forEach(d=>{ studentsCache.push({id:d.id,...d.data()}); });
-    renderStudentsTable(filter);
+    snap.forEach(d=>{
+      const s={id:d.id,...d.data()}; studentsCache.push(s);
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${s.subjects.map(sb=>`${sb.name}: ${sb.remaining || sb.fee}`).join(' | ')}</td>
+        <td>
+          <button class="btn small showBtn">عرض</button>
+          <button class="btn small ghost editBtn">✏️</button>
+          <button class="btn small warn deleteBtn">🗑️</button>
+          <button class="btn small">🖨️ طباعة</button>
+        </td>`;
+      /* Buttons */
+      tr.querySelector('.editBtn').addEventListener('click',()=>{ loadStudentToForm(s); });
+      tr.querySelector('.deleteBtn').addEventListener('click',async()=>{ if(confirm('تأكيد الحذف؟')){ await deleteDoc(doc(db,'students',s.id)); loadStudents(); } });
+      tr.querySelector('.showBtn').addEventListener('click',()=>{ showStudentModal(s); });
+      tr.querySelectorAll('button')[3].addEventListener('click',()=>{ printStudent(s); });
+      studentsTableBody.appendChild(tr);
+    });
+    totalCount.textContent=studentsCache.length;
   }catch(e){console.error(e);}
 }
 
-/* --- Render table --- */
-function renderStudentsTable(filter){
-  studentsTableBody.innerHTML='';
-  let filtered=studentsCache;
-  if(filter.name) filtered=filtered.filter(s=>s.name.includes(filter.name));
-  if(filter.stage) filtered=filtered.filter(s=>s.stage===filter.stage);
-  if(filter.group) filtered=filtered.filter(s=>s.group===filter.group);
-  if(filter.subjectId) filtered=filtered.filter(s=>s.subjects.some(sub=>sub.name===filter.subjectId));
-  if(filter.teacherId) filtered=filtered.filter(s=>s.subjects.some(sub=>sub.teacherId===filter.teacherId));
-  filtered.forEach(s=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${s.name}</td>
-      <td>${s.phone}</td>
-      <td>${s.stage}</td>
-      <td>${s.group}</td>
-      <td>${s.subjects.map(sub=>`${sub.name} (${sub.remaining})`).join('<br>')}</td>
-      <td>
-        <button class="btn small" onclick="showStudent('${s.id}')">عرض</button>
-        <button class="btn small ghost" onclick="editStudent('${s.id}')">✏️</button>
-        <button class="btn small warn" onclick="deleteStudent('${s.id}')">🗑️</button>
-      </td>`;
-    studentsTableBody.appendChild(tr);
-  });
-  totalCount.textContent=filtered.length;
-}
-
-/* --- Show student modal --- */
-window.showStudent=async function(id){
-  const s=studentsCache.find(st=>st.id===id); if(!s)return;
-  modalTitle.textContent=`استمارة الطالب: ${s.name}`;
-  let html=`<div><strong>الهاتف:</strong> ${s.phone} | <strong>المرحلة:</strong> ${s.stage} | <strong>الكروب:</strong> ${s.group} | <strong>المدرسة:</strong> ${s.school}</div>`;
-  html+=`<hr><div><strong>المواد والدفعات:</strong><br>`;
-  s.subjects.forEach((sub,i)=>{
-    html+=`<div style="margin-bottom:6px"><strong>${sub.name}</strong> - المتبقي: ${sub.remaining} | إجمالي: ${sub.fee} <button class="btn small" onclick="addPayment('${id}',${i})">💰 إضافة دفعة</button></div>`;
-  });
-  html+=`</div><hr><div><strong>ملاحظة:</strong> ${s.note||'-'}</div>`;
-  modalBody.innerHTML=html; modal.classList.add('open');
-};
-
-/* --- Close modal --- */
-closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
-
-/* --- Add payment inside modal --- */
-window.addPayment=async function(studentId,subIndex){
-  const s=studentsCache.find(st=>st.id===studentId); if(!s)return;
-  const amountStr=prompt('أدخل مبلغ الدفعة'); if(!amountStr)return;
-  const amount=parseFloat(amountStr); if(isNaN(amount)||amount<=0){alert('مبلغ غير صالح');return;}
-  const date=new Date().toLocaleDateString();
-  s.subjects[subIndex].payments.push({amount,date});
-  s.subjects[subIndex].remaining=Math.max(0,s.subjects[subIndex].remaining-amount);
-  await updateDoc(doc(db,'students',studentId),{subjects:s.subjects});
-  alert('تم إضافة الدفعة'); loadStudents();
-  showStudent(studentId);
-};
-
-/* --- Edit student --- */
-window.editStudent=async function(id){
-  const s=studentsCache.find(st=>st.id===id); if(!s)return;
+/* --- Load student to form for edit --- */
+function loadStudentToForm(s){
+  editingStudentId=s.id;
   document.getElementById('name').value=s.name;
   document.getElementById('phone').value=s.phone;
   document.getElementById('address').value=s.address;
   document.getElementById('school').value=s.school;
-  stageSelectForm.value=s.stage; groupSelectForm.value=s.group;
-  subjectsContainer.innerHTML=''; s.subjects.forEach(sub=>createSubjectRow(sub));
-  totalFeesInput.value=s.totalFees;
-};
+  stageSelectForm.value=s.stage;
+  groupSelectForm.value=s.group;
+  document.getElementById('note').value=s.note||'';
+  subjectsContainer.innerHTML=''; 
+  s.subjects.forEach(sub=>createSubjectRow(sub));
+  updateTotalFees();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
-/* --- Delete student --- */
-window.deleteStudent=async function(id){
-  if(confirm('هل تريد حذف الطالب؟')){ await deleteDoc(doc(db,'students',id)); loadStudents(); }
-};
-
-/* --- Filters --- */
-applyFiltersBtn.addEventListener('click',()=>{
-  const filter={name:searchBox.value,stage:filterStage.value,group:filterGroup.value,subjectId:filterSubject.value,teacherId:filterTeacher.value};
-  renderStudentsTable(filter);
-});
-
-/* --- Print list --- */
-printListBtn.addEventListener('click',()=>{
-  const filter={name:searchBox.value,stage:filterStage.value,group:filterGroup.value,subjectId:filterSubject.value,teacherId:filterTeacher.value};
-  const filtered=studentsCache.filter(s=>{
-    if(filter.name && !s.name.includes(filter.name)) return false;
-    if(filter.stage && s.stage!==filter.stage) return false;
-    if(filter.group && s.group!==filter.group) return false;
-    if(filter.subjectId && !s.subjects.some(sub=>sub.name===filter.subjectId)) return false;
-    if(filter.teacherId && !s.subjects.some(sub=>sub.teacherId===filter.teacherId)) return false;
-    return true;
+/* --- Modal --- */
+function showStudentModal(s){
+  modalTitle.textContent=`استمارة الطالب: ${s.name}`;
+  modalBody.innerHTML=`<div><strong>الهاتف:</strong> ${s.phone}</div>
+    <div><strong>المرحلة:</strong> ${s.stage}</div>
+    <div><strong>الكروب:</strong> ${s.group}</div>
+    <div><strong>العنوان:</strong> ${s.address}</div>
+    <div><strong>المدرسة:</strong> ${s.school}</div>
+    <div><strong>المواد والدفعات:</strong></div>
+    <div id="modalSubjects"></div>`;
+  const modalSubjects=document.getElementById('modalSubjects');
+  s.subjects.forEach(sub=>{
+    const div=document.createElement('div');
+    div.style.margin='6px 0';
+    div.innerHTML=`${sub.name} - إجمالي القسط: ${sub.fee} - المتبقي: ${sub.remaining || sub.fee}
+      <button class="btn small">💰 إضافة دفعة</button>`;
+    div.querySelector('button').addEventListener('click',()=>{
+      const amtStr=prompt('أدخل مبلغ الدفعة:'); if(!amtStr)return;
+      const amt=parseFloat(amtStr); if(isNaN(amt)||amt<=0){alert('مبلغ غير صالح');return;}
+      sub.payments=sub.payments||[]; sub.payments.push({amount:amt,date:new Date().toLocaleDateString()});
+      sub.remaining=Math.max(0,(sub.remaining||sub.fee)-amt);
+      updateDoc(doc(db,'students',s.id),{subjects:s.subjects}).then(()=>{ alert('تم تسجيل الدفعة'); showStudentModal(s); loadStudents(); });
+    });
+    modalSubjects.appendChild(div);
   });
-  let html=`<div class="print-page"><h2>${settingsData.name||''} - قائمة الطلاب</h2><hr>`;
-  filtered.forEach(s=>{ html+=`<div><strong>${s.name}</strong> | ${s.phone} | ${s.stage} | ${s.group}<br>${s.subjects.map(sub=>`${sub.name} (${sub.remaining})`).join(' | ')}</div><hr>`; });
-  const w=window.open('','','width=900,height=700'); w.document.write(html); w.print();
-});
-
-/* --- Print student --- */
-printStudentBtn.addEventListener('click', ()=>{
-  const studentId = modalTitle.textContent.split(':')[1]?.trim();
-  if(!studentId) return;
-
-  const student = studentsCache.find(s => s.name === studentId);
-  if(!student) return;
-
-  const institute = settingsData.name || '';
-
-  // حساب المبلغ المدفوع والمتبقي لكل مادة
-  let totalPaid = 0;
-  student.subjects.forEach(sub => {
-    const paid = sub.payments.reduce((a,b)=>a+b.amount,0);
-    sub.paid = paid;
-    sub.remaining = Math.max(0, sub.fee - paid);
-    totalPaid += paid;
-  });
-
-  const totalFee = student.subjects.reduce((a,b)=>a+b.fee,0);
-  const totalRemaining = totalFee - totalPaid;
-
-  // توليد جدول الدفعات
-  let paymentsTable = `<table style="width:100%; border-collapse:collapse; margin-top:10px;">
-    <thead>
-      <tr style="background:#004aad; color:white;">
-        <th>المادة</th><th>المبلغ المدفوع</th><th>تاريخ الدفعة</th>
-      </tr>
-    </thead>
-    <tbody>`;
-  student.subjects.forEach(sub=>{
-    if(sub.payments.length===0){
-      paymentsTable += `<tr>
-        <td style="border:1px solid #ccc; text-align:center;">${sub.name}</td>
-        <td style="border:1px solid #ccc; text-align:center;">-</td>
-        <td style="border:1px solid #ccc; text-align:center;">-</td>
-      </tr>`;
-    } else {
-      sub.payments.forEach(p=>{
-        paymentsTable += `<tr>
-          <td style="border:1px solid #ccc; text-align:center;">${sub.name}</td>
-          <td style="border:1px solid #ccc; text-align:center;">${p.amount}</td>
-          <td style="border:1px solid #ccc; text-align:center;">${p.date}</td>
-        </tr>`;
-      });
-    }
-  });
-  paymentsTable += `</tbody></table>`;
-
-  const printHTML = `
-    <html lang="ar" dir="rtl">
-    <head>
-      <meta charset="UTF-8">
-      <title>استمارة الطالب</title>
-      <style>
-        body{font-family:'Cairo',sans-serif; margin:20px; color:#102027;}
-        .header{text-align:center; margin-bottom:20px;}
-        .header h1{color:#004aad;}
-        .top{display:flex; justify-content:space-between; margin-bottom:20px;}
-        .top table{width:48%; border-collapse:collapse;}
-        .top th, .top td{border:1px solid #ccc; padding:6px;}
-        .top th{background:#004aad; color:white; text-align:center;}
-        table{width:100%; border-collapse:collapse; margin-top:10px;}
-        th, td{border:1px solid #ccc; padding:6px; text-align:center;}
-        th{background:#004aad; color:white;}
-        .footer{margin-top:40px; display:flex; justify-content:space-between; font-weight:bold;}
-        .footer div{width:45%; text-align:center;}
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>${institute}</h1>
-        <h2>استمارة الطالب</h2>
-      </div>
-
-      <div class="top">
-        <table>
-          <tr><th colspan="2">معلومات الطالب</th></tr>
-          <tr><td>الاسم</td><td>${student.name}</td></tr>
-          <tr><td>الهاتف</td><td>${student.phone}</td></tr>
-          <tr><td>العنوان</td><td>${student.address || '-'}</td></tr>
-          <tr><td>المدرسة</td><td>${student.school || '-'}</td></tr>
-          <tr><td>المرحلة</td><td>${student.stage}</td></tr>
-          <tr><td>الكروب</td><td>${student.group}</td></tr>
-        </table>
-
-        <table>
-          <tr><th colspan="2">المعلومات المالية</th></tr>
-          <tr><td>إجمالي القسط</td><td>${totalFee}</td></tr>
-          <tr><td>المبلغ المدفوع</td><td>${totalPaid}</td></tr>
-          <tr><td>المتبقي</td><td>${totalRemaining}</td></tr>
-          <tr><td>عدد المواد</td><td>${student.subjects.length}</td></tr>
-          <tr><td>ملاحظات</td><td>${student.note || '-'}</td></tr>
-        </table>
-      </div>
-
-      <div>
-        <h3>الدفعات</h3>
-        ${paymentsTable}
-      </div>
-
-      <div class="footer">
-        <div>ختم المعهد</div>
-        <div>توقيع الطالب</div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const w = window.open('','_blank','width=900,height=700');
-  w.document.write(printHTML);
-  w.document.close();
-  w.focus();
-  w.print();
-});
+  modal.classList.add('open');
+}
+closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
+printStudentBtn.addEventListener('click',()=>{ window.print(); });
 
 /* --- Clear form --- */
-clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; totalFeesInput.value=0; });
+clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; editingStudentId=null; updateTotalFees(); });
+
+/* --- Print list --- */
+printListBtn.addEventListener('click',()=>{ window.print(); });
 
 </script>
 </body>
