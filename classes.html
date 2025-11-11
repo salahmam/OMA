@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>إدارة الحصص - المعهد</title>
 <style>
 body{font-family:'Cairo',sans-serif;margin:0;padding:0;background:#f5f9ff;color:#102027;}
@@ -38,10 +38,13 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
     <form id="classForm">
       <label>المادة</label>
       <select id="subjectSelect" required></select>
+
       <label>الأستاذ</label>
       <select id="teacherSelect" required></select>
+
       <label>المجموعة / الكروب</label>
       <select id="groupSelect" required></select>
+
       <label>القاعة</label>
       <select id="roomSelect" required>
         <option value="قاعة 1">قاعة 1</option>
@@ -55,6 +58,7 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
         <option value="قاعة 9">قاعة 9</option>
         <option value="قاعة 10">قاعة 10</option>
       </select>
+
       <label>اليوم</label>
       <select id="daySelect" required>
         <option value="الاثنين">الاثنين</option>
@@ -65,10 +69,13 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#37474f;}
         <option value="السبت">السبت</option>
         <option value="الأحد">الأحد</option>
       </select>
+
       <label>وقت البداية</label>
       <input type="time" id="startTime" required>
+
       <label>وقت الانتهاء</label>
       <input type="time" id="endTime" required>
+
       <button type="submit" class="btn">✅ حفظ الحصة</button>
     </form>
   </div>
@@ -136,6 +143,7 @@ onAuthStateChanged(auth, async user=>{
   await loadClasses();
 });
 
+// جلب الشعار واسم المعهد والألوان
 async function loadInstituteSettings(){
   const settingsDoc = await getDoc(doc(db,"settings","institute"));
   if(settingsDoc.exists()){
@@ -146,13 +154,15 @@ async function loadInstituteSettings(){
   }
 }
 
+// جلب المواد، الأساتذة، الكروبات من الطلاب
 async function loadTeachersSubjectsGroups(){
   subjectsList=[]; teachersList=[]; groupsList=[];
   const studentsSnap = await getDocs(collection(db,"students"));
   const subjectsSet=new Set(); const groupsSet=new Set();
   studentsSnap.forEach(s=>{
-    s.data().subjects?.forEach(sub=>subjectsSet.add(sub.name));
-    if(s.data().group) groupsSet.add(s.data().group);
+    const sd=s.data();
+    sd.subjects?.forEach(sub=>subjectsSet.add(sub.name));
+    if(sd.group) groupsSet.add(sd.group);
   });
   subjectsList=[...subjectsSet];
   groupsList=[...groupsSet];
@@ -160,6 +170,7 @@ async function loadTeachersSubjectsGroups(){
   const teachersSnap = await getDocs(collection(db,"teachers"));
   teachersSnap.forEach(t=>teachersList.push({id:t.id,...t.data()}));
 
+  // ملء قوائم الاختيار
   subjectSelect.innerHTML="<option value=''>اختر المادة</option>";
   filterSubject.innerHTML="<option value=''>الكل</option>";
   subjectsList.forEach(s=>{
@@ -182,7 +193,7 @@ async function loadTeachersSubjectsGroups(){
   });
 }
 
-// حفظ الحصة
+// حفظ الحصة مع التحقق من التعارض
 classForm.addEventListener("submit", async e=>{
   e.preventDefault();
   const subject = subjectSelect.value;
@@ -193,18 +204,13 @@ classForm.addEventListener("submit", async e=>{
   const start = startTime.value;
   const end = endTime.value;
 
-  // التحقق من تعارض الحصص
   const conflict = classesData.find(c=>c.day===day &&
     (c.room===room || c.teacherId===teacherId || c.group===group) &&
     ((start>=c.startTime && start<c.endTime) || (end>c.startTime && end<=c.endTime))
   );
   if(conflict){ alert("⚠️ هناك تعارض في الحصة مع درس موجود!"); return; }
 
-  await addDoc(collection(db,"classes"),{
-    subject, teacherId, group, room, day,
-    startTime:start, endTime:end
-  });
-
+  await addDoc(collection(db,"classes"),{subject, teacherId, group, room, day, startTime:start, endTime:end});
   classForm.reset();
   await loadClasses();
 });
