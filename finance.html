@@ -3,47 +3,39 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>المالية والمصاريف — المعهد</title>
+<title>المالية المتقدمة — المعهد</title>
 
-<!-- Chart.js (ES module via CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- SheetJS (xlsx) for Excel export -->
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
 <style>
-  :root{
-    --primary:#004aad;
-    --accent:#ffcc33;
-    --bg:#f5f9ff;
-    --card:#fff;
-  }
-  *{box-sizing:border-box}
-  body{font-family:'Cairo',sans-serif;background:var(--bg);color:#102027;margin:0;padding:20px;direction:rtl;visibility:hidden}
-  header{display:flex;align-items:center;gap:12px;background:var(--primary);color:#fff;padding:12px;border-radius:10px}
-  header img{height:48px;object-fit:contain}
-  .wrap{max-width:1200px;margin:18px auto}
-  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-  .card {background:var(--card);border-radius:10px;padding:14px;box-shadow:0 8px 24px rgba(6,20,30,0.06);flex:1;min-width:200px}
-  .card.small{flex:0 0 200px}
-  .h{font-weight:800;color:var(--primary);margin-bottom:8px}
-  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  input,select{padding:8px;border:1px solid #e3e9f2;border-radius:8px}
-  button{background:var(--primary);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
-  button.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,0,0,0.06)}
-  button.warn{background:#ff7043}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:center;font-size:13px}
-  th{background:var(--primary);color:#fff}
-  .flex-between{display:flex;justify-content:space-between;align-items:center}
-  .charts{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
-  .chart-card{background:var(--card);padding:12px;border-radius:10px;flex:1;min-width:260px}
-  @media print{
-    body{background:white;color:black}
-    header, .no-print, button, input, select { display:none !important }
-    .print-title{font-size:18px;margin-bottom:8px}
-    table{page-break-inside:avoid}
-  }
-  .note{font-size:12px;color:#546e7a}
+:root{--primary:#004aad;--accent:#ffcc33;--bg:#f5f9ff;--card:#fff;}
+*{box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:#102027;margin:0;padding:20px;direction:rtl;visibility:hidden}
+header{display:flex;align-items:center;gap:12px;background:var(--primary);color:#fff;padding:12px;border-radius:10px}
+header img{height:48px;object-fit:contain}
+.wrap{max-width:1200px;margin:18px auto}
+.cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.card {background:var(--card);border-radius:10px;padding:14px;box-shadow:0 8px 24px rgba(6,20,30,0.06);flex:1;min-width:200px}
+.card.small{flex:0 0 200px}
+.h{font-weight:800;color:var(--primary);margin-bottom:8px}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+input,select{padding:8px;border:1px solid #e3e9f2;border-radius:8px}
+button{background:var(--primary);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+button.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,0,0,0.06)}
+button.warn{background:#ff7043}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:8px;border-bottom:1px solid #eee;text-align:center;font-size:13px}
+th{background:var(--primary);color:#fff}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.charts{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.chart-card{background:var(--card);padding:12px;border-radius:10px;flex:1;min-width:260px}
+@media print{
+  body{background:white;color:black}
+  header, .no-print, button, input, select { display:none !important }
+  table{page-break-inside:avoid}
+}
+.note{font-size:12px;color:#546e7a}
 </style>
 </head>
 <body>
@@ -52,120 +44,77 @@
   <img id="instituteLogo" src="" alt="شعار" />
   <div>
     <div id="instituteName" style="font-weight:900;font-size:18px">المعهد</div>
-    <div id="instituteTag" class="note">لوحة المالية والمصاريف</div>
+    <div class="note">لوحة المالية المتقدمة</div>
   </div>
 </header>
 
 <div class="wrap">
 
-  <!-- داشبورد ملخص -->
+  <!-- ملخص مالي -->
   <div class="cards">
-    <div class="card small">
-      <div class="h">إجمالي المدفوعات</div>
-      <div id="sumPayments">0</div>
-    </div>
-    <div class="card small">
-      <div class="h">نصيب الأساتذة</div>
-      <div id="sumTeachers">0</div>
-    </div>
-    <div class="card small">
-      <div class="h">نصيب المعهد</div>
-      <div id="sumInstitute">0</div>
-    </div>
-    <div class="card small">
-      <div class="h">إجمالي المصاريف</div>
-      <div id="sumExpenses">0</div>
-    </div>
-    <div class="card small">
-      <div class="h">صافي الربح</div>
-      <div id="netProfit">0</div>
-    </div>
+    <div class="card small"><div class="h">إجمالي الواردات</div><div id="sumIncome">0</div></div>
+    <div class="card small"><div class="h">المستلم من الطلاب</div><div id="receivedPayments">0</div></div>
+    <div class="card small"><div class="h">المتبقي على الطلاب</div><div id="remainingPayments">0</div></div>
+    <div class="card small"><div class="h">مدفوع للأساتذة</div><div id="teacherPayments">0</div></div>
+    <div class="card small"><div class="h">المصاريف العامة</div><div id="totalExpenses">0</div></div>
+    <div class="card small"><div class="h">صافي الربح</div><div id="netProfit">0</div></div>
   </div>
 
+  <!-- فلترة وتفاصيل -->
   <div class="card">
     <div class="flex-between">
-      <div><strong class="h">المدفوعات (Payments)</strong><div class="note">سجلات دفعات الطلاب</div></div>
+      <div><strong class="h">تفاصيل مالية متقدمة</strong></div>
       <div style="display:flex;gap:8px">
-        <button id="exportExcelBtn" class="ghost no-print">⬇️ تنزيل Excel</button>
-        <button id="printReportBtn" class="no-print">🖨️ طباعة التقرير</button>
+        <button id="exportExcelBtn" class="ghost no-print">⬇️ Excel</button>
+        <button id="printReportBtn" class="no-print">🖨️ طباعة</button>
       </div>
     </div>
 
-    <div class="filter-row no-print" style="margin-top:12px">
-      <input type="date" id="payFrom" />
-      <input type="date" id="payTo" />
-      <select id="payTeacher"><option value="">كل الأساتذة</option></select>
-      <select id="paySubject"><option value="">كل المواد</option></select>
-      <input id="payStudent" placeholder="بحث باسم الطالب..." />
-      <button id="applyPayFilter">تطبيق</button>
-      <button id="clearPayFilter" class="ghost">مسح</button>
+    <div class="filter-row no-print">
+      <input type="date" id="fromDate" />
+      <input type="date" id="toDate" />
+      <select id="filterStudent"><option value="">كل الطلاب</option></select>
+      <select id="filterTeacher"><option value="">كل الأساتذة</option></select>
+      <select id="filterSubject"><option value="">كل المواد</option></select>
+      <button id="applyFilter">تطبيق</button>
+      <button id="clearFilter" class="ghost">مسح</button>
     </div>
 
-    <table id="paymentsTable">
+    <table id="financeTable">
       <thead>
-        <tr><th>الطالب</th><th>المادة</th><th>المعلم</th><th>المبلغ</th><th>نصيب الأستاذ</th><th>نصيب المعهد</th><th>التاريخ</th><th class="no-print">خيارات</th></tr>
+        <tr>
+          <th>النوع</th>
+          <th>الطالب / الوصف</th>
+          <th>المعلم</th>
+          <th>المادة</th>
+          <th>المبلغ</th>
+          <th>نصيب الأستاذ</th>
+          <th>نصيب المعهد</th>
+          <th>التاريخ</th>
+        </tr>
       </thead>
       <tbody></tbody>
       <tfoot>
         <tr>
-          <th colspan="3">المجموع</th>
-          <th id="paymentsTotalFooter">0</th>
-          <th id="paymentsTeacherFooter">0</th>
-          <th id="paymentsInstituteFooter">0</th>
-          <th colspan="1"></th>
-          <th class="no-print"></th>
+          <th colspan="4">المجموع</th>
+          <th id="footerTotal">0</th>
+          <th id="footerTeacher">0</th>
+          <th id="footerInstitute">0</th>
+          <th></th>
         </tr>
       </tfoot>
     </table>
-
   </div>
 
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
-    <div class="card" style="flex:1;min-width:360px">
-      <div class="h">إضافة مصروف جديد</div>
-      <form id="expenseForm">
-        <label>الوصف</label>
-        <input id="expDesc" required />
-        <label>المبلغ</label>
-        <input id="expAmount" type="number" required />
-        <label>التاريخ</label>
-        <input id="expDate" type="date" required />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button type="submit">💾 حفظ المصروف</button>
-          <button type="button" id="clearExpense" class="ghost">مسح</button>
-        </div>
-      </form>
-
-      <div style="margin-top:16px">
-        <div class="h">فلترة المصاريف</div>
-        <div class="filter-row no-print">
-          <input type="date" id="expFrom" />
-          <input type="date" id="expTo" />
-          <button id="applyExpFilter">تطبيق</button>
-          <button id="clearExpFilter" class="ghost">مسح</button>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="card" style="flex:2;min-width:420px">
-      <div class="h">قائمة المصاريف</div>
-      <table id="expensesTable">
-        <thead><tr><th>الوصف</th><th>المبلغ</th><th>التاريخ</th><th class="no-print">خيارات</th></tr></thead>
-        <tbody></tbody>
-        <tfoot><tr><th>المجموع</th><th id="expensesTotalFooter">0</th><th colspan="2"></th></tr></tfoot>
-      </table>
-    </div>
-  </div>
-
+  <!-- الرسوم البيانية -->
   <div class="card charts">
     <div class="chart-card">
-      <div class="h">مخطط الدخل عبر الزمن</div>
-      <canvas id="lineChart" height="120"></canvas>
+      <div class="h">الدخل مقابل المصاريف</div>
+      <canvas id="pieChart" height="120"></canvas>
     </div>
     <div class="chart-card">
-      <div class="h">توزيع الدخل والمصاريف</div>
-      <canvas id="pieChart" height="120"></canvas>
+      <div class="h">صافي الربح عبر الزمن</div>
+      <canvas id="lineChart" height="120"></canvas>
     </div>
   </div>
 
@@ -173,9 +122,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import {
-  getFirestore, collection, getDocs, addDoc, deleteDoc, doc
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -191,278 +138,171 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ---------- DOM Elements ---------- */
+/* ---------- DOM ---------- */
 const instituteNameEl = document.getElementById('instituteName');
 const instituteLogoEl = document.getElementById('instituteLogo');
-
-const paymentsTableBody = document.querySelector('#paymentsTable tbody');
-const paymentsTotalFooter = document.getElementById('paymentsTotalFooter');
-const paymentsTeacherFooter = document.getElementById('paymentsTeacherFooter');
-const paymentsInstituteFooter = document.getElementById('paymentsInstituteFooter');
-
-const expensesTableBody = document.querySelector('#expensesTable tbody');
-const expensesTotalFooter = document.getElementById('expensesTotalFooter');
-
-const sumPaymentsEl = document.getElementById('sumPayments');
-const sumTeachersEl = document.getElementById('sumTeachers');
-const sumInstituteEl = document.getElementById('sumInstitute');
-const sumExpensesEl = document.getElementById('sumExpenses');
+const sumIncomeEl = document.getElementById('sumIncome');
+const receivedPaymentsEl = document.getElementById('receivedPayments');
+const remainingPaymentsEl = document.getElementById('remainingPayments');
+const teacherPaymentsEl = document.getElementById('teacherPayments');
+const totalExpensesEl = document.getElementById('totalExpenses');
 const netProfitEl = document.getElementById('netProfit');
+const financeTableBody = document.querySelector('#financeTable tbody');
+const footerTotal = document.getElementById('footerTotal');
+const footerTeacher = document.getElementById('footerTeacher');
+const footerInstitute = document.getElementById('footerInstitute');
 
-const payFrom = document.getElementById('payFrom');
-const payTo = document.getElementById('payTo');
-const payTeacher = document.getElementById('payTeacher');
-const paySubject = document.getElementById('paySubject');
-const payStudent = document.getElementById('payStudent');
-const applyPayFilter = document.getElementById('applyPayFilter');
-const clearPayFilter = document.getElementById('clearPayFilter');
-
-const expDesc = document.getElementById('expDesc');
-const expAmount = document.getElementById('expAmount');
-const expDate = document.getElementById('expDate');
-const expenseForm = document.getElementById('expenseForm');
-const expFrom = document.getElementById('expFrom');
-const expTo = document.getElementById('expTo');
-const applyExpFilter = document.getElementById('applyExpFilter');
-const clearExpFilter = document.getElementById('clearExpFilter');
+const fromDate = document.getElementById('fromDate');
+const toDate = document.getElementById('toDate');
+const filterStudent = document.getElementById('filterStudent');
+const filterTeacher = document.getElementById('filterTeacher');
+const filterSubject = document.getElementById('filterSubject');
+const applyFilter = document.getElementById('applyFilter');
+const clearFilter = document.getElementById('clearFilter');
 
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const printReportBtn = document.getElementById('printReportBtn');
 
 /* ---------- State ---------- */
 let settings = { name:'', logo:'', teacherPercent:60 };
-let payments = [];
-let expenses = [];
-let teachers = [];
-let subjects = new Set();
+let students=[], payments=[], expenses=[], teachers=[], subjects=new Set();
+let pieChart=null, lineChart=null;
 
-let lineChart=null, pieChart=null;
-
+/* ---------- Helpers ---------- */
 function formatCurrency(x){ return Number(x||0).toLocaleString('en-US',{maximumFractionDigits:2}); }
-function parseDateInput(v){ return v ? new Date(v+'T00:00:00') : null; }
+function parseDateInput(v){ return v?new Date(v+'T00:00:00'):null; }
 function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
 /* ---------- Auth ---------- */
 onAuthStateChanged(auth,user=>{
-  if(!user) { window.location.href='login.html'; return; }
+  if(!user){ window.location.href='login.html'; return; }
   document.body.style.visibility='visible';
   initialLoadAll();
 });
 
-/* ---------- Load Functions ---------- */
-async function loadSettings(){
-  try{
-    const snap = await getDocs(collection(db,'settings'));
-    snap.forEach(d=>{
-      const data = d.data();
-      if(data.name) settings.name = data.name;
-      if(data.logo) settings.logo = data.logo;
-      if(data.teacherPercent) settings.teacherPercent = data.teacherPercent;
-    });
-    instituteNameEl.textContent = settings.name || 'المعهد';
-    instituteLogoEl.src = settings.logo || '';
-  }catch(e){ console.warn(e); }
+/* ---------- Load Data ---------- */
+async function loadSettings(){ 
+  const snap = await getDocs(collection(db,'settings'));
+  snap.forEach(d=>{ const data=d.data(); if(data.name) settings.name=data.name; if(data.logo) settings.logo=data.logo; if(data.teacherPercent) settings.teacherPercent=data.teacherPercent; });
+  instituteNameEl.textContent = settings.name;
+  instituteLogoEl.src = settings.logo || '';
 }
 
-async function loadTeachersAndSubjects(){
-  teachers=[]; subjects=new Set();
-  try{
-    const tSnap = await getDocs(collection(db,'teachers'));
-    tSnap.forEach(d=>teachers.push({id:d.id,...d.data()}));
-    const pSnap = await getDocs(collection(db,'payments'));
-    pSnap.forEach(d=>{ if(d.data().subject) subjects.add(d.data().subject); });
-  }catch(e){ console.warn(e); }
-  renderFilters();
-}
+async function loadTeachers(){ teachers=[]; const snap=await getDocs(collection(db,'teachers')); snap.forEach(d=>teachers.push({id:d.id,...d.data()})); renderTeacherFilter(); }
+async function loadStudents(){ students=[]; const snap=await getDocs(collection(db,'students')); snap.forEach(d=>students.push({id:d.id,...d.data()})); renderStudentFilter(); }
+async function loadPayments(){ payments=[]; const snap=await getDocs(collection(db,'payments')); snap.forEach(d=>payments.push({id:d.id,...d.data()})); renderSubjectFilter(); }
+async function loadExpenses(){ expenses=[]; const snap=await getDocs(collection(db,'expenses')); snap.forEach(d=>expenses.push({id:d.id,...d.data()})); }
 
-async function loadPayments(){
-  payments=[];
-  try{
-    const snap = await getDocs(collection(db,'payments'));
-    snap.forEach(d=>payments.push({id:d.id,...d.data()}));
-  }catch(e){ console.error(e); }
-  renderPaymentsTable();
-}
+/* ---------- Render Filters ---------- */
+function renderStudentFilter(){ filterStudent.innerHTML='<option value="">كل الطلاب</option>'; students.forEach(s=>{ const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; filterStudent.appendChild(opt); }); }
+function renderTeacherFilter(){ filterTeacher.innerHTML='<option value="">كل الأساتذة</option>'; teachers.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.textContent=t.name; filterTeacher.appendChild(opt); }); }
+function renderSubjectFilter(){ subjects=new Set(payments.map(p=>p.subject)); filterSubject.innerHTML='<option value="">كل المواد</option>'; Array.from(subjects).sort().forEach(s=>{ const opt=document.createElement('option'); opt.value=s; opt.textContent=s; filterSubject.appendChild(opt); }); }
 
-async function loadExpenses(){
-  expenses=[];
-  try{
-    const snap = await getDocs(collection(db,'expenses'));
-    snap.forEach(d=>expenses.push({id:d.id,...d.data()}));
-  }catch(e){ console.error(e); }
-  renderExpensesTable();
-}
+/* ---------- Calculate & Render ---------- */
+function calculateFinance(filter={}){
+  const from=parseDateInput(filter.from); const to=parseDateInput(filter.to); if(to) to.setHours(23,59,59,999);
 
-function renderFilters(){
-  payTeacher.innerHTML='<option value="">كل الأساتذة</option>';
-  teachers.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.textContent=t.name||t.id; payTeacher.appendChild(opt); });
-  paySubject.innerHTML='<option value="">كل المواد</option>';
-  Array.from(subjects).sort().forEach(s=>{ const opt=document.createElement('option'); opt.value=s; opt.textContent=s; paySubject.appendChild(opt); });
-}
+  let received=0, remaining=0, teacherPay=0, totalExp=0, instituteShare=0;
+  let tableRows=[];
 
-/* ---------- Table Render ---------- */
-function renderPaymentsTable(filter=getPayFilterValues()){
-  let list = payments.slice();
-  if(filter.from){ const from=parseDateInput(filter.from); list=list.filter(p=>new Date(p.date)>=from);}
-  if(filter.to){ const to=parseDateInput(filter.to); to.setHours(23,59,59,999); list=list.filter(p=>new Date(p.date)<=to);}
-  if(filter.teacherId) list=list.filter(p=>p.teacherId===filter.teacherId);
-  if(filter.subject) list=list.filter(p=>p.subject===filter.subject);
-  if(filter.student?.trim()){ const q=filter.student.trim().toLowerCase(); list=list.filter(p=>(p.studentName||'').toLowerCase().includes(q)); }
+  payments.forEach(p=>{
+    const d=new Date(p.date);
+    if((!from || d>=from)&&(!to||d<=to) &&
+       (!filter.student || p.studentId===filter.student) &&
+       (!filter.teacher || p.teacherId===filter.teacher) &&
+       (!filter.subject || p.subject===filter.subject)){
+      const tShare=(p.amount||0)*(settings.teacherPercent||0)/100;
+      const iShare=(p.amount||0)-tShare;
+      received += p.amount||0;
+      teacherPay += tShare;
+      instituteShare += iShare;
+      tableRows.push({type:'دفعة', student:p.studentName, teacher:p.teacherName, subject:p.subject, amount:p.amount, teacherShare:tShare, instituteShare:iShare, date:p.date});
+    }
+  });
 
-  paymentsTableBody.innerHTML='';
-  let total=0, totalTeacher=0, totalInstitute=0;
-  const teacherPct=settings.teacherPercent||0;
-  list.forEach(p=>{
-    const teacherShare=(p.amount||0)*teacherPct/100;
-    const instituteShare=(p.amount||0)-teacherShare;
-    total+=p.amount||0; totalTeacher+=teacherShare; totalInstitute+=instituteShare;
+  expenses.forEach(e=>{
+    const d=new Date(e.date);
+    if((!from || d>=from)&&(!to||d<=to)){
+      totalExp += e.amount||0;
+      tableRows.push({type:'مصروف', student:e.description, teacher:'-', subject:'-', amount:e.amount, teacherShare:0, instituteShare:0, date:e.date});
+    }
+  });
+
+  students.forEach(s=>{
+    const totalDue = s.totalFee||0;
+    const paid = payments.filter(p=>p.studentId===s.id).reduce((sum,p)=>sum+(p.amount||0),0);
+    const rem = totalDue - paid;
+    if(rem>0) remaining += rem;
+  });
+
+  const totalIncome=received+remaining;
+  const netProfit=instituteShare-totalExp;
+
+  sumIncomeEl.textContent=formatCurrency(totalIncome);
+  receivedPaymentsEl.textContent=formatCurrency(received);
+  remainingPaymentsEl.textContent=formatCurrency(remaining);
+  teacherPaymentsEl.textContent=formatCurrency(teacherPay);
+  totalExpensesEl.textContent=formatCurrency(totalExp);
+  netProfitEl.textContent=formatCurrency(netProfit);
+
+  financeTableBody.innerHTML='';
+  let footerT=0, footerTeacher=0, footerInst=0;
+  tableRows.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(r=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td>${escapeHtml(p.studentName||'-')}</td>
-      <td>${escapeHtml(p.subject||'-')}</td>
-      <td>${escapeHtml(p.teacherName||p.teacherId||'-')}</td>
-      <td>${formatCurrency(p.amount||0)}</td>
-      <td>${formatCurrency(teacherShare)}</td>
-      <td>${formatCurrency(instituteShare)}</td>
-      <td>${escapeHtml(p.date||'-')}</td>
-      <td class="no-print"><button class="warn" data-id="${p.id}">🗑️</button></td>
+      <td>${r.type}</td>
+      <td>${escapeHtml(r.student)}</td>
+      <td>${escapeHtml(r.teacher)}</td>
+      <td>${escapeHtml(r.subject)}</td>
+      <td>${formatCurrency(r.amount)}</td>
+      <td>${formatCurrency(r.teacherShare)}</td>
+      <td>${formatCurrency(r.instituteShare)}</td>
+      <td>${r.date}</td>
     `;
-    paymentsTableBody.appendChild(tr);
-    tr.querySelector('button')?.addEventListener('click',async e=>{
-      if(!confirm('هل تريد حذف هذه الدفعة؟')) return;
-      await deleteDoc(doc(db,'payments',e.currentTarget.dataset.id)); await loadPayments();
-    });
+    financeTableBody.appendChild(tr);
+    footerT += r.amount||0;
+    footerTeacher += r.teacherShare||0;
+    footerInst += r.instituteShare||0;
   });
-  paymentsTotalFooter.textContent=formatCurrency(total);
-  paymentsTeacherFooter.textContent=formatCurrency(totalTeacher);
-  paymentsInstituteFooter.textContent=formatCurrency(totalInstitute);
-  sumPaymentsEl.textContent=formatCurrency(total);
-  sumTeachersEl.textContent=formatCurrency(totalTeacher);
-  sumInstituteEl.textContent=formatCurrency(totalInstitute);
-  updateSummaryAndCharts();
-}
+  footerTotal.textContent=formatCurrency(footerT);
+  footerTeacher.textContent=formatCurrency(footerTeacher);
+  footerInstitute.textContent=formatCurrency(footerInst);
 
-function renderExpensesTable(filter=getExpFilterValues()){
-  let list=expenses.slice();
-  if(filter.from){ const from=parseDateInput(filter.from); list=list.filter(e=>new Date(e.date)>=from);}
-  if(filter.to){ const to=parseDateInput(filter.to); to.setHours(23,59,59,999); list=list.filter(e=>new Date(e.date)<=to);}
-  expensesTableBody.innerHTML='';
-  let total=0;
-  list.forEach(e=>{
-    total+=e.amount||0;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td>${escapeHtml(e.description||'-')}</td>
-      <td>${formatCurrency(e.amount||0)}</td>
-      <td>${escapeHtml(e.date||'-')}</td>
-      <td class="no-print"><button class="warn" data-id="${e.id}">🗑️</button></td>
-    `;
-        expensesTableBody.appendChild(tr);
-    tr.querySelector('button')?.addEventListener('click', async e=>{
-      if(!confirm('هل تريد حذف هذا المصروف؟')) return;
-      await deleteDoc(doc(db,'expenses',e.currentTarget.dataset.id));
-      await loadExpenses();
-    });
-  });
-  expensesTotalFooter.textContent=formatCurrency(total);
-  sumExpensesEl.textContent=formatCurrency(total);
-  updateSummaryAndCharts();
+  // Charts
+  updateCharts(totalIncome, totalExp, tableRows);
 }
-
-/* ---------- Form Actions ---------- */
-expenseForm.addEventListener('submit', async e=>{
-  e.preventDefault();
-  try{
-    await addDoc(collection(db,'expenses'),{
-      description: expDesc.value,
-      amount: Number(expAmount.value),
-      date: expDate.value
-    });
-    expDesc.value=''; expAmount.value=''; expDate.value='';
-    await loadExpenses();
-  }catch(err){ console.error(err); alert('خطأ في حفظ المصروف'); }
-});
-document.getElementById('clearExpense').addEventListener('click',()=>{
-  expDesc.value=''; expAmount.value=''; expDate.value='';
-});
-
-/* ---------- Filters ---------- */
-function getPayFilterValues(){
-  return {
-    from: payFrom.value,
-    to: payTo.value,
-    teacherId: payTeacher.value,
-    subject: paySubject.value,
-    student: payStudent.value
-  };
-}
-applyPayFilter.addEventListener('click',()=>renderPaymentsTable(getPayFilterValues()));
-clearPayFilter.addEventListener('click',()=>{
-  payFrom.value=''; payTo.value=''; payTeacher.value=''; paySubject.value=''; payStudent.value='';
-  renderPaymentsTable();
-});
-
-function getExpFilterValues(){
-  return { from: expFrom.value, to: expTo.value };
-}
-applyExpFilter.addEventListener('click',()=>renderExpensesTable(getExpFilterValues()));
-clearExpFilter.addEventListener('click',()=>{
-  expFrom.value=''; expTo.value='';
-  renderExpensesTable();
-});
 
 /* ---------- Charts ---------- */
-function updateSummaryAndCharts(){
-  const totalIncome = Number(sumPaymentsEl.textContent.replace(/,/g,'')) || 0;
-  const totalExpense = Number(sumExpensesEl.textContent.replace(/,/g,'')) || 0;
-  netProfitEl.textContent = formatCurrency(totalIncome - totalExpense);
-
-  // Line chart: income over time (daily)
-  const dailyTotals = {};
-  payments.forEach(p=>{
-    const d = p.date || ''; if(!d) return;
-    if(!dailyTotals[d]) dailyTotals[d]=0;
-    dailyTotals[d]+=p.amount||0;
-  });
-  const lineLabels = Object.keys(dailyTotals).sort();
-  const lineData = lineLabels.map(d=>dailyTotals[d]);
-
-  if(lineChart) lineChart.destroy();
-  const ctxLine=document.getElementById('lineChart').getContext('2d');
-  lineChart = new Chart(ctxLine,{
-    type:'line',
-    data:{ labels: lineLabels, datasets:[{label:'الدخل اليومي',data:lineData, borderColor:'#004aad', backgroundColor:'rgba(0,74,173,0.2)', fill:true}]},
-    options:{ responsive:true, plugins:{legend:{display:false}} }
-  });
-
-  // Pie chart: income vs expenses
+function updateCharts(totalIncome,totalExpenses,tableRows){
   if(pieChart) pieChart.destroy();
   const ctxPie=document.getElementById('pieChart').getContext('2d');
   pieChart=new Chart(ctxPie,{
     type:'pie',
-    data:{labels:['إجمالي الدخل','إجمالي المصاريف'], datasets:[{data:[totalIncome,totalExpense],backgroundColor:['#004aad','#ff7043']}]},
+    data:{labels:['الواردات','المصاريف'],datasets:[{data:[totalIncome,totalExpenses],backgroundColor:['#004aad','#ff7043']}]},
     options:{responsive:true}
   });
+
+  if(lineChart) lineChart.destroy();
+  const dailyTotals={};
+  tableRows.forEach(r=>{ const d=r.date; dailyTotals[d]=(dailyTotals[d]||0) + (r.type==='دفعة'? r.instituteShare : -r.amount); });
+  const labels=Object.keys(dailyTotals).sort();
+  const data=labels.map(d=>dailyTotals[d]);
+  const ctxLine=document.getElementById('lineChart').getContext('2d');
+  lineChart=new Chart(ctxLine,{type:'line',data:{labels,datasets:[{label:'صافي الربح اليومي',data,borderColor:'#004aad',backgroundColor:'rgba(0,74,173,0.2)',fill:true}]}, options:{responsive:true}});
 }
 
-/* ---------- Export Excel ---------- */
+/* ---------- Filters ---------- */
+applyFilter.addEventListener('click',()=>calculateFinance({from:fromDate.value,to:toDate.value,student:filterStudent.value,teacher:filterTeacher.value,subject:filterSubject.value}));
+clearFilter.addEventListener('click',()=>{ fromDate.value=''; toDate.value=''; filterStudent.value=''; filterTeacher.value=''; filterSubject.value=''; calculateFinance({}); });
+
+/* ---------- Excel ---------- */
 exportExcelBtn.addEventListener('click',()=>{
   const wb = XLSX.utils.book_new();
-  const payData=[['الطالب','المادة','المعلم','المبلغ','نصيب الأستاذ','نصيب المعهد','التاريخ']];
-  payments.forEach(p=>{
-    const teacherShare=(p.amount||0)*(settings.teacherPercent||0)/100;
-    const instituteShare=(p.amount||0)-teacherShare;
-    payData.push([p.studentName,p.subject,p.teacherName||p.teacherId,p.amount,teacherShare,instituteShare,p.date]);
-  });
-  const ws1 = XLSX.utils.aoa_to_sheet(payData);
-  XLSX.utils.book_append_sheet(wb,ws1,'المدفوعات');
-
-  const expData=[['الوصف','المبلغ','التاريخ']];
-  expenses.forEach(e=>{ expData.push([e.description,e.amount,e.date]); });
-  const ws2=XLSX.utils.aoa_to_sheet(expData);
-  XLSX.utils.book_append_sheet(wb,ws2,'المصاريف');
-
-  XLSX.writeFile(wb,'Financial_Report.xlsx');
+  const wsData=[['النوع','الطالب/الوصف','المعلم','المادة','المبلغ','نصيب الأستاذ','نصيب المعهد','التاريخ']];
+  financeTableBody.querySelectorAll('tr').forEach(tr=>{ wsData.push(Array.from(tr.children).map(td=>td.textContent)); });
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb,ws,'Finance_Report');
+  XLSX.writeFile(wb,'Finance_Report.xlsx');
 });
 
 /* ---------- Print ---------- */
@@ -471,9 +311,11 @@ printReportBtn.addEventListener('click',()=>window.print());
 /* ---------- Initial Load ---------- */
 async function initialLoadAll(){
   await loadSettings();
-  await loadTeachersAndSubjects();
+  await loadTeachers();
+  await loadStudents();
   await loadPayments();
   await loadExpenses();
+  calculateFinance({});
 }
 
 </script>
