@@ -1,161 +1,101 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>إدارة الطلاب - المعهد</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>إدارة الطلاب - OMA</title>
 <style>
 :root{
-  --primary:#004aad; --accent:#ffcc33; --bg:#f5f9ff; --card:#fff;
+  --primary:#004aad;
+  --accent:#ffcc33;
+  --bg:#f5f9ff;
+  --card:#fff;
 }
-*{box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;margin:0;background:linear-gradient(180deg,var(--bg),#fff);color:#102027;direction:rtl;visibility:hidden;}
-header{background:var(--primary);color:#fff;padding:16px;text-align:center;font-weight:700;}
-.wrap{max-width:1200px;margin:20px auto;padding:12px;}
-.card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:14px;}
-.form-grid{display:flex;flex-wrap:wrap;gap:10px}
-input,select,textarea{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;}
-.two{width:calc(50% - 6px)}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
-.btn.warn{background:#ff7043}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
-.table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
-th{background:var(--primary);color:#fff}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
-.subject-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
-.subject-row > *{flex:1}
-.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999}
-.modal.open{display:flex}
-.modal .box{background:white;padding:18px;border-radius:10px;max-width:900px;width:96%;max-height:90vh;overflow:auto}
-@media print{
-  body{background:white}
-  header,.controls,.btn,.modal,.no-print{display:none !important}
-  .print-page{box-shadow:none;margin:0;padding:0}
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
+header{background:var(--primary);color:#fff;text-align:center;padding:12px 0;font-size:1.4rem;}
+.container{padding:15px;max-width:1200px;margin:auto;}
+.card{background:var(--card);padding:15px;margin-bottom:15px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+input,select,button,textarea{padding:6px 10px;margin:4px 2px;border:1px solid #ccc;border-radius:4px;font-size:0.95rem;}
+button{cursor:pointer;background:var(--primary);color:#fff;border:none}
+button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+button.warn{background:#ff4444;color:#fff;}
+button.small{padding:3px 8px;font-size:0.8rem}
+.subject-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
+#subjectsContainer{margin-top:8px;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ccc;padding:6px;text-align:center;font-size:0.9rem;}
+th{background:var(--primary);color:#fff;}
+#modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;}
+#modal.open{display:flex;}
+#modalContent{background:#fff;padding:15px;width:90%;max-width:700px;border-radius:6px;max-height:90%;overflow:auto;}
+.close-btn{float:left;background:#ff4444;padding:2px 6px;border-radius:4px;font-size:0.9rem;}
+.print-page{padding:10px;font-size:0.95rem;}
 </style>
 </head>
 <body>
-<header id="instituteName">—</header>
-<div class="wrap">
+<header><span id="instituteName">اسم المعهد</span> - إدارة الطلاب</header>
+<div class="container">
 
-  <!-- إضافة طالب -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-      <div>
-        <strong>أضف / عدل طالب</strong>
-        <div style="font-size:13px;color:#546e7a">املأ الحقول ثم اضغط حفظ</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center" class="no-print">
-        <select id="stageSelect" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
-          <option value="">اختر المرحلة</option>
-        </select>
-        <select id="groupSelectTop" style="padding:8px;border-radius:8px;border:1px solid #e0e6ef">
-          <option value="">اختر الكروب</option>
-        </select>
-        <button id="printListBtn" class="btn">🖨️ طباعة القائمة</button>
-      </div>
+<div class="card">
+  <h3>إضافة/تعديل طالب</h3>
+  <form id="studentForm">
+    <input type="text" id="name" placeholder="اسم الطالب" required>
+    <input type="text" id="phone" placeholder="رقم الهاتف" required>
+    <input type="text" id="address" placeholder="العنوان">
+    <input type="text" id="school" placeholder="اسم المدرسة">
+    <select id="stageSelectForm"></select>
+    <select id="groupSelectForm"></select>
+    <textarea id="note" placeholder="ملاحظة"></textarea>
+    <div id="subjectsContainer"></div>
+    <button type="button" id="addSubjectBtn">➕ إضافة مادة</button>
+    <input type="number" id="totalFees" placeholder="إجمالي القسط" readonly>
+    <div style="margin-top:8px;">
+      <button type="submit">💾 حفظ الطالب</button>
+      <button type="button" id="clearFormBtn" class="ghost">🧹 مسح النموذج</button>
     </div>
+  </form>
+</div>
 
-    <form id="studentForm" style="margin-top:12px">
-      <div class="form-grid">
-        <div class="two">
-          <label>الاسم الكامل</label>
-          <input id="name" type="text" required />
-        </div>
-        <div class="two">
-          <label>رقم الموبايل</label>
-          <input id="phone" type="tel" required />
-        </div>
-        <div class="two">
-          <label>العنوان</label>
-          <input id="address" type="text" />
-        </div>
-        <div class="two">
-          <label>اسم المدرسة</label>
-          <input id="school" type="text" />
-        </div>
-        <div class="two">
-          <label>المرحلة الدراسية</label>
-          <select id="stageSelectForm"></select>
-        </div>
-        <div class="two">
-          <label>الكروب</label>
-          <select id="groupSelectForm"></select>
-        </div>
-
-        <div style="width:100%">
-          <label>المواد (اختَر مادة ثم المعلم ثم قيمة القسط)</label>
-          <div id="subjectsContainer"></div>
-          <div style="margin-top:8px">
-            <button id="addSubjectBtn" type="button" class="btn ghost small">➕ إضافة مادة</button>
-          </div>
-        </div>
-
-        <div class="two">
-          <label>إجمالي المستحق لجميع المواد (يحسب تلقائي)</label>
-          <input id="totalFees" type="number" min="0" readonly/>
-        </div>
-        <div class="two">
-          <label>ملاحظة / وصف الطالب</label>
-          <input id="note" type="text" />
-        </div>
-
-        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
-          <button id="saveStudentBtn" class="btn" type="submit">✅ حفظ الطالب</button>
-          <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
-        </div>
-      </div>
-    </form>
+<div class="card">
+  <h3>قائمة الطلاب <span id="totalCount"></span></h3>
+  <div>
+    <input type="text" id="searchBox" placeholder="بحث بالاسم">
+    <select id="filterStage"><option value="">كل المراحل</option></select>
+    <select id="filterGroup"><option value="">كل الكروبات</option></select>
+    <select id="filterTeacher"><option value="">كل الأساتذة</option></select>
+    <select id="filterSubject"><option value="">كل المواد</option></select>
+    <button id="applyFiltersBtn">تطبيق الفلاتر</button>
+    <button id="printListBtn" class="ghost">🖨️ طباعة القائمة</button>
   </div>
-
-  <!-- جدول الطلاب -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-      <div><strong>قائمة الطلاب</strong> <span id="totalCount" class="badge">0</span></div>
-      <div style="display:flex;gap:8px;align-items:center" class="no-print">
-        <input type="text" id="searchBox" placeholder="بحث عن طالب..." style="padding:6px;border-radius:6px;border:1px solid #ddd"/>
-        <select id="filterSubject"><option value="">كل المواد</option></select>
-        <select id="filterTeacher"><option value="">كل الأساتذة</option></select>
-        <select id="filterGroup"><option value="">كل الكروبات</option></select>
-        <select id="filterStage"><option value="">كل المراحل</option></select>
-        <button id="applyFiltersBtn" class="btn">تطبيق الفلاتر</button>
-      </div>
-    </div>
-
-    <table class="table" id="studentsTable">
-      <thead>
-        <tr>
-          <th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد / المتبقي</th><th>الخيارات</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <table id="studentsTable">
+    <thead>
+      <tr>
+        <th>الاسم</th><th>الهاتف</th><th>المرحلة</th><th>الكروب</th><th>المواد والمتبقي</th><th>الإجراءات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 </div>
 
-<!-- مودال التفاصيل -->
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <strong id="modalTitle">تفاصيل الطالب</strong>
-      <div>
-        <button id="printStudentBtn" class="btn no-print">🖨️ طباعة الاستمارة</button>
-        <button id="closeModal" class="btn ghost">إغلاق</button>
-      </div>
-    </div>
+<!-- Modal -->
+<div id="modal">
+  <div id="modalContent">
+    <span class="close-btn" id="closeModal">❌ إغلاق</span>
+    <h3 id="modalTitle"></h3>
     <div id="modalBody"></div>
   </div>
 </div>
 
 <script type="module">
+// -------- Firebase imports --------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* --------- Configure Firebase --------- */
+// -------- Config --------
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -169,7 +109,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* --- Elements --- */
+// -------- Elements --------
 const subjectsContainer = document.getElementById('subjectsContainer');
 const addSubjectBtn = document.getElementById('addSubjectBtn');
 const studentForm = document.getElementById('studentForm');
@@ -187,29 +127,25 @@ const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modalBody');
 const modalTitle = document.getElementById('modalTitle');
 const closeModalBtn = document.getElementById('closeModal');
-const printStudentBtn = document.getElementById('printStudentBtn');
-const stageSelect = document.getElementById('stageSelect');
-const stageSelectForm = document.getElementById('stageSelectForm');
-const groupSelectTop = document.getElementById('groupSelectTop');
-const groupSelectForm = document.getElementById('groupSelectForm');
 const totalFeesInput = document.getElementById('totalFees');
+const stageSelectForm = document.getElementById('stageSelectForm');
+const groupSelectForm = document.getElementById('groupSelectForm');
 const instituteNameHeader = document.getElementById('instituteName');
 
-/* --- State --- */
+// -------- State --------
 let teachers = [];
 let studentsCache = [];
 let settingsData = {};
-let editingStudentId = null;
 const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
 const GROUPS = ["A","B","C","D","E","F","G","H"];
 
-/* --- Auth guard --- */
+// -------- Auth --------
 onAuthStateChanged(auth,user=>{
   if(!user){ window.location.href='login.html'; } 
   else{ document.body.style.visibility='visible'; initPage(); }
 });
 
-/* --- Initialization --- */
+// -------- Initialization --------
 async function initPage(){
   await loadSettings();
   populateStageGroup();
@@ -218,7 +154,7 @@ async function initPage(){
   populateFilters();
 }
 
-/* --- Load settings --- */
+// -------- Load settings --------
 async function loadSettings(){
   try{
     const snap = await getDoc(doc(db,'settings','info'));
@@ -233,30 +169,33 @@ async function loadSettings(){
   }catch(e){ console.error('loadSettings',e); }
 }
 
-/* --- Populate stage/group selects --- */
+// -------- Stage/Group --------
 function populateStageGroup(){
   STAGES.forEach(s=>{
-    stageSelect.innerHTML+=`<option value="${s}">${s}</option>`;
     stageSelectForm.innerHTML+=`<option value="${s}">${s}</option>`;
     filterStage.innerHTML+=`<option value="${s}">${s}</option>`;
   });
   GROUPS.forEach(g=>{
-    groupSelectTop.innerHTML+=`<option value="${g}">${g}</option>`;
     groupSelectForm.innerHTML+=`<option value="${g}">${g}</option>`;
     filterGroup.innerHTML+=`<option value="${g}">${g}</option>`;
   });
 }
 
-/* --- Load teachers --- */
+// -------- Load teachers --------
 async function loadTeachers(){
   teachers = [];
   try{
     const snap = await getDocs(collection(db,'teachers'));
     snap.forEach(d=>teachers.push({id:d.id,...d.data()}));
+    populateTeacherFilters();
   }catch(e){ console.error(e); }
 }
+function populateTeacherFilters(){
+  filterTeacher.innerHTML='<option value="">كل الأساتذة</option>';
+  teachers.forEach(t=>{ filterTeacher.innerHTML+=`<option value="${t.id}">${t.name}</option>`; });
+}
 
-/* --- Subject row --- */
+// -------- Subject row --------
 function createSubjectRow(data={}){
   const wrapper = document.createElement('div'); wrapper.className='subject-row';
   const subjInp=document.createElement('input'); subjInp.placeholder='اسم المادة'; subjInp.value=data.name||'';
@@ -267,7 +206,7 @@ function createSubjectRow(data={}){
   const payBtn=document.createElement('button'); payBtn.type='button'; payBtn.className='btn small'; payBtn.textContent='💰 إضافة دفعة';
   const remSubBtn=document.createElement('button'); remSubBtn.type='button'; remSubBtn.className='btn warn small'; remSubBtn.textContent='❌';
   wrapper.payments=Array.isArray(data.payments)?[...data.payments]:[];
-  /* Payment button */
+
   payBtn.addEventListener('click',()=>{
     const amountStr=prompt('أدخل مبلغ الدفعة:'); if(!amountStr)return;
     const amount=parseFloat(amountStr); if(isNaN(amount)||amount<=0){alert('مبلغ غير صالح');return;}
@@ -277,7 +216,9 @@ function createSubjectRow(data={}){
     updateTotalFees();
     alert(`تم تسجيل دفعة ${amount} بتاريخ ${date}`);
   });
+
   remSubBtn.addEventListener('click',()=>{ wrapper.remove(); updateTotalFees(); });
+
   wrapper.appendChild(subjInp); wrapper.appendChild(teacherSel); wrapper.appendChild(feeInp); wrapper.appendChild(remInp); wrapper.appendChild(payBtn); wrapper.appendChild(remSubBtn);
   [feeInp, remInp].forEach(inp=>inp.addEventListener('input',updateTotalFees));
   subjectsContainer.appendChild(wrapper);
@@ -287,13 +228,13 @@ function createSubjectRow(data={}){
 
 addSubjectBtn.addEventListener('click',()=>{ if(teachers.length===0){alert('لا توجد أساتذة مسجلين');return;} createSubjectRow(); });
 
-/* --- Update total fees --- */
+// -------- Total fees --------
 function updateTotalFees(){
   const rows=Array.from(subjectsContainer.querySelectorAll('.subject-row'));
   let sum=0; rows.forEach(r=>{ const f=parseFloat(r.querySelectorAll('input')[2].value)||0; sum+=f; }); totalFeesInput.value=sum;
 }
 
-/* --- Save student --- */
+// -------- Save student --------
 studentForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const name=document.getElementById('name').value.trim();
@@ -317,96 +258,118 @@ studentForm.addEventListener('submit',async e=>{
   if(!name||!phone){alert('الاسم ورقم الهاتف مطلوبان');return;}
   if(subjects.length===0){alert('أضف مادة واحدة على الأقل');return;}
   try{
-    if(editingStudentId){
-      await updateDoc(doc(db,'students',editingStudentId),{name,phone,address,school,stage,group,totalFees,note,subjects});
-      alert('تم تعديل الطالب بنجاح'); editingStudentId=null;
-    } else {
-      await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
-      alert('تم حفظ الطالب بنجاح');
-    }
+    await addDoc(collection(db,'students'),{name,phone,address,school,stage,group,totalFees,note,subjects,createdAt:new Date()});
+    alert('تم حفظ الطالب بنجاح');
     studentForm.reset(); subjectsContainer.innerHTML=''; updateTotalFees();
     loadStudents();
-  }catch(e){console.error(e); alert('خطأ بالحفظ'); }
+  }catch(e){console.error(e);alert('خطأ أثناء الحفظ');}
 });
 
-/* --- Load students --- */
-async function loadStudents(){
-  studentsTableBody.innerHTML=''; studentsCache=[];
+// -------- Load students --------
+async function loadStudents(filter={}){
   try{
-    const q=query(collection(db,'students'),orderBy('name'));
+    const q=query(collection(db,'students'),orderBy('createdAt','desc'));
     const snap=await getDocs(q);
-    snap.forEach(d=>{
-      const s={id:d.id,...d.data()}; studentsCache.push(s);
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${s.name}</td><td>${s.phone}</td><td>${s.stage}</td><td>${s.group}</td><td>${s.subjects.map(sb=>`${sb.name}: ${sb.remaining || sb.fee}`).join(' | ')}</td>
-        <td>
-          <button class="btn small showBtn">عرض</button>
-          <button class="btn small ghost editBtn">✏️</button>
-          <button class="btn small warn deleteBtn">🗑️</button>
-          <button class="btn small">🖨️ طباعة</button>
-        </td>`;
-      /* Buttons */
-      tr.querySelector('.editBtn').addEventListener('click',()=>{ loadStudentToForm(s); });
-      tr.querySelector('.deleteBtn').addEventListener('click',async()=>{ if(confirm('تأكيد الحذف؟')){ await deleteDoc(doc(db,'students',s.id)); loadStudents(); } });
-      tr.querySelector('.showBtn').addEventListener('click',()=>{ showStudentModal(s); });
-      tr.querySelectorAll('button')[3].addEventListener('click',()=>{ printStudent(s); });
-      studentsTableBody.appendChild(tr);
-    });
-    totalCount.textContent=studentsCache.length;
+    studentsCache=[]; studentsTableBody.innerHTML='';
+    snap.forEach(d=>{ studentsCache.push({id:d.id,...d.data()}); });
+    renderStudentsTable(filter);
   }catch(e){console.error(e);}
 }
 
-/* --- Load student to form for edit --- */
-function loadStudentToForm(s){
-  editingStudentId=s.id;
+// -------- Render table --------
+function renderStudentsTable(filter){
+  studentsTableBody.innerHTML='';
+  let filtered=studentsCache;
+  if(filter.name) filtered=filtered.filter(s=>s.name.includes(filter.name));
+  if(filter.stage) filtered=filtered.filter(s=>s.stage===filter.stage);
+  if(filter.group) filtered=filtered.filter(s=>s.group===filter.group);
+  if(filter.subjectId) filtered=filtered.filter(s=>s.subjects.some(sub=>sub.name===filter.subjectId));
+  if(filter.teacherId) filtered=filtered.filter(s=>s.subjects.some(sub=>sub.teacherId===filter.teacherId));
+  filtered.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s.name}</td>
+      <td>${s.phone}</td>
+      <td>${s.stage}</td>
+      <td>${s.group}</td>
+      <td>${s.subjects.map(sub=>`${sub.name} (${sub.remaining})`).join('<br>')}</td>
+      <td>
+        <button class="btn small" onclick="showStudent('${s.id}')">عرض</button>
+        <button class="btn small ghost" onclick="editStudent('${s.id}')">✏️</button>
+        <button class="btn small warn" onclick="deleteStudent('${s.id}')">🗑️</button>
+      </td>`;
+    studentsTableBody.appendChild(tr);
+  });
+  totalCount.textContent=filtered.length;
+}
+
+// -------- Show student modal --------
+window.showStudent=async function(id){
+  const s=studentsCache.find(st=>st.id===id); if(!s)return;
+  modalTitle.textContent=`استمارة الطالب: ${s.name}`;
+  let html=`<div><strong>الهاتف:</strong> ${s.phone} | <strong>المرحلة:</strong> ${s.stage} | <strong>الكروب:</strong> ${s.group} | <strong>المدرسة:</strong> ${s.school}</div>`;
+  html+=`<hr><div><strong>المواد والدفعات:</strong><br>`;
+  s.subjects.forEach((sub,i)=>{
+    html+=`<div style="margin-bottom:6px"><strong>${sub.name}</strong> - المتبقي: ${sub.remaining} | إجمالي: ${sub.fee} <button class="btn small" onclick="addPayment('${id}',${i})">💰 إضافة دفعة</button></div>`;
+  });
+  html+=`</div><hr><div><strong>ملاحظة:</strong> ${s.note||'-'}</div>`;
+  modalBody.innerHTML=html; modal.classList.add('open');
+};
+closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
+
+// -------- Add payment inside modal --------
+window.addPayment=async function(studentId,subIndex){
+  const s=studentsCache.find(st=>st.id===studentId); if(!s)return;
+  const amountStr=prompt('أدخل مبلغ الدفعة'); if(!amountStr)return;
+  const amount=parseFloat(amountStr); if(isNaN(amount)||amount<=0){alert('مبلغ غير صالح');return;}
+  const date=new Date().toLocaleDateString();
+  s.subjects[subIndex].payments.push({amount,date});
+  s.subjects[subIndex].remaining=Math.max(0,s.subjects[subIndex].remaining-amount);
+  await updateDoc(doc(db,'students',studentId),{subjects:s.subjects});
+  alert('تم إضافة الدفعة'); loadStudents();
+  showStudent(studentId);
+};
+
+// -------- Edit student --------
+window.editStudent=async function(id){
+  const s=studentsCache.find(st=>st.id===id); if(!s)return;
   document.getElementById('name').value=s.name;
   document.getElementById('phone').value=s.phone;
   document.getElementById('address').value=s.address;
   document.getElementById('school').value=s.school;
-  stageSelectForm.value=s.stage;
-  groupSelectForm.value=s.group;
-  document.getElementById('note').value=s.note||'';
-  subjectsContainer.innerHTML=''; 
-  s.subjects.forEach(sub=>createSubjectRow(sub));
-  updateTotalFees();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+  stageSelectForm.value=s.stage; groupSelectForm.value=s.group;
+  subjectsContainer.innerHTML=''; s.subjects.forEach(sub=>createSubjectRow(sub));
+  totalFeesInput.value=s.totalFees;
+};
 
-/* --- Modal --- */
-function showStudentModal(s){
-  modalTitle.textContent=`استمارة الطالب: ${s.name}`;
-  modalBody.innerHTML=`<div><strong>الهاتف:</strong> ${s.phone}</div>
-    <div><strong>المرحلة:</strong> ${s.stage}</div>
-    <div><strong>الكروب:</strong> ${s.group}</div>
-    <div><strong>العنوان:</strong> ${s.address}</div>
-    <div><strong>المدرسة:</strong> ${s.school}</div>
-    <div><strong>المواد والدفعات:</strong></div>
-    <div id="modalSubjects"></div>`;
-  const modalSubjects=document.getElementById('modalSubjects');
-  s.subjects.forEach(sub=>{
-    const div=document.createElement('div');
-    div.style.margin='6px 0';
-    div.innerHTML=`${sub.name} - إجمالي القسط: ${sub.fee} - المتبقي: ${sub.remaining || sub.fee}
-      <button class="btn small">💰 إضافة دفعة</button>`;
-    div.querySelector('button').addEventListener('click',()=>{
-      const amtStr=prompt('أدخل مبلغ الدفعة:'); if(!amtStr)return;
-      const amt=parseFloat(amtStr); if(isNaN(amt)||amt<=0){alert('مبلغ غير صالح');return;}
-      sub.payments=sub.payments||[]; sub.payments.push({amount:amt,date:new Date().toLocaleDateString()});
-      sub.remaining=Math.max(0,(sub.remaining||sub.fee)-amt);
-      updateDoc(doc(db,'students',s.id),{subjects:s.subjects}).then(()=>{ alert('تم تسجيل الدفعة'); showStudentModal(s); loadStudents(); });
-    });
-    modalSubjects.appendChild(div);
+// -------- Delete student --------
+window.deleteStudent=async function(id){
+  if(confirm('هل تريد حذف الطالب؟')){ await deleteDoc(doc(db,'students',id)); loadStudents(); }
+};
+
+// -------- Filters --------
+applyFiltersBtn.addEventListener('click',()=>{
+  const filter={name:searchBox.value,stage:filterStage.value,group:filterGroup.value,subjectId:filterSubject.value,teacherId:filterTeacher.value};
+  renderStudentsTable(filter);
+});
+
+// -------- Print list --------
+printListBtn.addEventListener('click',()=>{
+  const filter={name:searchBox.value,stage:filterStage.value,group:filterGroup.value,subjectId:filterSubject.value,teacherId:filterTeacher.value};
+  const filtered=studentsCache.filter(s=>{
+    if(filter.name && !s.name.includes(filter.name)) return false;
+    if(filter.stage && s.stage!==filter.stage) return false;
+    if(filter.group && s.group!==filter.group) return false;
+    if(filter.subjectId && !s.subjects.some(sub=>sub.name===filter.subjectId)) return false;
+    if(filter.teacherId && !s.subjects.some(sub=>sub.teacherId===filter.teacherId)) return false;
+    return true;
   });
-  modal.classList.add('open');
-}
-closeModalBtn.addEventListener('click',()=>modal.classList.remove('open'));
-printStudentBtn.addEventListener('click',()=>{ window.print(); });
+  let html=`<div class="print-page"><h2>${settingsData.name||''} - قائمة الطلاب</h2><hr>`;
+  filtered.forEach(s=>{ html+=`<div><strong>${s.name}</strong> | ${s.phone} | ${s.stage} | ${s.group}<br>${s.subjects.map(sub=>`${sub.name} (${sub.remaining})`).join(' | ')}</div><hr>`; });
+  const w=window.open('','','width=900,height=700'); w.document.write(html); w.print();
+});
 
-/* --- Clear form --- */
-clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; editingStudentId=null; updateTotalFees(); });
-
-/* --- Print list --- */
-printListBtn.addEventListener('click',()=>{ window.print(); });
+// -------- Clear form --------
+clearFormBtn.addEventListener('click',()=>{ studentForm.reset(); subjectsContainer.innerHTML=''; totalFeesInput.value=0; });
 
 </script>
 </body>
