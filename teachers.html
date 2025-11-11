@@ -1,113 +1,96 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>إدارة الأساتذة — المعهد</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>إدارة الأساتذة - المعهد</title>
 <style>
-:root{--primary:#004aad;--accent:#ffcc33;--bg:#f5f9ff;--card:#fff;}
+:root{
+  --primary:#004aad; --accent:#ffcc33; --bg:#f5f9ff; --card:#fff;
+}
 *{box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;margin:0;background:var(--bg);color:#102027;direction:rtl;visibility:hidden;}
-header{background:var(--primary);color:#fff;padding:16px;text-align:center;font-weight:700;}
+header{background:var(--primary);color:#fff;padding:16px;text-align:center;display:flex;align-items:center;gap:10px;justify-content:center;font-weight:700;}
+header img{height:40px;}
 .wrap{max-width:1200px;margin:20px auto;padding:12px;}
 .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(6,20,30,0.06);margin-bottom:14px;}
-.form-grid{display:flex;flex-wrap:wrap;gap:10px}
-input,select,textarea{padding:10px;border:1px solid #d6dde9;border-radius:8px;font-size:15px;width:100%;}
-.two{width:calc(50% - 6px)}
-.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
-.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
-.btn.warn{background:#ff7043}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
 .table{width:100%;border-collapse:collapse;margin-top:12px}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
 th{background:var(--primary);color:#fff}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef6ff;color:var(--primary);font-weight:700}
-.subject-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
-.subject-row > *{flex:1}
+.btn{background:var(--primary);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(0,74,173,0.12)}
+.btn.warn{background:#ff7043}
+.btn.small{padding:6px 8px;font-size:13px;border-radius:6px}
 .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:9999}
 .modal.open{display:flex}
 .modal .box{background:white;padding:18px;border-radius:10px;max-width:900px;width:96%;max-height:90vh;overflow:auto}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.search{flex:1;min-width:180px}
 @media print{
   body{background:white}
   header,.controls,.btn,.modal,.no-print{display:none !important}
-  .print-page{box-shadow:none;margin:0;padding:0}
 }
-.small-note{font-size:12px;color:#546e7a}
 </style>
 </head>
 <body>
-<header id="instituteName">—</header>
+<header id="instituteHeader">
+  <img id="instituteLogo" src="" alt="شعار المعهد">
+  <span id="instituteName">—</span>
+</header>
 <div class="wrap">
 
+  <!-- إضافة أستاذ -->
   <div class="card">
-    <strong id="formTitle">أضف أستاذ جديد</strong>
-    <div class="small-note">أضِف مادة+مرحلة+كروب كمجموعة مرتبطة. يمكن تكرارها لعدة مجموعات.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <div><strong>أضف أستاذ جديد</strong></div>
+    </div>
     <form id="teacherForm" style="margin-top:12px">
-      <div class="form-grid">
-        <div class="two">
-          <label>الاسم الكامل</label>
-          <input id="name" type="text" required />
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <div style="flex:1">
+          <label>اسم الأستاذ</label>
+          <input id="teacherName" type="text" required>
         </div>
-        <div class="two">
-          <label>رقم الموبايل</label>
-          <input id="phone" type="tel" />
+        <div style="flex:1">
+          <label>الهاتف</label>
+          <input id="teacherPhone" type="tel">
         </div>
-        <div class="two">
-          <label>العنوان</label>
-          <input id="address" type="text" />
+        <div style="flex:1">
+          <label>ملاحظة / وصف</label>
+          <input id="teacherNote" type="text">
         </div>
-        <div class="two">
-          <label>ملاحظات</label>
-          <input id="note" type="text" />
-        </div>
-
-        <div style="width:100%">
-          <label>العناصر (المادة + المرحلة + الكروب)</label>
-          <div id="subjectsContainer"></div>
-          <div style="margin-top:8px">
-            <button id="addSubjectBtn" type="button" class="btn ghost small">➕ إضافة عنصر (مادة+مرحلة+كروب)</button>
-          </div>
-        </div>
-
-        <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
-          <button id="saveTeacherBtn" class="btn" type="submit">✅ حفظ الأستاذ</button>
-          <button id="clearFormBtn" type="button" class="btn ghost">مسح الحقول</button>
+        <div style="flex-basis:100%;display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
+          <button type="submit" class="btn">✅ حفظ</button>
+          <button type="button" id="clearTeacherForm" class="btn ghost">مسح</button>
         </div>
       </div>
     </form>
   </div>
 
+  <!-- جدول الأساتذة -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-      <div><strong>قائمة الأساتذة</strong> <span id="totalCount" class="badge">0</span></div>
-      <div class="controls no-print">
-        <input id="searchBox" class="search" placeholder="ابحث باسم الأستاذ أو المادة..." />
-        <select id="filterStage"><option value="">كل المراحل</option></select>
-        <select id="filterGroup"><option value="">كل الكروبات</option></select>
-        <button id="applyFiltersBtn" class="btn">تطبيق الفلاتر</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <div><strong>قائمة الأساتذة</strong> <span id="totalTeachers" class="badge">0</span></div>
+      <div class="no-print">
+        <input type="text" id="searchTeacher" placeholder="بحث..." style="padding:6px;border-radius:6px;border:1px solid #ddd"/>
+        <button id="applyTeacherFilter" class="btn">تطبيق الفلاتر</button>
       </div>
     </div>
-
     <table class="table" id="teachersTable">
       <thead>
         <tr>
-          <th>الاسم</th><th>الهاتف</th><th>عدد العناصر</th><th>إجمالي مستحق (تقريبي)</th><th>خيارات</th>
+          <th>الاسم</th><th>الهاتف</th><th>عدد طلابه</th><th>المستحق له</th><th>المتبقي للمعهد</th><th>الخيارات</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
-
 </div>
 
+<!-- مودال التفاصيل -->
 <div id="modal" class="modal" aria-hidden="true">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <strong id="modalTitle">تفاصيل الأستاذ</strong>
       <div>
-        <button id="printTeacherBtn" class="btn no-print">🖨️ طباعة الاستمارة</button>
         <button id="closeModal" class="btn ghost">إغلاق</button>
       </div>
     </div>
@@ -133,213 +116,158 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const subjectsContainer = document.getElementById('subjectsContainer');
-const addSubjectBtn = document.getElementById('addSubjectBtn');
-const teacherForm = document.getElementById('teacherForm');
-const clearFormBtn = document.getElementById('clearFormBtn');
-const teachersTableBody = document.querySelector('#teachersTable tbody');
-const searchBox = document.getElementById('searchBox');
-const filterStage = document.getElementById('filterStage');
-const filterGroup = document.getElementById('filterGroup');
-const applyFiltersBtn = document.getElementById('applyFiltersBtn');
-const totalCount = document.getElementById('totalCount');
-const modal = document.getElementById('modal');
-const modalBody = document.getElementById('modalBody');
-const modalTitle = document.getElementById('modalTitle');
-const closeModalBtn = document.getElementById('closeModal');
-const printTeacherBtn = document.getElementById('printTeacherBtn');
-const instituteNameHeader = document.getElementById('instituteName');
+/* Elements */
+const teacherForm=document.getElementById('teacherForm');
+const teachersTableBody=document.querySelector('#teachersTable tbody');
+const totalTeachers=document.getElementById('totalTeachers');
+const clearTeacherForm=document.getElementById('clearTeacherForm');
+const searchTeacher=document.getElementById('searchTeacher');
+const applyTeacherFilter=document.getElementById('applyTeacherFilter');
+const modal=document.getElementById('modal');
+const modalBody=document.getElementById('modalBody');
+const modalTitle=document.getElementById('modalTitle');
+const closeModal=document.getElementById('closeModal');
+const instituteNameHeader=document.getElementById('instituteName');
+const instituteLogo=document.getElementById('instituteLogo');
 
-let teachersData = [];
-let studentsData = [];
-let editingTeacherId = null;
-const STAGES = ["الاول ابتدائي","الثاني ابتدائي","الثالث ابتدائي","الرابع ابتدائي","الخامس ابتدائي","السادس ابتدائي","الاول اعدادي","الثاني اعدادي","الثالث اعدادي","الرابع اعدادي (ثانوي)","الخامس اعدادي","السادس اعدادي - علمي","السادس اعدادي - ادبي"];
-const GROUPS = ["A","B","C","D","E","F","G","H"];
-let settingsData = { name: '', teacherPercent: 100 };
+let teachersCache=[]; 
+let studentsCache=[]; 
+let settingsData={};
 
-onAuthStateChanged(auth, user => {
-  if(!user) window.location.href = 'login.html';
-  else { document.body.style.visibility = 'visible'; initPage(); }
+onAuthStateChanged(auth,user=>{
+  if(!user){ window.location.href='login.html'; } 
+  else{ document.body.style.visibility='visible'; initPage(); }
 });
 
 async function initPage(){
   await loadSettings();
-  populateStageGroup();
-  await loadStudents();
   await loadTeachers();
+  await loadStudents();
+  renderTeachers();
 }
 
 async function loadSettings(){
   try{
-    const sdoc = await getDoc(doc(db,'settings','info'));
-    if(sdoc && sdoc.exists()) settingsData = { ...settingsData, ...sdoc.data() };
-    instituteNameHeader.textContent = settingsData.name || 'المعهد';
-    if(settingsData.teacherPercent==null) settingsData.teacherPercent=100;
-  }catch(e){ console.warn(e); }
+    const snap = await getDoc(doc(db,'settings','info'));
+    if(snap.exists()){ settingsData=snap.data(); }
+    if(settingsData.name) instituteNameHeader.textContent=settingsData.name;
+    if(settingsData.logo) instituteLogo.src=settingsData.logo;
+    if(settingsData.colors){
+      document.documentElement.style.setProperty('--primary',settingsData.colors.primary||'#004aad');
+      document.documentElement.style.setProperty('--accent',settingsData.colors.accent||'#ffcc33');
+      document.documentElement.style.setProperty('--bg',settingsData.colors.bg||'#f5f9ff');
+      document.documentElement.style.setProperty('--card',settingsData.colors.card||'#fff');
+    }
+  }catch(e){console.error('loadSettings',e);}
 }
 
-function populateStageGroup(){
-  STAGES.forEach(s=>filterStage.innerHTML += `<option value="${s}">${s}</option>`);
-  GROUPS.forEach(g=>filterGroup.innerHTML += `<option value="${g}">${g}</option>`);
+async function loadTeachers(){
+  teachersCache=[];
+  try{
+    const snap = await getDocs(collection(db,'teachers'));
+    snap.forEach(d=>teachersCache.push({id:d.id,...d.data()}));
+  }catch(e){console.error(e);}
 }
 
 async function loadStudents(){
-  studentsData = [];
+  studentsCache=[];
   try{
-    const q = query(collection(db,'students'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    snap.forEach(d => studentsData.push({id:d.id,...d.data()}));
-  }catch(e){ console.error('loadStudents', e); }
+    const snap = await getDocs(collection(db,'students'));
+    snap.forEach(d=>studentsCache.push({id:d.id,...d.data()}));
+  }catch(e){console.error(e);}
 }
 
-function createSubjectRow(data = {}) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'subject-row';
-  wrapper.innerHTML = `
-    <input class="subjName" placeholder="اسم المادة" value="${data.subject||data.name||''}" />
-    <select class="subjStage">
-      <option value="">اختر المرحلة</option>
-      ${STAGES.map(s=>`<option value="${s}" ${s=== (data.stage||'') ? 'selected':''}>${s}</option>`).join('')}
-    </select>
-    <select class="subjGroup">
-      <option value="">اختر الكروب</option>
-      ${GROUPS.map(g=>`<option value="${g}" ${g=== (data.group||'') ? 'selected':''}>${g}</option>`).join('')}
-    </select>
-    <button type="button" class="btn warn small removeSubj">❌</button>
-  `;
-  wrapper.querySelector('.removeSubj').addEventListener('click', ()=> wrapper.remove());
-  subjectsContainer.appendChild(wrapper);
-  return wrapper;
-}
-addSubjectBtn.addEventListener('click', ()=> createSubjectRow());
-
-clearFormBtn.addEventListener('click', ()=>{
-  teacherForm.reset();
-  subjectsContainer.innerHTML = '';
-  editingTeacherId = null;
-  document.getElementById('formTitle').textContent = 'أضف أستاذ جديد';
-});
-
-teacherForm.addEventListener('submit', async e=>{
+/* --- Save teacher --- */
+teacherForm.addEventListener('submit',async e=>{
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const note = document.getElementById('note').value.trim();
-
-  const subjects = Array.from(subjectsContainer.querySelectorAll('.subject-row')).map(row=>{
-    const subj = row.querySelector('.subjName').value.trim();
-    const stage = row.querySelector('.subjStage').value;
-    const group = row.querySelector('.subjGroup').value;
-    return { subject: subj, stage, group, payments: [], total:0, received:0, remaining:0 };
-  }).filter(s=>s.subject && s.stage && s.group);
-
-  if(subjects.length===0 || !name){ alert('الرجاء تعبئة الحقول المطلوبة'); return; }
-
+  const name=document.getElementById('teacherName').value.trim();
+  const phone=document.getElementById('teacherPhone').value.trim();
+  const note=document.getElementById('teacherNote').value.trim();
+  if(!name){alert('الاسم مطلوب'); return;}
   try{
-    if(editingTeacherId){
-      await updateDoc(doc(db,'teachers',editingTeacherId), { name, phone, address, note, subjects });
-      editingTeacherId=null;
-      document.getElementById('formTitle').textContent='أضف أستاذ جديد';
-    } else await addDoc(collection(db,'teachers'),{ name, phone, address, note, subjects, createdAt:new Date() });
-    teacherForm.reset();
-    subjectsContainer.innerHTML='';
-    await loadTeachers();
-  }catch(err){ console.error(err); alert('حدث خطأ أثناء الحفظ'); }
+    await addDoc(collection(db,'teachers'),{name,phone,note,createdAt:new Date()});
+    alert('تم إضافة الأستاذ'); teacherForm.reset(); loadTeachers(); renderTeachers();
+  }catch(e){console.error(e); alert('خطأ أثناء الحفظ');}
 });
 
-async function loadTeachers(){
-  teachersData=[];
-  teachersTableBody.innerHTML='';
-  try{
-    const q = query(collection(db,'teachers'), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    for(const docSnap of snap.docs){
-      const t = { id: docSnap.id, ...docSnap.data() };
-      for(const sub of (t.subjects||[])){
-        let total=0;
-        studentsData.forEach(st=>{
-          if(st.stage===sub.stage && st.group===sub.group){
-            const studentSub=(st.subjects||[]).find(ss=>ss.name===sub.subject);
-            if(studentSub) total+=parseFloat(studentSub.fee||0);
-          }
-        });
-        sub.total = total*(settingsData.teacherPercent/100);
-        sub.received=(sub.payments||[]).reduce((a,b)=>a+(b.amount||0),0);
-        sub.remaining=Math.max(0,(sub.total||0)-sub.received);
-      }
-      teachersData.push(t);
+clearTeacherForm.addEventListener('click',()=>teacherForm.reset());
 
-      const tr=document.createElement('tr');
-      const approxTotal=t.subjects.reduce((a,b)=>a+(b.total||0),0);
-      tr.innerHTML=`<td>${t.name}</td><td>${t.phone||'-'}</td><td>${t.subjects.length}</td><td>${approxTotal}</td>
+/* --- Render teachers --- */
+function renderTeachers(filter=''){
+  teachersTableBody.innerHTML='';
+  teachersCache.forEach(t=>{
+    if(filter && !t.name.includes(filter)) return;
+    const tr=document.createElement('tr');
+    const hisStudents = studentsCache.filter(s=>s.subjects.some(sub=>sub.teacherId===t.id));
+    let totalDue=0; let remainingInstitute=0;
+    hisStudents.forEach(s=>{
+      s.subjects.forEach(sub=>{
+        if(sub.teacherId===t.id){
+          const paid = sub.fee-(sub.remaining||0);
+          const due = (paid* (settingsData.teacherPercent||50)/100);
+          totalDue+=due;
+          remainingInstitute+=paid-due;
+        }
+      });
+    });
+    tr.innerHTML=`<td>${t.name}</td><td>${t.phone||'-'}</td><td>${hisStudents.length}</td><td>${totalDue.toFixed(2)}</td><td>${remainingInstitute.toFixed(2)}</td>
       <td>
-        <button class="btn small" onclick="showTeacher('${t.id}')">عرض</button>
-        <button class="btn small ghost" onclick="startEditTeacher('${t.id}')">✏️</button>
-        <button class="btn small warn" onclick="deleteTeacher('${t.id}')">🗑️</button>
+        <button class="btn small viewBtn">عرض</button>
+        <button class="btn small">✏️ تعديل</button>
+        <button class="btn warn small">🗑️ حذف</button>
       </td>`;
-      teachersTableBody.appendChild(tr);
-    }
-    totalCount.textContent=teachersData.length;
-  }catch(e){ console.error(e); }
+    const [viewBtn, editBtn, delBtn] = tr.querySelectorAll('button');
+    viewBtn.addEventListener('click',()=>showModal(t,hisStudents));
+    editBtn.addEventListener('click',()=>editTeacher(t));
+    delBtn.addEventListener('click',async()=>{
+      if(confirm('هل تريد حذف الأستاذ نهائياً؟')){
+        await deleteDoc(doc(db,'teachers',t.id));
+        alert('تم الحذف'); loadTeachers(); renderTeachers();
+      }
+    });
+    teachersTableBody.appendChild(tr);
+  });
+  totalTeachers.textContent=teachersCache.length;
 }
 
-window.startEditTeacher = async id=>{
-  const t = teachersData.find(x=>x.id===id); if(!t) return;
-  editingTeacherId=id;
-  document.getElementById('formTitle').textContent='تعديل بيانات الأستاذ';
-  document.getElementById('name').value=t.name;
-  document.getElementById('phone').value=t.phone||'';
-  document.getElementById('address').value=t.address||'';
-  document.getElementById('note').value=t.note||'';
-  subjectsContainer.innerHTML='';
-  (t.subjects||[]).forEach(s=>createSubjectRow(s));
-};
-
-window.deleteTeacher=async id=>{
-  if(!confirm('هل أنت متأكد من حذف الأستاذ؟')) return;
-  try{ await deleteDoc(doc(db,'teachers',id)); await loadTeachers(); }catch(e){ console.error(e); }
-};
-
-window.showTeacher=id=>{
-  const t=teachersData.find(x=>x.id===id); if(!t) return;
-  modalTitle.textContent=`الأستاذ: ${t.name}`;
-  modalBody.innerHTML='<table class="table"><tr><th>المادة</th><th>المرحلة</th><th>الكروب</th><th>إجمالي مستحق</th><th>تم استلامه</th><th>المتبقي</th></tr>'+
-    t.subjects.map(s=>`<tr><td>${s.subject}</td><td>${s.stage}</td><td>${s.group}</td><td>${s.total}</td><td>${s.received}</td><td>${s.remaining}</td></tr>`).join('')+'</table>';
+function showModal(teacher,hisStudents){
+  modalTitle.textContent=`أستاذ: ${teacher.name}`;
+  modalBody.innerHTML=`
+    <p><strong>الهاتف:</strong> ${teacher.phone||'-'}</p>
+    <p><strong>ملاحظات:</strong> ${teacher.note||'-'}</p>
+    <h4>طلاب الأستاذ ودفعاتهم:</h4>
+    ${hisStudents.map(s=>{
+      const subs=s.subjects.filter(sub=>sub.teacherId===teacher.id);
+      return `<div><strong>${s.name}</strong> - ${subs.map(sub=>{
+        const paid=sub.fee-(sub.remaining||0);
+        const due=(paid*(settingsData.teacherPercent||50)/100).toFixed(2);
+        return `${sub.name}: المدفوع له ${due} / ${sub.fee}`;
+      }).join('<br>')}</div><hr>`;
+    }).join('')}
+  `;
   modal.classList.add('open');
-};
+}
 
-closeModalBtn.addEventListener('click', ()=> modal.classList.remove('open'));
-printTeacherBtn.addEventListener('click', ()=>{
-  const w=window.open(); w.document.write('<html><head><title>طباعة</title></head><body>'+modalBody.innerHTML+'</body></html>');
-  w.print(); w.close();
-});
+closeModal.addEventListener('click',()=>modal.classList.remove('open'));
 
-applyFiltersBtn.addEventListener('click', ()=>{
-  const search=searchBox.value.trim().toLowerCase();
-  const stage=filterStage.value;
-  const group=filterGroup.value;
+applyTeacherFilter.addEventListener('click',()=>renderTeachers(searchTeacher.value.trim()));
 
-  teachersTableBody.innerHTML='';
-  teachersData.forEach(t=>{
-    let match=true;
-    if(search && !t.name.toLowerCase().includes(search) && !(t.subjects||[]).some(s=>s.subject.toLowerCase().includes(search))) match=false;
-    if(stage && !(t.subjects||[]).some(s=>s.stage===stage)) match=false;
-    if(group && !(t.subjects||[]).some(s=>s.group===group)) match=false;
-    if(match){
-      const tr=document.createElement('tr');
-      const approxTotal=t.subjects.reduce((a,b)=>a+(b.total||0),0);
-      tr.innerHTML=`<td>${t.name}</td><td>${t.phone||'-'}</td><td>${t.subjects.length}</td><td>${approxTotal}</td>
-      <td>
-        <button class="btn small" onclick="showTeacher('${t.id}')">عرض</button>
-        <button class="btn small ghost" onclick="startEditTeacher('${t.id}')">✏️</button>
-        <button class="btn small warn" onclick="deleteTeacher('${t.id}')">🗑️</button>
-      </td>`;
-      teachersTableBody.appendChild(tr);
-    }
-  });
-});
-
+function editTeacher(t){
+  document.getElementById('teacherName').value=t.name;
+  document.getElementById('teacherPhone').value=t.phone||'';
+  document.getElementById('teacherNote').value=t.note||'';
+  teacherForm.onsubmit=async e=>{
+    e.preventDefault();
+    try{
+      await updateDoc(doc(db,'teachers',t.id),{
+        name:document.getElementById('teacherName').value.trim(),
+        phone:document.getElementById('teacherPhone').value.trim(),
+        note:document.getElementById('teacherNote').value.trim()
+      });
+      alert('تم تعديل الأستاذ'); teacherForm.reset(); loadTeachers(); renderTeachers();
+    }catch(e){console.error(e);alert('خطأ أثناء التعديل');}
+  };
+}
 </script>
 </body>
 </html>
