@@ -20,13 +20,8 @@ header {
   border-radius:8px;
   margin-bottom:20px;
 }
-header img {
-  height:50px;
-}
-header h1 {
-  font-size:24px;
-  margin:0;
-}
+header img { height:50px; }
+header h1 { font-size:24px; margin:0; }
 .card {
   background:#fff;
   border-radius:10px;
@@ -54,19 +49,18 @@ table {
   border-collapse:collapse;
   margin-top:12px;
 }
-th,td {
-  padding:10px;
-  border:1px solid #eee;
-  text-align:center;
-}
+th,td { padding:10px; border:1px solid #eee; text-align:center; }
 th { background:#004aad; color:#fff; }
 .status-present { background:#c8e6c9; }
 .status-absent { background:#ffcdd2; }
 .status-late { background:#fff9c4; }
 
+.filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.filters select, .filters input { flex:1; }
+
 @media print {
   body{background:white;}
-  .card, button, select, input { display:none; }
+  .card, button, select, input, .filters { display:none; }
   table { page-break-inside:avoid; }
 }
 </style>
@@ -79,6 +73,12 @@ th { background:#004aad; color:#fff; }
 </header>
 
 <div class="card">
+  <strong>فلترة الحصص</strong>
+  <div class="filters">
+    <select id="filterSubject"><option value="">حسب المادة</option></select>
+    <select id="filterTeacher"><option value="">حسب الأستاذ</option></select>
+    <select id="filterGroup"><option value="">حسب المجموعة</option></select>
+  </div>
   <strong>اختر الحصة لتسجيل الحضور</strong>
   <select id="classSelect"></select>
   <button id="printBtn">🖨️ طباعة</button>
@@ -102,19 +102,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
-  authDomain: "oma0-33cc0.firebaseapp.com",
-  projectId: "oma0-33cc0",
-  storageBucket: "oma0-33cc0.firebasestorage.app",
-  messagingSenderId: "899300774863",
-  appId: "1:899300774863:web:0a81a7f5747ef37d49b8ba",
-  measurementId: "G-5CKWYQT9XZ"
-};
+// 🔹 إعداد Firebase
+import { firebaseConfig } from "./firebase-config.js"; // ملف خارجي للربط
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// 🔹 عناصر الصفحة
 const instituteLogo = document.getElementById("instituteLogo");
 const instituteName = document.getElementById("instituteName");
 const classSelect = document.getElementById("classSelect");
@@ -122,10 +116,15 @@ const attendanceTableBody = document.querySelector("#attendanceTable tbody");
 const saveBtn = document.getElementById("saveBtn");
 const printBtn = document.getElementById("printBtn");
 
-let classesData = [];
-let selectedClass = null;
-let studentsData = [];
+const filterSubject = document.getElementById("filterSubject");
+const filterTeacher = document.getElementById("filterTeacher");
+const filterGroup = document.getElementById("filterGroup");
 
+let classesData = [];
+let studentsData = [];
+let selectedClass = null;
+
+// 🔹 التحقق من تسجيل الدخول
 onAuthStateChanged(auth, async user => {
   if (!user) window.location.href="login.html";
   else {
@@ -135,6 +134,7 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
+// 🔹 تحميل إعدادات المعهد
 async function loadInstituteSettings() {
   const docSnap = await getDoc(doc(db,"settings","institute"));
   if(docSnap.exists()){
@@ -145,17 +145,53 @@ async function loadInstituteSettings() {
   }
 }
 
+// 🔹 تحميل الحصص
 async function loadClasses() {
   classesData = [];
   const snapshot = await getDocs(collection(db,"classes"));
-  classSelect.innerHTML = "<option value=''>اختر الحصة</option>";
   snapshot.forEach(docSnap=>{
     const cls = {id:docSnap.id,...docSnap.data()};
     classesData.push(cls);
-    classSelect.innerHTML += `<option value="${cls.id}">${cls.subject} - ${cls.group} - ${cls.day} ${cls.startTime}</option>`;
+  });
+  populateFilters();
+  renderClassSelect();
+}
+
+// 🔹 تعبئة خيارات الفلترة
+function populateFilters() {
+  const subjects = [...new Set(classesData.map(c=>c.subject))];
+  const teachers = [...new Set(classesData.map(c=>c.teacher))];
+  const groups = [...new Set(classesData.map(c=>c.group))];
+
+  filterSubject.innerHTML="<option value=''>حسب المادة</option>";
+  subjects.forEach(s=>filterSubject.innerHTML+=`<option value="${s}">${s}</option>`);
+
+  filterTeacher.innerHTML="<option value=''>حسب الأستاذ</option>";
+  teachers.forEach(t=>filterTeacher.innerHTML+=`<option value="${t}">${t}</option>`);
+
+  filterGroup.innerHTML="<option value=''>حسب المجموعة</option>";
+  groups.forEach(g=>filterGroup.innerHTML+=`<option value="${g}">${g}</option>`);
+}
+
+// 🔹 عرض الحصص حسب الفلترة
+function renderClassSelect() {
+  classSelect.innerHTML="<option value=''>اختر الحصة</option>";
+  const filtered = classesData.filter(c=>{
+    return (!filterSubject.value || c.subject===filterSubject.value)
+        && (!filterTeacher.value || c.teacher===filterTeacher.value)
+        && (!filterGroup.value || c.group===filterGroup.value);
+  });
+  filtered.forEach(c=>{
+    classSelect.innerHTML+=`<option value="${c.id}">${c.subject} - ${c.group} - ${c.day} ${c.startTime}</option>`;
   });
 }
 
+// 🔹 عند تغيير الفلاتر
+[filterSubject, filterTeacher, filterGroup].forEach(el=>{
+  el.addEventListener("change", renderClassSelect);
+});
+
+// 🔹 اختيار الحصة وتحميل الطلاب
 classSelect.addEventListener("change", async ()=>{
   const classId = classSelect.value;
   if(!classId) return attendanceTableBody.innerHTML="";
@@ -163,6 +199,7 @@ classSelect.addEventListener("change", async ()=>{
   await loadStudents(selectedClass);
 });
 
+// 🔹 تحميل الطلاب لكل حصة
 async function loadStudents(cls) {
   attendanceTableBody.innerHTML="";
   studentsData = cls.students || [];
@@ -181,6 +218,7 @@ async function loadStudents(cls) {
   });
 }
 
+// 🔹 حفظ الحضور
 saveBtn.addEventListener("click", async ()=>{
   if(!selectedClass) return alert("اختر حصة أولا");
   const attendanceUpdates = [];
@@ -196,9 +234,9 @@ saveBtn.addEventListener("click", async ()=>{
   alert("تم حفظ الحضور بنجاح ✅");
 });
 
-printBtn.addEventListener("click", ()=>{
-  window.print();
-});
+// 🔹 طباعة الحضور
+printBtn.addEventListener("click", ()=> window.print());
+
 </script>
 </body>
 </html>
