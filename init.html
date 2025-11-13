@@ -83,7 +83,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, getDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// ✅ إعداد Firebase
+// إعداد Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAMANgdrLgoGIjqLZOcS_qyEqCUOVC7gOU",
   authDomain: "oma0-33cc0.firebaseapp.com",
@@ -131,7 +131,7 @@ async function clearOldData(){
 
 async function startSetup(){
   const pass = adminKey.value.trim();
-  if(pass !== "AdminSetup2025"){ // 🔐 كلمة المرور الإدارية
+  if(pass !== "AdminSetup2025"){
     alert("كلمة المرور غير صحيحة ❌");
     return;
   }
@@ -188,7 +188,7 @@ async function startSetup(){
           await ensureUser(inst.email, cred.user.uid, "instituteAdmin");
         }else throw err;
       }
-      await new Promise(res=>setTimeout(res,1000)); // تأخير بسيط
+      await new Promise(res=>setTimeout(res,1000));
     }
 
     log("\n🎉 تم الانتهاء من التهيئة بنجاح!");
@@ -196,6 +196,7 @@ async function startSetup(){
     log("❌ خطأ: "+err.message);
   }
 }
+
 startBtn.addEventListener("click",startSetup);
 </script>
 
