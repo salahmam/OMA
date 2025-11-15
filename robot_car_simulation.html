@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>محاكاة سيارة روبوت ذكية (يدوي / تجنّب عقبات / رؤية / تحكم من الهاتف)</title>
+<style>
+  html,body{height:100%;margin:0;font-family:Tahoma, Arial, sans-serif;background:#111;color:#eee}
+  #ui{position:absolute;right:12px;top:12px;z-index:20;backdrop-filter:blur(6px)}
+  .panel{background:rgba(0,0,0,0.45);padding:10px;border-radius:8px;margin-bottom:10px}
+  button{font-size:16px;padding:10px;border-radius:6px;border:none;background:#1e88e5;color:#fff;cursor:pointer;margin:4px}
+  button.tgl{background:#555}
+  #canvas{display:block;margin:0 auto;background:#2b2b2b;touch-action:none}
+  .bigBtn{width:72px;height:72px;border-radius:12px;font-size:18px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .label{font-size:14px;color:#ddd;margin-bottom:6px;text-align:center}
+  .footer{position:absolute;left:12px;bottom:12px;color:#ccc;font-size:13px}
+  .status{margin-top:6px;color:#cfc}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div class="panel">
+    <div class="label"><strong>وضعيات التحكم</strong></div>
+    <div class="controls">
+      <button id="manualBtn">يدوي</button>
+      <button id="autoBtn" class="tgl">تلقائي (تجنّب عقبات)</button>
+      <button id="visionBtn" class="tgl">رؤية (اتّباع أحمر)</button>
+      <button id="followBtn" class="tgl">متابعة هدف</button>
+    </div>
+    <div class="status" id="modeStatus">الوضع: <span id="modeText">يدوي</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="label"><strong>التحكم من الهاتف / المتصفح</strong></div>
+    <div class="controls">
+      <button id="btnForward" class="bigBtn">↑</button>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="btnLeft" class="bigBtn">◀</button>
+        <button id="btnRight" class="bigBtn">▶</button>
+      </div>
+      <button id="btnBack" class="bigBtn">↓</button>
+    </div>
+    <div style="margin-top:8px;text-align:center">
+      <button id="speedDown">سرعة -</button>
+      <button id="speedUp">سرعة +</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label"><strong>بيانات المحاكاة</strong></div>
+    <div>سرعة: <span id="speedDisplay">2.0</span></div>
+    <div>مسافة الحساس: <span id="sensorDisplay">150</span> px</div>
+    <div>كاميرا/زاوية رؤية: <span id="fovDisplay">60</span>°</div>
+    <div class="label" style="margin-top:6px">تعليمات قصيرة:</div>
+    <ul style="margin:6px 0 0 18px;color:#ccc">
+      <li>المفاتيح: ↑ ↓ ← → للتحرك يدوياً</li>
+      <li>اضغط "تلقائي" لتشغيل تجنّب العقبات</li>
+      <li>اضغط "رؤية" لتمكين الكشف عن الأجسام الحمراء</li>
+      <li>اضغط "متابعة" ليتجه الروبوت نحو الهدف الأحمر إن وجد</li>
+      <li>يمكن استخدام الأزرار على الهاتف للتحكم</li>
+    </ul>
+  </div>
+</div>
+
+<canvas id="canvas" width="900" height="600"></canvas>
+<div class="footer">محاكاة روبوت — دمج: يدوي، تجنّب عقبات، رؤية، تحكم هاتفي — صنع لك</div>
+
+<script>
+// Basic simulation of a robot car
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// Responsive canvas
+function fitCanvas(){
+  const margin = 20;
+  const w = Math.min(window.innerWidth - margin*2, 1000);
+  const h = Math.min(window.innerHeight - margin*2, 700);
+  canvas.width = w;
+  canvas.height = h;
+}
+window.addEventListener('resize', fitCanvas);
+fitCanvas();
+
+// Environment objects
+let obstacles = [];
+let targets = [];
+
+// Create random obstacles and a few red targets
+function resetEnvironment(){
+  obstacles = [];
+  targets = [];
+  // obstacles: rectangles
+  for(let i=0;i<8;i++){
+    obstacles.push({
+      x: 60 + Math.random()*(canvas.width-120),
+      y: 60 + Math.random()*(canvas.height-120),
+      w: 40 + Math.random()*90,
+      h: 20 + Math.random()*80
+    });
+  }
+  // targets (red balls)
+  for(let i=0;i<3;i++){
+    targets.push({
+      x: Math.random()*(canvas.width-120)+60,
+      y: Math.random()*(canvas.height-120)+60,
+      r: 12 + Math.random()*10
+    });
+  }
+}
+resetEnvironment();
+
+// Robot
+const robot = {
+  x: canvas.width/2,
+  y: canvas.height/2,
+  angle: -Math.PI/2, // facing up
+  speed: 2.0,
+  width: 36,
+  length: 50,
+  turnRate: 0.04,
+  sensorRange: 150, // ultrasonic like
+  fov: Math.PI * (60/180), // vision cone in radians
+  visionRange: 200
+};
+
+// Control state
+let control = {
+  forward:false, back:false, left:false, right:false,
+  manual:true, auto:false, vision:false, follow:false
+};
+
+// UI buttons
+const manualBtn = document.getElementById('manualBtn');
+const autoBtn = document.getElementById('autoBtn');
+const visionBtn = document.getElementById('visionBtn');
+const followBtn = document.getElementById('followBtn');
+const modeText = document.getElementById('modeText');
+const speedDisplay = document.getElementById('speedDisplay');
+const sensorDisplay = document.getElementById('sensorDisplay');
+const fovDisplay = document.getElementById('fovDisplay');
+
+function updateModeText(){
+  if(control.manual) modeText.innerText = "يدوي";
+  else if(control.auto && control.vision) modeText.innerText = "تلقائي + رؤية";
+  else if(control.auto) modeText.innerText = "تلقائي (تجنّب)";
+  else if(control.vision) modeText.innerText = "رؤية فقط";
+  else modeText.innerText = "مُحايد";
+}
+
+manualBtn.onclick = ()=>{ control.manual=true; control.auto=false; updateModeText(); toggleButtons(); };
+autoBtn.onclick = ()=>{ control.auto=!control.auto; control.manual = !control.auto; updateModeText(); toggleButtons(); };
+visionBtn.onclick = ()=>{ control.vision=!control.vision; updateModeText(); toggleButtons(); };
+followBtn.onclick = ()=>{ control.follow=!control.follow; updateModeText(); toggleButtons(); };
+
+function toggleButtons(){
+  autoBtn.classList.toggle('tgl', !control.auto);
+  visionBtn.classList.toggle('tgl', !control.vision);
+  followBtn.classList.toggle('tgl', !control.follow);
+  manualBtn.classList.toggle('tgl', !control.manual);
+}
+
+// Touch / phone controls
+const btnForward = document.getElementById('btnForward');
+const btnBack = document.getElementById('btnBack');
+const btnLeft = document.getElementById('btnLeft');
+const btnRight = document.getElementById('btnRight');
+const speedUp = document.getElementById('speedUp');
+const speedDown = document.getElementById('speedDown');
+
+btnForward.addEventListener('touchstart', e=>{ control.forward=true; e.preventDefault(); });
+btnForward.addEventListener('touchend', e=>{ control.forward=false; e.preventDefault(); });
+btnBack.addEventListener('touchstart', e=>{ control.back=true; e.preventDefault(); });
+btnBack.addEventListener('touchend', e=>{ control.back=false; e.preventDefault(); });
+btnLeft.addEventListener('touchstart', e=>{ control.left=true; e.preventDefault(); });
+btnLeft.addEventListener('touchend', e=>{ control.left=false; e.preventDefault(); });
+btnRight.addEventListener('touchstart', e=>{ control.right=true; e.preventDefault(); });
+btnRight.addEventListener('touchend', e=>{ control.right=false; e.preventDefault(); });
+
+btnForward.addEventListener('mousedown', e=>control.forward=true);
+btnForward.addEventListener('mouseup', e=>control.forward=false);
+btnBack.addEventListener('mousedown', e=>control.back=true);
+btnBack.addEventListener('mouseup', e=>control.back=false);
+btnLeft.addEventListener('mousedown', e=>control.left=true);
+btnLeft.addEventListener('mouseup', e=>control.left=false);
+btnRight.addEventListener('mousedown', e=>control.right=true);
+btnRight.addEventListener('mouseup', e=>control.right=false);
+
+speedUp.onclick = ()=>{ robot.speed = Math.min(6, robot.speed + 0.5); updateDisplays(); };
+speedDown.onclick = ()=>{ robot.speed = Math.max(0.5, robot.speed - 0.5); updateDisplays(); };
+
+function updateDisplays(){
+  speedDisplay.innerText = robot.speed.toFixed(1);
+  sensorDisplay.innerText = robot.sensorRange.toFixed(0);
+  fovDisplay.innerText = (robot.fov * 180/Math.PI).toFixed(0);
+}
+updateDisplays();
+
+// Keyboard
+window.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowUp') control.forward=true;
+  if(e.key === 'ArrowDown') control.back=true;
+  if(e.key === 'ArrowLeft') control.left=true;
+  if(e.key === 'ArrowRight') control.right=true;
+  // space to toggle auto
+  if(e.key === ' ') { control.auto = !control.auto; control.manual = !control.auto; toggleButtons(); updateModeText(); }
+});
+window.addEventListener('keyup', e=>{
+  if(e.key === 'ArrowUp') control.forward=false;
+  if(e.key === 'ArrowDown') control.back=false;
+  if(e.key === 'ArrowLeft') control.left=false;
+  if(e.key === 'ArrowRight') control.right=false;
+});
+
+// Utility collision check
+function rectIntersectsLine(rect, x1,y1,x2,y2){
+  // Liang-Barsky or simple sample along the line
+  const steps = 40;
+  for(let i=0;i<=steps;i++){
+    const t = i/steps;
+    const x = x1 + (x2-x1)*t;
+    const y = y1 + (y2-y1)*t;
+    if(x >= rect.x && x <= rect.x+rect.w && y >= rect.y && y <= rect.y+rect.h) return true;
+  }
+  return false;
+}
+
+// Sensor: cast a ray forward and find distance to nearest obstacle (or target if vision)
+function senseObstacle(){
+  const sx = robot.x;
+  const sy = robot.y;
+  const dx = Math.cos(robot.angle);
+  const dy = Math.sin(robot.angle);
+  let nearest = robot.sensorRange;
+  // sample points along ray
+  for(let d=10; d<=robot.sensorRange; d+=6){
+    const px = sx + dx*d;
+    const py = sy + dy*d;
+    // check walls
+    if(px < 0 || px > canvas.width || py < 0 || py > canvas.height){
+      nearest = Math.min(nearest, d);
+      break;
+    }
+    // check obstacles
+    for(const ob of obstacles){
+      if(px >= ob.x && px <= ob.x+ob.w && py >= ob.y && py <= ob.y+ob.h){
+        nearest = Math.min(nearest, d);
+      }
+    }
+  }
+  return nearest;
+}
+
+// Vision: find red targets within FOV and range; returns array of visible targets with angle & distance
+function visionDetect(){
+  const visible = [];
+  for(const t of targets){
+    const vx = t.x - robot.x;
+    const vy = t.y - robot.y;
+    const dist = Math.hypot(vx,vy);
+    if(dist > robot.visionRange) continue;
+    const ang = Math.atan2(vy, vx);
+    let dAng = angleDiff(ang, robot.angle);
+    if(Math.abs(dAng) <= robot.fov/2){
+      // also check line of sight (no obstacle in between)
+      const blocked = obstacles.some(ob => rectIntersectsLine(ob, robot.x, robot.y, t.x, t.y));
+      if(!blocked) visible.push({target:t, dist:dist, ang:dAng});
+    }
+  }
+  return visible;
+}
+
+function angleDiff(a,b){
+  let d = a - b;
+  while(d > Math.PI) d -= 2*Math.PI;
+  while(d < -Math.PI) d += 2*Math.PI;
+  return d;
+}
+
+// Main update loop
+function update(){
+  // Autonomous obstacle avoidance
+  if(control.auto && !control.manual){
+    const dist = senseObstacle();
+    // if too close, turn away
+    if(dist < 60){
+      // simple behavior: rotate away from obstacle (turn right if obstacle on left)
+      robot.angle += robot.turnRate * 2;
+    } else {
+      // go forward
+      robot.x += Math.cos(robot.angle) * robot.speed;
+      robot.y += Math.sin(robot.angle) * robot.speed;
+    }
+    // small random jitter to escape local minima
+    robot.angle += (Math.random()-0.5)*0.002;
+  }
+
+  // Vision-based following
+  const visible = visionDetect();
+  if(control.vision && control.follow && visible.length > 0){
+    // steer toward average angle of visible targets
+    let avgAng = 0, wsum = 0;
+    for(const v of visible){ const w = 1/(0.1+v.dist); avgAng += v.ang * w; wsum += w; }
+    avgAng /= wsum;
+    // turn towards target
+    robot.angle += Math.max(Math.min(avgAng, robot.turnRate), -robot.turnRate);
+    // move forward
+    robot.x += Math.cos(robot.angle) * robot.speed;
+    robot.y += Math.sin(robot.angle) * robot.speed;
+  }
+
+  // Manual control overrides
+  if(control.manual){
+    if(control.forward) { robot.x += Math.cos(robot.angle) * robot.speed; robot.y += Math.sin(robot.angle) * robot.speed; }
+    if(control.back) { robot.x -= Math.cos(robot.angle) * robot.speed; robot.y -= Math.sin(robot.angle) * robot.speed; }
+    if(control.left) robot.angle -= robot.turnRate * 1.4;
+    if(control.right) robot.angle += robot.turnRate * 1.4;
+  } else {
+    // even when not manual allow slight steering when buttons are pressed
+    if(control.left) robot.angle -= robot.turnRate;
+    if(control.right) robot.angle += robot.turnRate;
+    if(control.forward) { robot.x += Math.cos(robot.angle) * (robot.speed*0.7); robot.y += Math.sin(robot.angle) * (robot.speed*0.7); }
+  }
+
+  // keep inside bounds
+  robot.x = Math.max(10, Math.min(canvas.width-10, robot.x));
+  robot.y = Math.max(10, Math.min(canvas.height-10, robot.y));
+}
+
+// Drawing
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // draw background grid
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // obstacles
+  ctx.fillStyle = '#445';
+  for(const ob of obstacles){
+    ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+  }
+
+  // targets (red)
+  for(const t of targets){
+    ctx.beginPath();
+    ctx.fillStyle = '#ff4444';
+    ctx.arc(t.x, t.y, t.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#330000'; ctx.stroke();
+  }
+
+  // Draw robot
+  ctx.save();
+  ctx.translate(robot.x, robot.y);
+  ctx.rotate(robot.angle);
+  // body
+  ctx.fillStyle = '#0aa';
+  ctx.fillRect(-robot.length/2, -robot.width/2, robot.length, robot.width);
+  // wheels
+  ctx.fillStyle = '#111'; ctx.fillRect(-robot.length/2+6, -robot.width/2-6, 10, 6);
+  ctx.fillRect(-robot.length/2+6, robot.width/2, 10, 6);
+  ctx.fillRect(robot.length/2-16, -robot.width/2-6, 10, 6);
+  ctx.fillRect(robot.length/2-16, robot.width/2, 10, 6);
+  // heading line
+  ctx.strokeStyle = '#eef'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(robot.length/2+10,0); ctx.stroke();
+  ctx.restore();
+
+  // Draw sensor ray
+  const sx = robot.x;
+  const sy = robot.y;
+  const ex = sx + Math.cos(robot.angle) * robot.sensorRange;
+  const ey = sy + Math.sin(robot.angle) * robot.sensorRange;
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255,255,0,0.9)';
+  ctx.moveTo(sx,sy);
+  ctx.lineTo(ex,ey);
+  ctx.stroke();
+
+  // draw vision cone
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.fillStyle = 'rgba(255,80,80,0.07)';
+  ctx.arc(sx, sy, robot.visionRange, robot.angle - robot.fov/2, robot.angle + robot.fov/2);
+  ctx.lineTo(sx,sy);
+  ctx.fill();
+
+  // Info overlay
+  ctx.fillStyle = '#ddd';
+  ctx.font = '14px Tahoma';
+  ctx.fillText('الوضع: ' + (control.manual ? 'يدوي' : (control.auto ? 'تلقائي' : 'آخر')), 10, 20);
+  ctx.fillText('رؤية: ' + (control.vision ? 'مفعلة' : 'مطفأة') + '  | متابعة: ' + (control.follow ? 'نعم' : 'لا'), 10, 40);
+
+  // show detected targets
+  const vis = visionDetect();
+  ctx.fillStyle = '#ff0';
+  for(const v of vis){
+    const ax = robot.x + Math.cos(robot.angle + v.ang) * v.dist;
+    const ay = robot.y + Math.sin(robot.angle + v.ang) * v.dist;
+    ctx.beginPath();
+    ctx.arc(ax, ay, 6, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// Animation loop
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// Allow dragging of obstacles on desktop
+let drag = null;
+canvas.addEventListener('mousedown', e=>{
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  for(const ob of obstacles){
+    if(mx >= ob.x && mx <= ob.x+ob.w && my >= ob.y && my <= ob.y+ob.h){ drag = ob; break; }
+  }
+});
+window.addEventListener('mousemove', e=>{
+  if(!drag) return;
+  const rect = canvas.getBoundingClientRect();
+  drag.x = e.clientX - rect.left - drag.w/2;
+  drag.y = e.clientY - rect.top - drag.h/2;
+});
+window.addEventListener('mouseup', e=>{ drag=null; });
+
+// Double click to add red target
+canvas.addEventListener('dblclick', e=>{
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  targets.push({x:mx,y:my,r:10});
+});
+
+// Long press touch to add target on mobile
+let touchTimer = null;
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length==1){
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.touches[0].clientX - rect.left;
+    const my = e.touches[0].clientY - rect.top;
+    touchTimer = setTimeout(()=>{ targets.push({x:mx,y:my,r:10}); }, 600);
+  }
+});
+canvas.addEventListener('touchend', e=>{ if(touchTimer) clearTimeout(touchTimer); });
+
+// Reset environment on pressing 'R'
+window.addEventListener('keydown', e=>{ if(e.key.toLowerCase() === 'r'){ resetEnvironment(); } });
+
+// small utilities to expose state
+window.sim = {
+  reset: resetEnvironment,
+  robot: robot,
+  obstacles: obstacles,
+  targets: targets,
+  control: control
+};
+</script>
+</body>
+</html>
