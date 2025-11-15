@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>محاكاة روبوت بالذكاء الاصطناعي</title>
+<style>
+body { background:#f0f0f0; font-family:Arial; text-align:center; }
+#area {
+  width: 320px; height: 320px; margin: 20px auto;
+  background:white; border:2px solid #333; position:relative;
+}
+#car {
+  width:40px; height:40px; background:red;
+  position:absolute; top:140px; left:140px;
+  transition:0.2s;
+}
+button { padding:10px 20px; margin:5px; }
+</style>
+</head>
+<body>
+<h2>🚗 محاكاة روبوت بسيط</h2>
+<div id="area">
+  <div id="car"></div>
+</div>
+<button onclick="move(0,-20)">↑</button><br>
+<button onclick="move(-20,0)">←</button>
+<button onclick="move(20,0)">→</button><br>
+<button onclick="move(0,20)">↓</button>
+
+<script>
+function move(dx, dy) {
+  const car = document.getElementById('car');
+  let x = car.offsetLeft + dx;
+  let y = car.offsetTop + dy;
+  x = Math.max(0, Math.min(280, x));
+  y = Math.max(0, Math.min(280, y));
+  car.style.left = x + "px";
+  car.style.top = y + "px";
+}
+</script>
+</body>
+</html>
